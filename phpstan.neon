@@ -1,0 +1,17 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+
+    # Level 5 — catches real bugs without being pedantic about Eloquent magic
+    level: 5
+
+    checkModelProperties: false
+
+    ignoreErrors:
+        - '#Unsafe usage of new static#'
+
+    excludePaths:
+        - app/Http/Middleware/TrustProxies.php

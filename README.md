@@ -60,21 +60,21 @@ To get started contributing or building locally with standard tooling (Valet, Sa
 
 ---
 
-## 🪟 WAMP Server Deployment Guide
+## 🪟 WAMP / 🐧 LAMP Server Deployment Guide
 
-This CMS has been specifically optimized and tested for the Windows WAMP environment (e.g., `L:\UniWamp`). Follow these instructions to deploy the CMS locally or on a Windows-based production server.
+This CMS has been built to deploy smoothly on any standard LAMP (Linux, Apache, MySQL, PHP) or WAMP (Windows) environment. Follow these instructions to deploy the CMS locally or on a production server.
 
 ### 1. Environment Configuration
 
-1. Clone or copy the project into your WAMP `www` directory (e.g. `L:\UniWamp\www\aarvixcms`).
-2. Copy `.env.example` to `.env` and update your WAMP MySQL credentials:
+1. Clone or copy the project into your web root directory (e.g. `L:\UniWamp\www\aarvixcms` for WAMP, or `/var/www/aarvixcms` for LAMP).
+2. Copy `.env.example` to `.env` and update your MySQL credentials:
    ```env
    DB_CONNECTION=mysql
    DB_HOST=127.0.0.1
    DB_PORT=3306
    DB_DATABASE=aarvixcms
    DB_USERNAME=root
-   DB_PASSWORD=
+   DB_PASSWORD=your_password
    ```
 
 ### 2. Composer & Storage Setup
@@ -87,25 +87,27 @@ php artisan key:generate
 php artisan storage:link
 ```
 
+*(On Linux/LAMP, ensure your `storage` and `bootstrap/cache` directories are writable by the web server e.g., `chown -R www-data:www-data storage bootstrap/cache`)*
+
 ### 3. VHost Configuration (Recommended)
 
 To access the CMS via a clean URL like `http://aarvixcms.local`:
 
-1. Open `httpd-vhosts.conf` (e.g., `bin\apache\apacheX.Y.Z\conf\extra\`).
-2. Add the following block:
+1. Open your Apache virtual hosts file (e.g., `httpd-vhosts.conf` for WAMP, or `/etc/apache2/sites-available/aarvixcms.conf` for LAMP).
+2. Add the following block (adjusting `DocumentRoot` and `<Directory>` paths for your OS):
 ```apache
 <VirtualHost *:80>
     ServerName aarvixcms.local
-    DocumentRoot "L:/UniWamp/www/aarvixcms/public"
-    <Directory "L:/UniWamp/www/aarvixcms/public">
+    DocumentRoot "/path/to/aarvixcms/public"
+    <Directory "/path/to/aarvixcms/public">
         Options +Indexes +Includes +FollowSymLinks +MultiViews
         AllowOverride All
         Require all granted
     </Directory>
 </VirtualHost>
 ```
-3. Add `127.0.0.1 aarvixcms.local` to your Windows `C:\Windows\System32\drivers\etc\hosts` file.
-4. Restart WAMP Apache services.
+3. Add `127.0.0.1 aarvixcms.local` to your local `hosts` file (`C:\Windows\System32\drivers\etc\hosts` on Windows, or `/etc/hosts` on Linux/Mac).
+4. Restart your Apache service.
 
 ### 4. Production Optimization
 

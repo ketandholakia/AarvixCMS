@@ -21,5 +21,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Model::preventLazyLoading(! app()->isProduction());
+
+        \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
+            if (method_exists($user, 'hasPermission') && $user->hasPermission($ability)) {
+                return true;
+            }
+        });
     }
 }

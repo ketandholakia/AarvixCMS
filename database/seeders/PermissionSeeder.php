@@ -21,6 +21,8 @@ class PermissionSeeder extends Seeder
             'manage_settings',
             // Posts
             'view_posts', 'create_posts', 'edit_posts', 'delete_posts', 'publish_posts',
+            // Pages
+            'view_pages', 'create_pages', 'edit_pages', 'delete_pages', 'publish_pages',
             // Categories
             'view_categories', 'create_categories', 'edit_categories', 'delete_categories',
             // Forms (Phase 5)

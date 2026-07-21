@@ -49,7 +49,7 @@ To get started contributing or building locally with standard tooling (Valet, Sa
    ```bash
    php artisan migrate --seed
    ```
-   *The default admin account is `admin@example.com` / `password`.*
+   *The default admin account is `admin@aarvixcms.local` / `password`.*
 
 5. **Link Storage & Serve:**
    ```bash

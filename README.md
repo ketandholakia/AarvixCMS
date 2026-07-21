@@ -1,26 +1,73 @@
-# AarvixCMS 
+# AarvixCMS 🚀
 
-AarvixCMS is a modern, lightweight Content Management System built on Laravel 13, Tailwind CSS v4, and Alpine.js. It comes with full RBAC, caching, and a dynamic form builder right out of the box.
+AarvixCMS is a modern, blazing-fast, and lightweight Content Management System. Built on the bleeding edge of the PHP ecosystem with **Laravel 13**, **Tailwind CSS v4**, and **Alpine.js**, it provides a stellar developer experience and a robust foundation for building content-driven web applications.
 
-## WAMP Server Deployment Guide
+## ✨ Key Features
 
-This CMS has been specifically optimized for the WAMP environment (`L:\UniWamp`). Follow these instructions to deploy the CMS locally or on a Windows-based production server.
+- **Robust Role-Based Access Control (RBAC):** Built-in permissions architecture featuring Admin, Editor, and Author roles with fine-grained access checks.
+- **Dynamic Form Builder:** A powerful Alpine.js-powered drag-and-drop form builder. Generate complex forms in the admin panel and render them dynamically on the frontend.
+- **Stunning Frontend UI:** Fully responsive frontend themed with the latest Tailwind CSS v4 design tokens, including automatic Dark/Light mode support.
+- **Blazing Fast Caching:** Features a custom `PageCacheMiddleware` for statically caching full-page HTML responses for guests, automatically invalidated via Eloquent Model events. Zero N+1 queries by design.
+- **Dynamic Page Templates:** Choose between `Default`, `Full-Width`, `Sidebar`, or `Landing` page layouts right from the dashboard.
+- **Media Management:** Built-in upload handlers utilizing `Intervention Image` for thumbnail generation and WebP conversion.
+- **Security First:** Strict HTMLPurifier enforcement, CSRF protection, comprehensive rate limiting, and zero lazy-loading violations.
 
-### Prerequisites
+## 🛠 Tech Stack
 
-Ensure you have the following installed and running in your WAMP control panel:
-- **PHP 8.3+** (Ensure OpenSSL and PDO/MySQL extensions are enabled in your `php.ini`)
-- **MySQL 8** (or higher)
-- **Node.js** (for frontend asset compilation, if modifying theme)
+- **Framework:** [Laravel 13](https://laravel.com) (PHP 8.3+)
+- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
+- **Interactivity:** [Alpine.js v3](https://alpinejs.dev/)
+- **Authentication:** Laravel Fortify
+- **Testing:** PHPUnit 12
+
+---
+
+## 💻 Local Development Setup
+
+To get started contributing or building locally with standard tooling (Valet, Sail, or artisan serve):
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/ketandholakia/aarvixcms.git
+   cd aarvixcms
+   ```
+
+2. **Install Dependencies:**
+   ```bash
+   composer install
+   npm install
+   ```
+
+3. **Configure Environment:**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+   *Make sure to configure your `DB_*` variables in `.env` for your local database.*
+
+4. **Run Migrations & Seeders:**
+   ```bash
+   php artisan migrate --seed
+   ```
+   *The default admin account is `admin@example.com` / `password`.*
+
+5. **Link Storage & Serve:**
+   ```bash
+   php artisan storage:link
+   npm run dev
+   php artisan serve
+   ```
+
+---
+
+## 🪟 WAMP Server Deployment Guide
+
+This CMS has been specifically optimized and tested for the Windows WAMP environment (e.g., `L:\UniWamp`). Follow these instructions to deploy the CMS locally or on a Windows-based production server.
 
 ### 1. Environment Configuration
 
 1. Clone or copy the project into your WAMP `www` directory (e.g. `L:\UniWamp\www\aarvixcms`).
-2. Copy the `.env.example` file to `.env`:
-   ```bash
-   copy .env.example .env
-   ```
-3. Update the `.env` file to match your WAMP MySQL credentials:
+2. Copy `.env.example` to `.env` and update your WAMP MySQL credentials:
    ```env
    DB_CONNECTION=mysql
    DB_HOST=127.0.0.1
@@ -30,39 +77,21 @@ Ensure you have the following installed and running in your WAMP control panel:
    DB_PASSWORD=
    ```
 
-### 2. Composer & NPM Setup
+### 2. Composer & Storage Setup
 
-Run the following commands from the root directory (`L:\UniWamp\www\aarvixcms`) using the command line:
+From your command line in the project root:
 
 ```bash
-# Install PHP dependencies
 composer install --optimize-autoloader --no-dev
-
-# Generate application key
 php artisan key:generate
-
-# Link the storage directory (Important for Media uploads!)
 php artisan storage:link
-
-# Install frontend dependencies and compile assets (optional if assets are already bundled)
-npm install
-npm run build
 ```
 
-### 3. Database Migration and Seeding
+### 3. VHost Configuration (Recommended)
 
-You must run the migrations to create the tables. Additionally, run the seeders to create your initial Roles, Permissions, Default Settings, and Admin User.
+To access the CMS via a clean URL like `http://aarvixcms.local`:
 
-```bash
-php artisan migrate --seed
-```
-*Note: The default admin user credentials are `admin@example.com` / `password`. Make sure to change this immediately after logging in.*
-
-### 4. VHost Configuration (Optional but Recommended)
-
-For the best experience, configure a Virtual Host in WAMP so you can access the CMS via a clean URL like `http://aarvixcms.local` instead of `http://localhost/aarvixcms/public`.
-
-1. Open `httpd-vhosts.conf` (usually located in `bin\apache\apacheX.Y.Z\conf\extra\`).
+1. Open `httpd-vhosts.conf` (e.g., `bin\apache\apacheX.Y.Z\conf\extra\`).
 2. Add the following block:
 ```apache
 <VirtualHost *:80>
@@ -75,12 +104,12 @@ For the best experience, configure a Virtual Host in WAMP so you can access the 
     </Directory>
 </VirtualHost>
 ```
-3. Add `127.0.0.1 aarvixcms.local` to your Windows `hosts` file (`C:\Windows\System32\drivers\etc\hosts`).
+3. Add `127.0.0.1 aarvixcms.local` to your Windows `C:\Windows\System32\drivers\etc\hosts` file.
 4. Restart WAMP Apache services.
 
-### 5. Production Optimization
+### 4. Production Optimization
 
-If this WAMP environment is exposed to the public internet, you should run these caching commands to optimize Laravel's performance:
+If exposing this environment to the internet, optimize Laravel's performance and disable debug mode (`APP_DEBUG=false`):
 
 ```bash
 php artisan config:cache
@@ -89,11 +118,16 @@ php artisan view:cache
 php artisan event:cache
 ```
 
-**Security Note:** Make sure `APP_DEBUG=false` in your `.env` file!
-
-### Admin Dashboard
-
-Navigate to your application URL and add `/login` (e.g., `http://aarvixcms.local/login`) to access the admin panel. 
-
 ---
-Developed using Laravel 13 & Tailwind v4.
+
+## 🧪 Testing
+
+AarvixCMS ships with a comprehensive test suite covering RBAC policies, media uploads, full-page caching headers, and dynamic form builder schema parsing.
+
+To run the test suite:
+```bash
+php vendor/bin/phpunit --testdox
+```
+
+## 📄 License
+AarvixCMS is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

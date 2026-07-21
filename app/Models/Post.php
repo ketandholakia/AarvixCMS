@@ -16,6 +16,7 @@ class Post extends Model
     protected $fillable = [
         'author_id',
         'category_id',
+        'featured_image_id',
         'title',
         'slug',
         'excerpt',
@@ -61,5 +62,10 @@ class Post extends Model
     public function tags(): MorphToMany
     {
         return $this->morphToMany(Tag::class, 'taggable');
+    }
+
+    public function featuredImage(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'featured_image_id');
     }
 }

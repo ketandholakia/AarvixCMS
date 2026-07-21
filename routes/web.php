@@ -33,5 +33,8 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
         Route::resource('forms', \App\Http\Controllers\Admin\FormController::class);
         Route::resource('form_submissions', \App\Http\Controllers\Admin\FormSubmissionController::class)->only(['index', 'show', 'destroy']);
 
+        Route::resource('media', \App\Http\Controllers\Admin\MediaController::class)->only(['index', 'store', 'destroy']);
+        Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->except(['show']);
+
         Route::post('upload-image', [\App\Http\Controllers\Admin\ImageUploadController::class, 'store'])->name('upload.image');
     });

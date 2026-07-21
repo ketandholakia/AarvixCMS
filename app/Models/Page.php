@@ -35,11 +35,11 @@ class Page extends Model
     protected static function booted()
     {
         static::saved(function ($page) {
-            \Illuminate\Support\Facades\Cache::flush();
+            \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/' . $page->slug)));
         });
 
         static::deleted(function ($page) {
-            \Illuminate\Support\Facades\Cache::flush();
+            \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/' . $page->slug)));
         });
     }
 

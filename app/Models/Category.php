@@ -64,13 +64,15 @@ class Category extends Model
     protected static function booted()
     {
         static::saved(function ($category) {
-            \Illuminate\Support\Facades\Cache::forget('category_tree');
-            \Illuminate\Support\Facades\Cache::flush();
+            // Correct key is 'categories:tree' (matches Category::tree() method)
+            \Illuminate\Support\Facades\Cache::forget('categories:tree');
+            // Also clear any page cache that lists categories
+            \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/')));
         });
 
         static::deleted(function ($category) {
-            \Illuminate\Support\Facades\Cache::forget('category_tree');
-            \Illuminate\Support\Facades\Cache::flush();
+            \Illuminate\Support\Facades\Cache::forget('categories:tree');
+            \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/')));
         });
     }
 }

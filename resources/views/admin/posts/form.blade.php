@@ -10,7 +10,7 @@
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Write your article here.</p>
         </div>
         @if($record->exists)
-            <a href="#" class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline" target="_blank">View on Site &nearr;</a>
+            <a href="{{ route('post.show', $record->slug) }}" class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline" target="_blank">View on Site &nearr;</a>
         @endif
     </div>
 
@@ -88,6 +88,30 @@
                         :value="$record->category_id"
                         :options="$categories"
                     />
+                </div>
+
+                <div class="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 space-y-4">
+                    <h4 class="font-medium text-gray-900 dark:text-white">Tags</h4>
+                    @php
+                        $allTags = \App\Models\Tag::orderBy('name')->pluck('name', 'id')->toArray();
+                        $selectedTags = $record->exists ? $record->tags->pluck('id')->toArray() : [];
+                    @endphp
+                    <div class="space-y-2">
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">Select Tags</label>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($allTags as $id => $name)
+                                <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                                    <input type="checkbox" name="tags[]" value="{{ $id }}"
+                                           {{ in_array($id, $selectedTags) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ $name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        @if(empty($allTags))
+                            <p class="text-xs text-gray-400">No tags yet. <a href="{{ route('admin.tags.create') }}" class="text-indigo-500 hover:underline">Create one</a>.</p>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>

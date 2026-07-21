@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\ActivityService;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -119,6 +120,8 @@ abstract class AdminCrudController extends Controller
 
         $this->afterStore($request, $model);
 
+        app(ActivityService::class)->log(auth()->user(), 'created', $model);
+
         return redirect()->route($this->getRoutePrefix() . '.index')
             ->with('success', class_basename($modelClass) . ' created successfully.');
     }
@@ -149,6 +152,8 @@ abstract class AdminCrudController extends Controller
 
         $this->afterUpdate($request, $model);
 
+        app(ActivityService::class)->log(auth()->user(), 'updated', $model);
+
         return redirect()->route($this->getRoutePrefix() . '.index')
             ->with('success', class_basename($modelClass) . ' updated successfully.');
     }
@@ -159,7 +164,9 @@ abstract class AdminCrudController extends Controller
         $model = $modelClass::findOrFail($id);
 
         $this->beforeDestroy($request, $model);
-        
+
+        app(ActivityService::class)->log(auth()->user(), 'deleted', $model);
+
         $model->delete();
 
         return redirect()->route($this->getRoutePrefix() . '.index')

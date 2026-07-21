@@ -36,11 +36,15 @@ class Post extends Model
     protected static function booted()
     {
         static::saved(function ($post) {
-            \Illuminate\Support\Facades\Cache::flush();
+            // Invalidate only the cached page for this specific post
+            \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/blog/' . $post->slug)));
+            // Also clear the listing pages (home, category, tag) which may reference this post
+            \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/')));
         });
 
         static::deleted(function ($post) {
-            \Illuminate\Support\Facades\Cache::flush();
+            \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/blog/' . $post->slug)));
+            \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/')));
         });
     }
 

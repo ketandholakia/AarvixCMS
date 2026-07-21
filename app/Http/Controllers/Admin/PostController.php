@@ -46,5 +46,17 @@ class PostController extends AdminCrudController
         if (!isset($data['author_id'])) {
             $data['author_id'] = auth()->id();
         }
+        // Tags are handled via afterStore/afterUpdate; remove from fillable data
+        unset($data['tags']);
+    }
+
+    protected function afterStore(Request $request, \Illuminate\Database\Eloquent\Model $model): void
+    {
+        $model->tags()->sync($request->input('tags', []));
+    }
+
+    protected function afterUpdate(Request $request, \Illuminate\Database\Eloquent\Model $model): void
+    {
+        $model->tags()->sync($request->input('tags', []));
     }
 }

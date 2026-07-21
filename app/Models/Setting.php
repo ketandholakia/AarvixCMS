@@ -11,29 +11,38 @@ class Setting extends Model
 
     protected $fillable = ['key', 'value', 'type'];
 
+    /** In-request cache: key → value, populated on first access. */
+    protected static array $cache = [];
+
     /**
      * Get a setting value by key, with optional default.
      */
     public static function get(string $key, $default = null)
     {
-        // Simple static cache to prevent N+1 queries during a single request
-        static $cache = [];
-        
-        if (empty($cache)) {
-            $cache = static::pluck('value', 'key')->toArray();
+        if (empty(static::$cache)) {
+            static::$cache = static::pluck('value', 'key')->toArray();
         }
 
-        return $cache[$key] ?? $default;
+        return static::$cache[$key] ?? $default;
+    }
+
+    /**
+     * Reset the in-memory static cache used by get().
+     * Called automatically after settings are saved or deleted.
+     */
+    public static function clearStaticCache(): void
+    {
+        static::$cache = [];
     }
 
     protected static function booted()
     {
         static::saved(function ($setting) {
-            \Illuminate\Support\Facades\Cache::flush();
+            static::clearStaticCache();
         });
 
         static::deleted(function ($setting) {
-            \Illuminate\Support\Facades\Cache::flush();
+            static::clearStaticCache();
         });
     }
 }

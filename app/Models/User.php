@@ -15,7 +15,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, \App\Traits\HasPermissions;
+    use HasFactory, Notifiable, \App\Traits\HasPermissions, \Laravel\Sanctum\HasApiTokens, \Laravel\Cashier\Billable;
 
     /**
      * Get the attributes that should be cast.
@@ -39,5 +39,10 @@ class User extends Authenticatable
     public function pages(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Page::class, 'author_id');
+    }
+
+    public function isPremiumSubscriber(): bool
+    {
+        return $this->hasRole('Super Admin') || $this->hasRole('Editor') || $this->subscribed('default');
     }
 }

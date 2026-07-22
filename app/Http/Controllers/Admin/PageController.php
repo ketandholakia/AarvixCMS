@@ -44,5 +44,37 @@ class PageController extends AdminCrudController
         if (!isset($data['author_id'])) {
             $data['author_id'] = auth()->id();
         }
+        unset($data['translations']);
+    }
+
+    protected function beforeUpdate(Request $request, \Illuminate\Database\Eloquent\Model $model, array &$data): void
+    {
+        unset($data['translations']);
+    }
+
+    protected function afterStore(Request $request, \Illuminate\Database\Eloquent\Model $model): void
+    {
+        $this->syncTranslations($request, $model);
+    }
+
+    protected function afterUpdate(Request $request, \Illuminate\Database\Eloquent\Model $model): void
+    {
+        $this->syncTranslations($request, $model);
+    }
+
+    protected function syncTranslations(Request $request, \Illuminate\Database\Eloquent\Model $model): void
+    {
+        $translations = $request->input('translations', []);
+        
+        foreach ($translations as $locale => $data) {
+            if (empty(array_filter($data))) {
+                continue;
+            }
+
+            $model->translations()->updateOrCreate(
+                ['locale' => $locale],
+                $data
+            );
+        }
     }
 }

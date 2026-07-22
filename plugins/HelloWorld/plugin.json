@@ -1,0 +1,6 @@
+{
+    "name": "Hello World Plugin",
+    "namespace": "HelloWorld",
+    "description": "A proof-of-concept plugin to test the V5 architecture.",
+    "version": "1.0.0"
+}

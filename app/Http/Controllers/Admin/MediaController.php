@@ -40,14 +40,37 @@ class MediaController extends Controller
         $file = $request->file('file');
         $path = $file->store('uploads/' . date('Y/m'), 'public');
 
-        $media = Media::create([
+        $media = new Media([
             'disk'      => 'public',
             'path'      => $path,
+            'original_filename' => $file->getClientOriginalName(),
             'filename'  => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
             'size'      => $file->getSize(),
             'alt_text'  => $request->input('alt_text', pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)),
+            'caption'   => $request->input('caption'),
+            'uploaded_by' => auth()->id(),
         ]);
+        
+        if (str_starts_with($media->mime_type, 'image/')) {
+            // Optimize image using Intervention Image v3
+            $manager = \Intervention\Image\ImageManager::gd();
+            $image = $manager->read(Storage::disk('public')->path($path));
+            
+            // Constrain maximum width to 2048px while maintaining aspect ratio
+            if ($image->width() > 2048) {
+                $image->scale(width: 2048);
+                $image->save();
+                
+                // Update size after resize
+                $media->size = Storage::disk('public')->size($path);
+            }
+            
+            $media->width = $image->width();
+            $media->height = $image->height();
+        }
+        
+        $media->save();
 
         if ($request->expectsJson()) {
             return response()->json(['media' => $media, 'url' => $media->url]);

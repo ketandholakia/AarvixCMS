@@ -69,5 +69,8 @@
             {{ $posts->links() }}
         </div>
     @endif
+    
+    <!-- Newsletter Subscription -->
+    @include('partials.newsletter')
 </section>
 @endsection

@@ -33,7 +33,14 @@ class PageRequest extends FormRequest
             'body' => ['nullable', 'string'],
             'template' => ['nullable', 'string', 'max:255'],
             'status' => ['required', Rule::in(['draft', 'published'])],
+            'meta_title' => ['nullable', 'string', 'max:255'],
+            'meta_description' => ['nullable', 'string'],
             'published_at' => ['nullable', 'date'],
+            'translations' => ['nullable', 'array'],
+            'translations.*.title' => ['nullable', 'string', 'max:255'],
+            'translations.*.body' => ['nullable', 'string'],
+            'translations.*.meta_title' => ['nullable', 'string', 'max:255'],
+            'translations.*.meta_description' => ['nullable', 'string'],
         ];
     }
 }

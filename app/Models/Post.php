@@ -6,15 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSlug;
+use App\Traits\HasRevisions;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Post extends Model
 {
-    use HasFactory, SoftDeletes, HasSlug;
+    use HasFactory, SoftDeletes, HasSlug, HasRevisions, \App\Traits\HasTranslations;
+
+    public $translatable = ['title', 'excerpt', 'body', 'meta_title', 'meta_description'];
 
     protected $fillable = [
         'author_id',
+        'is_premium',
         'category_id',
         'featured_image_id',
         'title',
@@ -22,11 +27,14 @@ class Post extends Model
         'excerpt',
         'body',
         'status',
+        'meta_title',
+        'meta_description',
         'published_at',
     ];
 
     protected $casts = [
         'published_at' => 'datetime',
+        'is_premium' => 'boolean',
     ];
 
     public function getRouteKeyName()
@@ -41,11 +49,15 @@ class Post extends Model
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/blog/' . $post->slug)));
             // Also clear the listing pages (home, category, tag) which may reference this post
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/')));
+            
+            app(\App\Services\WebhookService::class)->dispatch('post.updated', $post->toArray());
         });
 
         static::deleted(function ($post) {
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/blog/' . $post->slug)));
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/')));
+            
+            app(\App\Services\WebhookService::class)->dispatch('post.deleted', ['id' => $post->id, 'slug' => $post->slug]);
         });
     }
 
@@ -67,5 +79,10 @@ class Post extends Model
     public function featuredImage(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Media::class, 'featured_image_id');
+    }
+
+    public function comments(): MorphMany
+    {
+        return $this->morphMany(Comment::class, 'commentable');
     }
 }

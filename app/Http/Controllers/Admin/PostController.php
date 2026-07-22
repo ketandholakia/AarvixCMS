@@ -46,17 +46,47 @@ class PostController extends AdminCrudController
         if (!isset($data['author_id'])) {
             $data['author_id'] = auth()->id();
         }
-        // Tags are handled via afterStore/afterUpdate; remove from fillable data
+        // Tags and translations are handled via afterStore/afterUpdate; remove from fillable data
         unset($data['tags']);
+        unset($data['translations']);
+    }
+
+    protected function beforeUpdate(Request $request, \Illuminate\Database\Eloquent\Model $model, array &$data): void
+    {
+        if (empty($data['slug'])) {
+            $data['slug'] = \Illuminate\Support\Str::slug($data['title']);
+        }
+
+        unset($data['tags']);
+        unset($data['translations']);
     }
 
     protected function afterStore(Request $request, \Illuminate\Database\Eloquent\Model $model): void
     {
         $model->tags()->sync($request->input('tags', []));
+        $this->syncTranslations($request, $model);
     }
 
     protected function afterUpdate(Request $request, \Illuminate\Database\Eloquent\Model $model): void
     {
         $model->tags()->sync($request->input('tags', []));
+        $this->syncTranslations($request, $model);
+    }
+
+    protected function syncTranslations(Request $request, \Illuminate\Database\Eloquent\Model $model): void
+    {
+        $translations = $request->input('translations', []);
+        
+        foreach ($translations as $locale => $data) {
+            // Check if there is any actual data provided for this locale
+            if (empty(array_filter($data))) {
+                continue;
+            }
+
+            $model->translations()->updateOrCreate(
+                ['locale' => $locale],
+                $data
+            );
+        }
     }
 }

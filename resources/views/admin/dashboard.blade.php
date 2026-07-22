@@ -5,7 +5,7 @@
 @section('content')
 <div class="space-y-6">
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Posts Stat -->
         <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center gap-4">
@@ -32,6 +32,45 @@
             </div>
         </div>
 
+        <!-- Views Stat -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-pink-50 dark:bg-pink-900/30 rounded-xl text-pink-600 dark:text-pink-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Page Views</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_views']) }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscribers Stat -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-xl text-amber-600 dark:text-amber-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Subscribers</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ $stats['subscribers'] }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comments Stat -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Comments</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ $stats['pending_comments'] }}</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Users Stat -->
         <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center gap-4">
@@ -42,6 +81,40 @@
                     <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Registered Users</p>
                     <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ $stats['users'] }}</p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Traffic Chart -->
+        <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden p-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">30-Day Traffic</h2>
+            <div class="relative h-72 w-full">
+                <canvas id="trafficChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Posts -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Top Posts</h2>
+            </div>
+            <div class="divide-y divide-gray-100 dark:divide-gray-800">
+                @forelse($topPosts as $post)
+                    <div class="px-6 py-4">
+                        <a href="{{ route('admin.posts.edit', $post->id) }}" class="text-sm font-medium text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 block mb-1">
+                            {{ Str::limit($post->title, 40) }}
+                        </a>
+                        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                            <span>{{ $post->comments_count }} comments</span>
+                            <span>{{ $post->revisions_count }} revisions</span>
+                        </div>
+                    </div>
+                @empty
+                    <div class="px-6 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                        No posts yet.
+                    </div>
+                @endforelse
             </div>
         </div>
     </div>
@@ -93,4 +166,87 @@
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('trafficChart').getContext('2d');
+        const isDark = document.documentElement.classList.contains('dark');
+        
+        const textColor = isDark ? '#9ca3af' : '#6b7280';
+        const gridColor = isDark ? '#374151' : '#f3f4f6';
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {!! json_encode($chartDates) !!},
+                datasets: [{
+                    label: 'Page Views',
+                    data: {!! json_encode($chartViews) !!},
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#4f46e5',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                        titleColor: isDark ? '#ffffff' : '#111827',
+                        bodyColor: isDark ? '#d1d5db' : '#4b5563',
+                        borderColor: isDark ? '#374151' : '#e5e7eb',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false,
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                        },
+                        ticks: {
+                            color: textColor,
+                            maxTicksLimit: 7,
+                            maxRotation: 0,
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: gridColor,
+                            borderDash: [5, 5],
+                        },
+                        ticks: {
+                            color: textColor,
+                            beginAtZero: true,
+                            precision: 0,
+                        },
+                        border: {
+                            display: false
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+    });
+</script>
 @endsection

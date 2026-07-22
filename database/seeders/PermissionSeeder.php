@@ -27,6 +27,10 @@ class PermissionSeeder extends Seeder
             'view_categories', 'create_categories', 'edit_categories', 'delete_categories',
             // Forms (Phase 5)
             'view_forms', 'manage_forms',
+            // Menus
+            'manage_menus',
+            // API
+            'api.read', 'api.write',
         ];
 
         foreach ($permissions as $permission) {

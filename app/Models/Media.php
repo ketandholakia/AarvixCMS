@@ -8,13 +8,23 @@ use Illuminate\Support\Facades\Storage;
 class Media extends Model
 {
     protected $fillable = [
-        'disk',
-        'path',
         'filename',
+        'original_filename',
+        'path',
         'mime_type',
+        'disk',
         'size',
+        'width',
+        'height',
         'alt_text',
+        'caption',
+        'uploaded_by',
     ];
+
+    public function uploader()
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
 
     protected $appends = ['url', 'human_size'];
 

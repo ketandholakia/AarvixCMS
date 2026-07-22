@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'AarvixCMS') - {{ config('app.name', 'Laravel') }}</title>
+    @yield('meta')
 
     <!-- Tailwind v4 via Vite -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -39,14 +40,26 @@
                 
                 <!-- Desktop Nav -->
                 <div class="hidden md:flex space-x-8 items-center">
-                    <a href="{{ route('home') }}" class="text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors">Home</a>
-                    <a href="/about" class="text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors">About</a>
+                    <x-frontend.menu location="primary" class="flex space-x-8 items-center" />
                     
                     @auth
                         <a href="{{ route('admin.dashboard') }}" class="px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Admin Dashboard</a>
                     @else
                         <a href="{{ route('login') }}" class="text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors">Log in</a>
                     @endauth
+
+                    <!-- Language Switcher -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors">
+                            {{ strtoupper(app()->getLocale()) }}
+                            <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 border border-gray-200 dark:border-gray-700" style="display: none;">
+                            <a href="?lang=en" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">English (EN)</a>
+                            <a href="?lang=hi" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Hindi (HI)</a>
+                            <a href="?lang=gu" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Gujarati (GU)</a>
+                        </div>
+                    </div>
 
                     <!-- Theme Toggle -->
                     <button @click="darkMode = !darkMode" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">
@@ -70,13 +83,19 @@
         <!-- Mobile Nav -->
         <div x-show="mobileMenuOpen" class="md:hidden border-t border-gray-200 dark:border-gray-800" style="display: none;">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                <a href="{{ route('home') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800">Home</a>
-                <a href="/about" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800">About</a>
+                <x-frontend.menu location="primary" class="flex flex-col space-y-1" />
                 @auth
                     <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium text-indigo-600 hover:bg-gray-50 dark:text-indigo-400 dark:hover:bg-gray-800">Admin Dashboard</a>
                 @else
                     <a href="{{ route('login') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800">Log in</a>
                 @endauth
+                <div class="border-t border-gray-200 dark:border-gray-800 my-2"></div>
+                <div class="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">Language</div>
+                <a href="?lang=en" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800">English (EN)</a>
+                <a href="?lang=hi" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800">Hindi (HI)</a>
+                <a href="?lang=gu" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800">Gujarati (GU)</a>
+
+                <div class="border-t border-gray-200 dark:border-gray-800 my-2"></div>
                 <button @click="darkMode = !darkMode" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800">
                     Toggle Theme
                 </button>

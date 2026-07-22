@@ -39,6 +39,11 @@ class PageController extends AdminCrudController
         return $query->with('author')->latest();
     }
 
+    protected function authorizeOwnership(string $ability, \Illuminate\Database\Eloquent\Model $model): void
+    {
+        $this->authorize($ability, $model);
+    }
+
     protected function beforeStore(Request $request, array &$data): void
     {
         if (!isset($data['author_id'])) {

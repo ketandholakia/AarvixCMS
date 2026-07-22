@@ -12,6 +12,12 @@ class EntryFrontendTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutVite();
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     protected function makeContentType(array $overrides = []): ContentType

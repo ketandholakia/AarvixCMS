@@ -33,6 +33,32 @@ class ContentType extends Model
         'is_active'     => 'boolean',
     ];
 
+    // ─── Lifecycle ────────────────────────────────────────────────────────────
+
+    protected static function booted()
+    {
+        static::created(function (ContentType $contentType) {
+            $slug = $contentType->slug;
+            $names = ["view_{$slug}", "create_{$slug}", "edit_{$slug}", "delete_{$slug}"];
+
+            $permissions = collect($names)->map(function ($name) {
+                return \App\Models\Permission::firstOrCreate(['name' => $name]);
+            });
+
+            // Grant all to Admin role automatically
+            $admin = \App\Models\Role::where('name', 'Admin')->first();
+            if ($admin) {
+                $admin->permissions()->syncWithoutDetaching($permissions->pluck('id'));
+            }
+        });
+
+        static::deleted(function (ContentType $contentType) {
+            $slug = $contentType->slug;
+            $names = ["view_{$slug}", "create_{$slug}", "edit_{$slug}", "delete_{$slug}"];
+            \App\Models\Permission::whereIn('name', $names)->delete();
+        });
+    }
+
     // ─── Scopes ───────────────────────────────────────────────────────────────
 
     public function scopeActive($query)

@@ -58,7 +58,6 @@ class ContentTypeController extends AdminCrudController
 
         $contentType = ContentType::create($data);
 
-        $this->seedPermissions($contentType);
         app(ContentTypeRegistry::class)->invalidate();
 
         return redirect()->route('admin.content-types.index')
@@ -142,22 +141,4 @@ class ContentTypeController extends AdminCrudController
 
     // ─── Private ──────────────────────────────────────────────────────────────
 
-    /**
-     * Auto-seed the four CRUD permissions for this type and grant them to Admin.
-     */
-    private function seedPermissions(ContentType $contentType): void
-    {
-        $slug = $contentType->slug;
-        $names = ["view_{$slug}", "create_{$slug}", "edit_{$slug}", "delete_{$slug}"];
-
-        $permissions = collect($names)->map(function ($name) {
-            return Permission::firstOrCreate(['name' => $name]);
-        });
-
-        // Grant all to Admin role automatically
-        $admin = Role::where('name', 'Admin')->first();
-        if ($admin) {
-            $admin->permissions()->syncWithoutDetaching($permissions->pluck('id'));
-        }
-    }
 }

@@ -19,7 +19,7 @@
             <!-- Main Content -->
             <div class="w-full md:w-2/3">
                 <div class="prose prose-lg prose-indigo dark:prose-invert max-w-none">
-                    {!! $page->body !!}
+                    {!! app(\App\Services\BlockParser::class)->parse($page->body) !!}
                 </div>
             </div>
 

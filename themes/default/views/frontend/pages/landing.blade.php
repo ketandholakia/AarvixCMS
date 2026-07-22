@@ -6,7 +6,7 @@
 <div class="bg-white dark:bg-gray-900 transition-colors">
     <!-- Landing Page (No Header, No Container, 100% Custom) -->
     <div class="w-full">
-        {!! $page->body !!}
+        {!! app(\App\Services\BlockParser::class)->parse($page->body) !!}
     </div>
 </div>
 @endsection

@@ -16,7 +16,7 @@
     <!-- Page Content (Full Width) -->
     <div class="w-full">
         <div class="prose prose-lg prose-indigo dark:prose-invert max-w-none px-4 sm:px-6 lg:px-8 py-16">
-            {!! $page->body !!}
+            {!! app(\App\Services\BlockParser::class)->parse($page->body) !!}
         </div>
     </div>
 </div>

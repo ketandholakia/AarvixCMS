@@ -37,16 +37,15 @@ return [
             'HTML.TargetBlank'         => true,
             'HTML.Nofollow'            => true,
         ],
-
-    ],
-
-    'custom_definition' => [
-        'id'  => 'html5-definitions',
-        'rev' => 1,
-        'debug' => false,
-        'elements' => [
-            // [Element Name, Type, Content, Attributes]
-            ['mark', 'Inline', 'Inline', 'Common'],
+        'custom_definition' => [
+            'id'  => 'html5-definitions',
+            'rev' => 1,
+            'debug' => false,
+            'elements' => [
+                // [Element Name, Type, Content, Attributes]
+                ['mark', 'Inline', 'Inline', 'Common'],
+            ],
         ],
+
     ],
 ];

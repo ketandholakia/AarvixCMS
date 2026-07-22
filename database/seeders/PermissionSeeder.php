@@ -25,10 +25,28 @@ class PermissionSeeder extends Seeder
             'view_pages', 'create_pages', 'edit_pages', 'delete_pages', 'publish_pages',
             // Categories
             'view_categories', 'create_categories', 'edit_categories', 'delete_categories',
+            // Tags
+            'view_tags', 'create_tags', 'edit_tags', 'delete_tags',
             // Forms (Phase 5)
             'view_forms', 'manage_forms',
             // Menus
             'manage_menus',
+            // Media
+            'manage_media',
+            // Webhooks
+            'manage_webhooks',
+            // Plugins & Themes
+            'manage_plugins', 'manage_themes',
+            // Comments
+            'manage_comments',
+            // Subscribers
+            'manage_subscribers',
+            // API tokens (issuing personal access tokens, distinct from api.read/api.write scopes below)
+            'manage_api_tokens',
+            // Revisions (viewing/restoring content history)
+            'manage_revisions',
+            // Subscriptions (Stripe/Cashier admin view)
+            'view_subscriptions',
             // API
             'api.read', 'api.write',
         ];

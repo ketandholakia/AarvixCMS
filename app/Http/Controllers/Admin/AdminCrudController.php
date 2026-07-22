@@ -53,6 +53,55 @@ abstract class AdminCrudController extends Controller
         return ['name', 'title'];
     }
 
+    // --- Authorization ---
+
+    /**
+     * The resource name used to build permission strings, e.g. 'posts' for
+     * 'view_posts' / 'create_posts' / 'edit_posts' / 'delete_posts'.
+     * Defaults to the last segment of the route prefix (admin.posts -> posts).
+     * Override in a subclass whose seeded permissions don't follow that pattern
+     * (e.g. Roles only have view_roles/edit_roles, not create_/delete_).
+     */
+    protected function permissionMap(): array
+    {
+        $resource = str($this->getRoutePrefix())->afterLast('.')->toString();
+
+        return [
+            'view'   => "view_{$resource}",
+            'create' => "create_{$resource}",
+            'edit'   => "edit_{$resource}",
+            'delete' => "delete_{$resource}",
+        ];
+    }
+
+    /**
+     * Abort with 403 unless the current user holds the given permission.
+     */
+    protected function authorizePermission(string $action): void
+    {
+        $permission = $this->permissionMap()[$action] ?? null;
+
+        // No permission mapped for this action = deliberately open (should be rare;
+        // prefer mapping an explicit permission over leaving this empty).
+        if ($permission === null) {
+            return;
+        }
+
+        if (! auth()->user()?->hasPermission($permission)) {
+            abort(403, 'You do not have the required permissions.');
+        }
+    }
+
+    /**
+     * Hook for per-record ownership/authorship rules (e.g. an Author may only
+     * edit their own posts even though they hold 'edit_posts'). No-op by default;
+     * override in subclasses backed by a Policy (see PostController, PageController).
+     */
+    protected function authorizeOwnership(string $ability, Model $model): void
+    {
+        //
+    }
+
     /**
      * Hook to modify the query before pagination.
      */
@@ -75,10 +124,9 @@ abstract class AdminCrudController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorizePermission('view');
+
         $modelClass = $this->getModelClass();
-        
-        // Authorization check if policy exists (handled by middleware or manual auth here)
-        // We assume policy is enforced via route middleware, but can be added here if needed.
 
         $query = $modelClass::query();
 
@@ -98,6 +146,8 @@ abstract class AdminCrudController extends Controller
 
     public function create()
     {
+        $this->authorizePermission('create');
+
         $modelClass = $this->getModelClass();
         $record = new $modelClass;
 
@@ -106,6 +156,8 @@ abstract class AdminCrudController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizePermission('create');
+
         if ($formRequest = $this->getFormRequestClass()) {
             $request = app($formRequest);
             $data = $request->validated();
@@ -128,16 +180,22 @@ abstract class AdminCrudController extends Controller
 
     public function edit(string $id)
     {
+        $this->authorizePermission('edit');
+
         $modelClass = $this->getModelClass();
         $record = $modelClass::findOrFail($id);
+        $this->authorizeOwnership('update', $record);
 
         return view($this->getViewPrefix() . '.form', compact('record'));
     }
 
     public function update(Request $request, string $id)
     {
+        $this->authorizePermission('edit');
+
         $modelClass = $this->getModelClass();
         $model = $modelClass::findOrFail($id);
+        $this->authorizeOwnership('update', $model);
 
         if ($formRequest = $this->getFormRequestClass()) {
             $request = app($formRequest);
@@ -160,8 +218,11 @@ abstract class AdminCrudController extends Controller
 
     public function destroy(Request $request, string $id)
     {
+        $this->authorizePermission('delete');
+
         $modelClass = $this->getModelClass();
         $model = $modelClass::findOrFail($id);
+        $this->authorizeOwnership('delete', $model);
 
         $this->beforeDestroy($request, $model);
 

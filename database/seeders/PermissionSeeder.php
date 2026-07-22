@@ -37,6 +37,8 @@ class PermissionSeeder extends Seeder
             'manage_webhooks',
             // Plugins & Themes
             'manage_plugins', 'manage_themes',
+            // Content Types (the registry itself — individual type permissions are auto-seeded at creation)
+            'manage_content_types',
             // Comments
             'manage_comments',
             // Subscribers

@@ -20,6 +20,12 @@ Route::middleware([PageCacheMiddleware::class])->group(function() {
     Route::get('/pricing/success', [\App\Http\Controllers\Frontend\SubscriptionController::class, 'success'])->name('subscription.success')->middleware('auth');
     Route::get('/pricing/cancel', [\App\Http\Controllers\Frontend\SubscriptionController::class, 'cancel'])->name('subscription.cancel')->middleware('auth');
 
+    // Custom content type entries (must be before the /{slug} catch-all)
+    Route::get('/{type_slug}/{slug}', [\App\Http\Controllers\EntryController::class, 'show'])
+        ->name('entry.show')
+        ->where('type_slug', '[a-z0-9\-]+')
+        ->where('slug', '[a-z0-9\-]+');
+
     Route::get('/{slug}', [FrontendController::class, 'showPage'])->name('page.show');
 });
 
@@ -92,6 +98,21 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
         // Themes
         Route::get('themes', [\App\Http\Controllers\Admin\ThemeController::class, 'index'])->name('themes.index')->middleware('can:manage_themes');
         Route::post('themes/activate', [\App\Http\Controllers\Admin\ThemeController::class, 'activate'])->name('themes.activate')->middleware('can:manage_themes');
+
+        // Content Types
+        Route::get('content-types/{content_type}/field-builder', [\App\Http\Controllers\Admin\ContentTypeController::class, 'fieldBuilder'])->name('content-types.field-builder');
+        Route::put('content-types/{content_type}/field-builder', [\App\Http\Controllers\Admin\ContentTypeController::class, 'saveSchema'])->name('content-types.save-schema');
+        Route::resource('content-types', \App\Http\Controllers\Admin\ContentTypeController::class);
+
+        // Custom Type Entries (parameterised by type slug)
+        Route::prefix('entries/{type}')->name('entries.')->group(function () {
+            Route::get('/',           [\App\Http\Controllers\Admin\EntryController::class, 'index'])  ->name('index');
+            Route::get('/create',     [\App\Http\Controllers\Admin\EntryController::class, 'create']) ->name('create');
+            Route::post('/',          [\App\Http\Controllers\Admin\EntryController::class, 'store'])  ->name('store');
+            Route::get('/{entry}/edit',    [\App\Http\Controllers\Admin\EntryController::class, 'edit'])   ->name('edit');
+            Route::put('/{entry}',         [\App\Http\Controllers\Admin\EntryController::class, 'update']) ->name('update');
+            Route::delete('/{entry}',      [\App\Http\Controllers\Admin\EntryController::class, 'destroy'])->name('destroy');
+        });
     });
 
 // Stripe Webhook (Cashier handles CSRF internally, but we need to exclude it from VerifyCsrfToken if we had it, but Laravel 11 automatically excludes it if we use the cashier method)

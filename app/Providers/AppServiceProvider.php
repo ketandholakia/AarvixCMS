@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Schema;
+use App\Services\ContentTypeRegistry;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -14,6 +17,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton('hook', function ($app) {
             return new \App\Services\HookManager();
+        });
+
+        $this->app->singleton(ContentTypeRegistry::class, function () {
+            return new ContentTypeRegistry();
         });
     }
 
@@ -29,5 +36,14 @@ class AppServiceProvider extends ServiceProvider
                 return true;
             }
         });
+
+        // Share active content types with all admin views for dynamic sidebar rendering.
+        try {
+            if (Schema::hasTable('content_types')) {
+                View::share('_contentTypes', app(ContentTypeRegistry::class)->all());
+            }
+        } catch (\Exception $e) {
+            View::share('_contentTypes', collect());
+        }
     }
 }

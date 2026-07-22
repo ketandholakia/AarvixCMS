@@ -10,11 +10,16 @@ use App\Traits\HasRevisions;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Database\Factories\EntryFactory;
 
 class Entry extends Model
 {
     use HasFactory, SoftDeletes, HasRevisions;
 
+    protected static function newFactory(): EntryFactory
+    {
+        return EntryFactory::new();
+    }
     protected $fillable = [
         'content_type_id',
         'author_id',

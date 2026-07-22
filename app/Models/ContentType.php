@@ -5,10 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Traits\HasSlug;
+use Database\Factories\ContentTypeFactory;
 
 class ContentType extends Model
 {
     use HasFactory, HasSlug;
+
+    protected static function newFactory(): ContentTypeFactory
+    {
+        return ContentTypeFactory::new();
+    }
 
     protected $fillable = [
         'name',

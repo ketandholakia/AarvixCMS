@@ -25,6 +25,16 @@ class RoleController extends AdminCrudController
         return 'admin.roles';
     }
 
+    protected function permissionMap(): array
+    {
+        return [
+            'view'   => 'view_roles',
+            'create' => 'edit_roles',
+            'edit'   => 'edit_roles',
+            'delete' => 'edit_roles',
+        ];
+    }
+
     protected function getSearchableColumns(): array
     {
         return ['name'];

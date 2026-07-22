@@ -24,6 +24,16 @@ class SubscriberController extends AdminCrudController
         return 'admin.subscribers';
     }
 
+    protected function permissionMap(): array
+    {
+        return [
+            'view'   => 'manage_subscribers',
+            'create' => 'manage_subscribers',
+            'edit'   => 'manage_subscribers',
+            'delete' => 'manage_subscribers',
+        ];
+    }
+
     protected function getSearchableColumns(): array
     {
         return ['email', 'first_name', 'last_name'];

@@ -22,8 +22,9 @@ class AuthorizationEnforcementTest extends TestCase
 
     public function test_admin_can_access_restricted_routes()
     {
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['is_active' => true]);
         $admin->roles()->attach(Role::where('name', 'Admin')->first());
+        app(\App\Services\PermissionService::class)->invalidateUserCache($admin);
 
         $this->actingAs($admin);
 
@@ -34,8 +35,9 @@ class AuthorizationEnforcementTest extends TestCase
 
     public function test_author_cannot_access_restricted_routes()
     {
-        $author = User::factory()->create();
+        $author = User::factory()->create(['is_active' => true]);
         $author->roles()->attach(Role::where('name', 'Author')->first());
+        app(\App\Services\PermissionService::class)->invalidateUserCache($author);
 
         $this->actingAs($author);
 

@@ -24,7 +24,9 @@ class RoleSeeder extends Seeder
             $allPermissions->whereIn('name', [
                 'view_posts', 'create_posts', 'edit_posts', 'delete_posts', 'publish_posts',
                 'view_categories', 'create_categories', 'edit_categories', 'delete_categories',
-                'view_forms', 'manage_forms'
+                'view_tags', 'create_tags', 'edit_tags', 'delete_tags',
+                'view_forms', 'manage_forms',
+                'manage_media', 'manage_menus', 'manage_comments', 'manage_revisions',
             ])
         );
 

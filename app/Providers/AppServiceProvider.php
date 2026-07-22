@@ -38,12 +38,16 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Share active content types with all admin views for dynamic sidebar rendering.
-        try {
-            if (Schema::hasTable('content_types')) {
-                View::share('_contentTypes', app(ContentTypeRegistry::class)->all());
+        View::composer('layouts.admin', function ($view) {
+            try {
+                if (Schema::hasTable('content_types')) {
+                    $view->with('_contentTypes', app(ContentTypeRegistry::class)->all());
+                } else {
+                    $view->with('_contentTypes', collect());
+                }
+            } catch (\Exception $e) {
+                $view->with('_contentTypes', collect());
             }
-        } catch (\Exception $e) {
-            View::share('_contentTypes', collect());
-        }
+        });
     }
 }

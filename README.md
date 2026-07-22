@@ -4,13 +4,18 @@ AarvixCMS is a modern, blazing-fast, and lightweight Content Management System. 
 
 ## ✨ Key Features
 
-- **Robust Role-Based Access Control (RBAC):** Built-in permissions architecture featuring Admin, Editor, and Author roles with fine-grained access checks.
+- **Block-Based Content Editor:** A rich, highly customized integration of Editor.js for structural content authoring instead of messy WYSIWYG HTML.
+- **Strict Content Sanitization:** Bulletproof XSS protection using HTMLPurifier, with multiple granular profiles strictly filtering block inputs, legacy content, and image attributes to guarantee perfectly safe HTML output.
+- **Granular Role-Based Access Control (RBAC):** Dynamic, controller-level permission mapping for Admin, Editor, and Author roles. Editors get content-adjacent controls, while Authors are strictly isolated to their own content via ownership policies.
+- **Extensible Plugin Engine:** Drop-in plugin architecture natively built on Laravel Service Providers. Plugins are dynamically auto-loaded and managed straight from the admin dashboard.
+- **Full Theme Engine:** Customize your entire frontend effortlessly. The theme engine allows complete Blade view overrides, custom layouts, and automated asset resolution (`@themeAsset`) without ever touching core files.
+- **Stripe Cashier Integration:** First-class support for subscription billing and checkout portals.
+- **API Tokens & Webhooks:** Built-in Developer API token management and outgoing webhooks to orchestrate workflows with external systems.
 - **Dynamic Form Builder:** A powerful Alpine.js-powered drag-and-drop form builder. Generate complex forms in the admin panel and render them dynamically on the frontend.
-- **Stunning Frontend UI:** Fully responsive frontend themed with the latest Tailwind CSS v4 design tokens, including automatic Dark/Light mode support.
 - **Blazing Fast Caching:** Features a custom `PageCacheMiddleware` for statically caching full-page HTML responses for guests, automatically invalidated via Eloquent Model events. Zero N+1 queries by design.
+- **Content Operations:** Built-in Comments management, Subscriptions/Newsletters, and Content Revision history tracking.
 - **Dynamic Page Templates:** Choose between `Default`, `Full-Width`, `Sidebar`, or `Landing` page layouts right from the dashboard.
 - **Media Management:** Built-in upload handlers utilizing `Intervention Image` for thumbnail generation and WebP conversion.
-- **Security First:** Strict HTMLPurifier enforcement, CSRF protection, comprehensive rate limiting, and zero lazy-loading violations.
 
 ## 🛠 Tech Stack
 
@@ -18,6 +23,7 @@ AarvixCMS is a modern, blazing-fast, and lightweight Content Management System. 
 - **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
 - **Interactivity:** [Alpine.js v3](https://alpinejs.dev/)
 - **Authentication:** Laravel Fortify
+- **Billing:** Laravel Cashier (Stripe)
 - **Testing:** PHPUnit 12
 
 ---
@@ -124,7 +130,7 @@ php artisan event:cache
 
 ## 🧪 Testing
 
-AarvixCMS ships with a comprehensive test suite covering RBAC policies, media uploads, full-page caching headers, and dynamic form builder schema parsing.
+AarvixCMS ships with a comprehensive test suite covering RBAC policies, media uploads, full-page caching headers, HTML purification pipelines, and dynamic form builder schema parsing.
 
 To run the test suite:
 ```bash

@@ -49,14 +49,19 @@ class BlockParser
                     $html .= "</{$style}>";
                     break;
                 case 'image':
-                    $url = htmlspecialchars($data['file']['url'] ?? '', ENT_QUOTES, 'UTF-8');
-                    $caption = clean($data['caption'] ?? '', 'inline');
+                    $url = $data['file']['url'] ?? '';
+                    if (!preg_match('#^(https?://|/)#i', $url)) {
+                        $url = '';
+                    }
+                    $url = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+                    
+                    $caption = htmlspecialchars(strip_tags($data['caption'] ?? ''), ENT_QUOTES, 'UTF-8');
                     $withBorder = !empty($data['withBorder']) ? 'border border-gray-200 dark:border-gray-700' : '';
                     $withBackground = !empty($data['withBackground']) ? 'bg-gray-100 p-4' : '';
                     $stretched = !empty($data['stretched']) ? 'w-full' : '';
                     
                     $html .= "<figure class='my-8 {$withBackground}'>";
-                    $html .= "<img src='{$url}' alt='".htmlspecialchars(strip_tags($caption), ENT_QUOTES, 'UTF-8')."' class='rounded-xl shadow-sm mx-auto {$withBorder} {$stretched}' />";
+                    $html .= "<img src='{$url}' alt='{$caption}' class='rounded-xl shadow-sm mx-auto {$withBorder} {$stretched}' />";
                     if ($caption) {
                         $html .= "<figcaption class='text-center text-sm text-gray-500 mt-2'>{$caption}</figcaption>";
                     }

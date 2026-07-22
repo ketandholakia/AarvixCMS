@@ -20,13 +20,6 @@ Route::middleware([PageCacheMiddleware::class])->group(function() {
     Route::get('/pricing/success', [\App\Http\Controllers\Frontend\SubscriptionController::class, 'success'])->name('subscription.success')->middleware('auth');
     Route::get('/pricing/cancel', [\App\Http\Controllers\Frontend\SubscriptionController::class, 'cancel'])->name('subscription.cancel')->middleware('auth');
 
-    // Custom content type entries (must be before the /{slug} catch-all)
-    Route::get('/{type_slug}/{slug}', [\App\Http\Controllers\EntryController::class, 'show'])
-        ->name('entry.show')
-        ->where('type_slug', '[a-z0-9\-]+')
-        ->where('slug', '[a-z0-9\-]+');
-
-    Route::get('/{slug}', [FrontendController::class, 'showPage'])->name('page.show');
 });
 
 Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
@@ -114,6 +107,17 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
             Route::delete('/{entry}',      [\App\Http\Controllers\Admin\EntryController::class, 'destroy'])->name('destroy');
         });
     });
+
+// Fallback frontend routes (MUST be defined after admin routes to prevent wildcard interception)
+Route::middleware([\App\Http\Middleware\PageCacheMiddleware::class])->group(function() {
+    // Custom content type entries (must be before the /{slug} catch-all)
+    Route::get('/{type_slug}/{slug}', [\App\Http\Controllers\EntryController::class, 'show'])
+        ->name('entry.show')
+        ->where('type_slug', '[a-z0-9\-]+')
+        ->where('slug', '[a-z0-9\-]+');
+
+    Route::get('/{slug}', [\App\Http\Controllers\FrontendController::class, 'showPage'])->name('page.show');
+});
 
 // Stripe Webhook (Cashier handles CSRF internally, but we need to exclude it from VerifyCsrfToken if we had it, but Laravel 11 automatically excludes it if we use the cashier method)
 Route::post('/stripe/webhook', [\Laravel\Cashier\Http\Controllers\WebhookController::class, 'handleWebhook']);

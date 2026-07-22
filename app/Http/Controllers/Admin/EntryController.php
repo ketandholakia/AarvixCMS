@@ -10,31 +10,11 @@ use App\Models\Media;
 use App\Services\ContentTypeRegistry;
 use App\Services\ActivityService;
 use Illuminate\Http\Request;
-use Illuminate\Database\Eloquent\Model;
+use App\Http\Controllers\Controller;
 
-class EntryController extends AdminCrudController
+class EntryController extends Controller
 {
     protected ContentType $contentType;
-
-    protected function getModelClass(): string
-    {
-        return Entry::class;
-    }
-
-    protected function getViewPrefix(): string
-    {
-        return 'admin.entries';
-    }
-
-    protected function getRoutePrefix(): string
-    {
-        return 'admin.entries';
-    }
-
-    protected function getSearchableColumns(): array
-    {
-        return ['title', 'slug'];
-    }
 
     /**
      * Resolve and cache the current ContentType from the route parameter.
@@ -50,12 +30,6 @@ class EntryController extends AdminCrudController
         return $this->contentType;
     }
 
-    protected function permissionMap(): array
-    {
-        // Resolved dynamically in each action once we know the type slug.
-        // We return a placeholder here; overrides below handle the real checks.
-        return [];
-    }
 
     protected function authorizePermission(string $action): void
     {
@@ -74,21 +48,18 @@ class EntryController extends AdminCrudController
         }
     }
 
-    protected function indexQuery($query)
-    {
-        return $query->where('content_type_id', $this->contentType->id)
-            ->with(['author', 'category'])
-            ->latest();
-    }
+
 
     // ─── CRUD Overrides ────────────────────────────────────────────────────────
 
-    public function index(Request $request)
+    public function index(Request $request, string $type)
     {
         $contentType = $this->resolveContentType($request);
         $this->authorizePermission('view');
 
-        $query = Entry::query();
+        $query = Entry::where('content_type_id', $this->contentType->id)
+            ->with(['author', 'category'])
+            ->latest();
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -97,12 +68,12 @@ class EntryController extends AdminCrudController
             });
         }
 
-        $records = $this->indexQuery($query)->paginate(20)->withQueryString();
+        $records = $query->paginate(20)->withQueryString();
 
         return view('admin.entries.index', compact('records', 'contentType'));
     }
 
-    public function create(Request $request)
+    public function create(Request $request, string $type)
     {
         $contentType = $this->resolveContentType($request);
         $this->authorizePermission('create');
@@ -114,7 +85,7 @@ class EntryController extends AdminCrudController
         return view('admin.entries.form', compact('record', 'contentType', 'categories', 'tags'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, string $type)
     {
         $contentType = $this->resolveContentType($request);
         $this->authorizePermission('create');

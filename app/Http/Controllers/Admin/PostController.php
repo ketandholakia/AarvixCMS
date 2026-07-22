@@ -40,6 +40,13 @@ class PostController extends AdminCrudController
         return $query->with(['author', 'category'])->latest();
     }
 
+    protected function authorizeOwnership(string $ability, Model $model): void
+    {
+        // Uses PostPolicy::update()/delete() — Admins and Editors can act on any
+        // post, Authors are restricted to posts where they are the author.
+        $this->authorize($ability, $model);
+    }
+
     protected function beforeStore(Request $request, array &$data): void
     {
         // Enforce ownership based on auth if they aren't an admin/editor mapping users

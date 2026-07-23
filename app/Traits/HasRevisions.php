@@ -7,11 +7,20 @@ use Illuminate\Database\Eloquent\Model;
 
 trait HasRevisions
 {
+    protected static array $revisionSnapshots = [];
+
     /**
      * Boot the trait to listen for model events.
      */
     public static function bootHasRevisions()
     {
+        static::updating(function (Model $model) {
+            static::$revisionSnapshots[spl_object_id($model)] = [
+                'dirty' => $model->getDirty(),
+                'original' => $model->getOriginal(),
+            ];
+        });
+
         static::updated(function (Model $model) {
             $model->saveRevision('updated');
         });
@@ -38,8 +47,11 @@ trait HasRevisions
      */
     public function saveRevision(string $event)
     {
-        $dirty = $this->getDirty();
-        $original = $this->getOriginal();
+        $snapshot = $this->pullRevisionSnapshot();
+        $dirty = $event === 'updated'
+            ? ($snapshot['dirty'] ?? $this->getChanges())
+            : $this->getDirty();
+        $original = $snapshot['original'] ?? $this->getOriginal();
 
         // If it's an update but nothing changed, do not save a revision.
         if ($event === 'updated' && empty($dirty)) {
@@ -72,5 +84,14 @@ trait HasRevisions
             'after_attributes' => $after,
             'event' => $event,
         ]);
+    }
+
+    protected function pullRevisionSnapshot(): array
+    {
+        $key = spl_object_id($this);
+        $snapshot = static::$revisionSnapshots[$key] ?? [];
+        unset(static::$revisionSnapshots[$key]);
+
+        return is_array($snapshot) ? $snapshot : [];
     }
 }

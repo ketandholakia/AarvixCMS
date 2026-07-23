@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\AI\Providers\FakeAiProvider;
 use App\Models\Page;
+use App\Models\Revision;
 use App\Models\Post;
 use App\Models\Role;
 use App\Models\User;
@@ -129,5 +130,59 @@ class AiWriterTest extends TestCase
         $response->assertJsonPath('preview.seo.slug', 'seo-ready-title');
         $response->assertJsonCount(2, 'preview.seo.warnings');
         $response->assertJsonPath('preview.seo.warnings.0', 'Meta title is short. Aim for 25 to 60 characters.');
-        }
+    }
+
+    public function test_ai_generated_post_changes_are_captured_in_revision_history(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.driver', FakeAiProvider::class);
+
+        $admin = $this->admin();
+        $post = Post::factory()->create([
+            'author_id' => $admin->id,
+            'title' => 'SEO Ready Title',
+            'slug' => 'seo-ready-title',
+            'status' => 'draft',
+        ]);
+
+        $preview = $this->actingAs($admin)->postJson(route('admin.ai.writer.generate'), [
+            'context' => 'post',
+            'record_id' => $post->id,
+            'title' => 'SEO Ready Title',
+            'operation' => 'seo',
+            'document' => json_encode([
+                'blocks' => [
+                    ['type' => 'paragraph', 'data' => ['text' => 'This article explains SEO planning for editors.']],
+                ],
+            ]),
+        ])->json('preview.seo');
+
+        $this->actingAs($admin)->put(route('admin.posts.update', $post->id), [
+            'title' => 'SEO Ready Title',
+            'slug' => $preview['slug'],
+            'excerpt' => 'An edited excerpt that mirrors AI-assisted changes.',
+            'body' => json_encode([
+                'blocks' => [
+                    ['type' => 'paragraph', 'data' => ['text' => 'This article explains SEO planning for editors.']],
+                ],
+            ]),
+            'status' => 'draft',
+            'meta_title' => $preview['meta_title'],
+            'meta_description' => $preview['meta_description'],
+            'published_at' => now()->format('Y-m-d\TH:i'),
+        ])->assertRedirect(route('admin.posts.index'));
+
+        $this->assertSame(2, $post->fresh()->revisions()->count());
+
+        $revision = Revision::where('revisionable_type', Post::class)
+            ->where('revisionable_id', $post->id)
+            ->orderByDesc('id')
+            ->first();
+
+        $this->assertNotNull($revision);
+        $this->assertNotNull($revision->after_attributes);
+        $this->assertSame($preview['meta_title'], $revision->after_attributes['meta_title'] ?? null);
+        $this->assertSame($preview['meta_description'], $revision->after_attributes['meta_description'] ?? null);
+    }
 }

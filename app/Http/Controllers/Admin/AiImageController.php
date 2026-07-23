@@ -12,10 +12,20 @@ class AiImageController extends Controller
     {
         $data = $request->validated();
 
+        if (! empty($data['replace_media_id']) && ! $request->boolean('confirm_replace')) {
+            return response()->json([
+                'message' => 'Confirm replacement before overwriting an existing media asset.',
+                'errors' => [
+                    'confirm_replace' => ['Confirm replacement before overwriting an existing media asset.'],
+                ],
+            ], 422);
+        }
+
         GenerateAiImageJob::dispatch(
             prompt: $data['prompt'],
             operation: $data['operation'],
             sourceMediaId: $data['source_media_id'] ?? null,
+            replaceMediaId: $data['replace_media_id'] ?? null,
             resolution: $data['resolution'] ?? null,
             seed: $data['seed'] ?? null,
             userId: $request->user()?->id,

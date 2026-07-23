@@ -85,6 +85,34 @@ class MediaUploadService
         }
     }
 
+    public function replaceMediaWithGeneratedImage(Media $media, string $contents, string $originalName, ?string $altText = null, ?string $caption = null): Media
+    {
+        $staged = $this->uploadGeneratedImage($contents, $originalName, $media->disk, 'uploads/generated', $altText, $caption);
+        $oldDisk = $media->disk;
+        $oldPath = $media->path;
+        $oldFilename = $media->filename;
+
+        $media->fill([
+            'disk' => $staged->disk,
+            'path' => $staged->path,
+            'filename' => $staged->filename,
+            'mime_type' => $staged->mime_type,
+            'size' => $staged->size,
+            'alt_text' => $staged->alt_text,
+            'caption' => $staged->caption,
+            'width' => $staged->width,
+            'height' => $staged->height,
+        ])->save();
+
+        if ($oldPath !== $media->path) {
+            Storage::disk($oldDisk)->delete([$oldPath, dirname($oldPath) . '/thumbs/thumb-' . $oldFilename]);
+        }
+
+        $staged->delete();
+
+        return $media->fresh();
+    }
+
     public function createAiImageAsset(Media $media, array $attributes): AiImageAsset
     {
         return $media->aiImageAsset()->create([

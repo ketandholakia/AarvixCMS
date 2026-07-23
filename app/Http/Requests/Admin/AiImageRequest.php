@@ -18,7 +18,7 @@ class AiImageRequest extends FormRequest
 
         $enabled = app(SettingService::class)->get('ai.image.enabled', config('ai.image.enabled', true));
 
-        return filter_var($enabled, FILTER_VALIDATE_BOOLEAN) && $user->can('manage_media');
+        return filter_var($enabled, FILTER_VALIDATE_BOOLEAN) && $user->hasPermission('manage_media');
     }
 
     public function rules(): array
@@ -27,6 +27,8 @@ class AiImageRequest extends FormRequest
             'prompt' => ['required', 'string', 'max:2000'],
             'operation' => ['required', Rule::in(['generate', 'edit', 'remove_background', 'upscale', 'resize'])],
             'source_media_id' => ['nullable', 'integer', 'exists:media,id'],
+            'replace_media_id' => ['nullable', 'integer', 'exists:media,id'],
+            'confirm_replace' => ['nullable', 'boolean'],
             'resolution' => ['nullable', 'string', 'max:20', 'regex:/^\d+x\d+$/'],
             'seed' => ['nullable', 'integer', 'min:0'],
         ];

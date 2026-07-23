@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\AI\DTOs\AiRequestData;
 use App\AI\Services\AiManager;
+use App\Models\Media;
 use App\Services\MediaUploadService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,6 +24,7 @@ class GenerateAiImageJob implements ShouldQueue
         public string $prompt,
         public string $operation = 'generate',
         public ?int $sourceMediaId = null,
+        public ?int $replaceMediaId = null,
         public ?string $resolution = null,
         public ?int $seed = null,
         public ?int $userId = null,
@@ -64,16 +66,10 @@ class GenerateAiImageJob implements ShouldQueue
         $altText = $this->normalizeText($payload['alt'] ?? $this->prompt);
         $caption = $this->normalizeText($payload['caption'] ?? '');
 
-        $media = $mediaUploadService->uploadGeneratedImage(
-            $contents,
-            $originalName,
-            'public',
-            'uploads/generated',
-            $altText !== '' ? $altText : null,
-            $caption !== '' ? $caption : null
-        );
+        $media = $this->persistMedia($mediaUploadService, $contents, $originalName, $altText, $caption);
 
         $mediaUploadService->createAiImageAsset($media, [
+            'source_media_id' => $this->sourceMediaId ?? $this->replaceMediaId,
             'provider' => $result->provider,
             'model' => $result->model,
             'operation' => $this->operation,
@@ -86,8 +82,33 @@ class GenerateAiImageJob implements ShouldQueue
                 'request_id' => $result->requestId,
                 'operation' => $this->operation,
                 'prompt' => Str::limit($this->prompt, 500),
+                'replacement' => $this->replaceMediaId !== null,
             ],
         ]);
+    }
+
+    protected function persistMedia(MediaUploadService $mediaUploadService, string $contents, string $originalName, string $altText, string $caption): Media
+    {
+        if ($this->replaceMediaId === null) {
+            return $mediaUploadService->uploadGeneratedImage(
+                $contents,
+                $originalName,
+                'public',
+                'uploads/generated',
+                $altText !== '' ? $altText : null,
+                $caption !== '' ? $caption : null
+            );
+        }
+
+        $media = Media::findOrFail($this->replaceMediaId);
+
+        return $mediaUploadService->replaceMediaWithGeneratedImage(
+            $media,
+            $contents,
+            $originalName,
+            $altText !== '' ? $altText : null,
+            $caption !== '' ? $caption : null
+        );
     }
 
     protected function extractImageContents(array $payload): string

@@ -674,7 +674,7 @@ logging without exposing a production Writer UI.
 5. [x] Implement `AiManager::generate()` and `AiManager::json()`.
 6. [x] Add prompt and prompt-version migrations, models, renderer, and seed prompts.
 7. [x] Add request and daily-usage migrations, models, logger, and cost calculator.
-8. Add permission seeds and authorization middleware.
+8. [x] Add permission seeds and authorization middleware.
 9. Add limits, timeout, retry classification, and global kill switch.
 10. Build an internal diagnostics command that performs a minimal generation request.
 11. Add unit, contract, feature, authorization, and failure tests.

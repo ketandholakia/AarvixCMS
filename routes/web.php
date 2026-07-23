@@ -35,11 +35,11 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
 
         Route::get('settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index')->middleware('can:manage_settings');
         Route::put('settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update')->middleware('can:manage_settings');
-        Route::get('ai/diagnostics', [\App\Http\Controllers\Admin\AiDiagnosticsController::class, 'index'])->name('ai.diagnostics')->middleware('can:manage_settings');
-        Route::resource('ai-prompts', \App\Http\Controllers\Admin\AiPromptController::class)->middleware('can:manage_settings');
-        Route::get('ai-prompts/{ai_prompt}/versions/{version}/compare', [\App\Http\Controllers\Admin\AiPromptController::class, 'compare'])->name('ai-prompts.compare')->middleware('can:manage_settings');
-        Route::post('ai-prompts/{ai_prompt}/versions/{version}/rollback', [\App\Http\Controllers\Admin\AiPromptController::class, 'rollback'])->name('ai-prompts.rollback')->middleware('can:manage_settings');
-        Route::post('ai/writer/generate', [\App\Http\Controllers\Admin\AiWriterController::class, 'generate'])->name('ai.writer.generate');
+        Route::get('ai/diagnostics', [\App\Http\Controllers\Admin\AiDiagnosticsController::class, 'index'])->name('ai.diagnostics')->middleware('admin:view_ai_usage,manage_ai_providers');
+        Route::resource('ai-prompts', \App\Http\Controllers\Admin\AiPromptController::class)->middleware('admin:manage_ai_prompts');
+        Route::get('ai-prompts/{ai_prompt}/versions/{version}/compare', [\App\Http\Controllers\Admin\AiPromptController::class, 'compare'])->name('ai-prompts.compare')->middleware('admin:manage_ai_prompts');
+        Route::post('ai-prompts/{ai_prompt}/versions/{version}/rollback', [\App\Http\Controllers\Admin\AiPromptController::class, 'rollback'])->name('ai-prompts.rollback')->middleware('admin:manage_ai_prompts');
+        Route::post('ai/writer/generate', [\App\Http\Controllers\Admin\AiWriterController::class, 'generate'])->name('ai.writer.generate')->middleware('admin:use_ai_writer');
         
         Route::resource('forms', \App\Http\Controllers\Admin\FormController::class);
         Route::resource('form_submissions', \App\Http\Controllers\Admin\FormSubmissionController::class)->only(['index', 'show', 'destroy']);
@@ -61,7 +61,7 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
         Route::delete('menus/items/{id}', [\App\Http\Controllers\Admin\MenuController::class, 'destroyItem'])->name('menus.items.destroy')->middleware('can:manage_menus');
 
         Route::post('upload-image', [\App\Http\Controllers\Admin\ImageUploadController::class, 'store'])->name('upload.image'); // Used by editorjs etc.
-        Route::post('ai/images/generate', [\App\Http\Controllers\Admin\AiImageController::class, 'generate'])->name('ai.images.generate')->middleware('can:manage_media');
+        Route::post('ai/images/generate', [\App\Http\Controllers\Admin\AiImageController::class, 'generate'])->name('ai.images.generate')->middleware('admin:use_ai_image');
         
         Route::get('api-tokens', [\App\Http\Controllers\Admin\ApiTokenController::class, 'index'])->name('api_tokens.index')->middleware('can:manage_api_tokens');
         Route::post('api-tokens', [\App\Http\Controllers\Admin\ApiTokenController::class, 'store'])->name('api_tokens.store')->middleware('can:manage_api_tokens');

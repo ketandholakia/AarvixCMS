@@ -51,6 +51,9 @@ class PermissionSeeder extends Seeder
             'view_subscriptions',
             // API
             'api.read', 'api.write',
+            // AI
+            'use_ai_writer', 'use_ai_image', 'use_ai_chat',
+            'manage_ai_prompts', 'manage_ai_providers', 'view_ai_usage', 'manage_ai_workflows',
         ];
 
         foreach ($permissions as $permission) {

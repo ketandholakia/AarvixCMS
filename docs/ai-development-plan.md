@@ -402,6 +402,7 @@ Current authorization maps to content status, ownership, and existing policies. 
 future tenant filter is added only when tenant ownership exists.
 
 - [x] Add authorization-aware retrieval service with vector search, visibility filtering, and stable citations for Post, Page, and Entry.
+- [x] Add a versioned RAG evaluation fixture set and CLI harness for recall, citation correctness, and injection safety.
 
 #### Acceptance criteria
 

@@ -68,6 +68,33 @@ class AiToolSeeder extends Seeder
                 ],
             ),
             new AiToolDefinition(
+                key: 'media.search',
+                version: 1,
+                name: 'Search Media',
+                description: 'Search the media library by filename, caption, or alt text.',
+                category: 'media',
+                handler: 'searchMedia',
+                requiredPermission: 'manage_media',
+                confirmationPolicy: 'never',
+                riskClassification: 'read',
+                inputSchema: [
+                    'type' => 'object',
+                    'properties' => [
+                        'query' => ['type' => 'string'],
+                        'limit' => ['type' => 'integer'],
+                        'mime_type' => ['type' => 'string'],
+                        'images_only' => ['type' => 'boolean'],
+                    ],
+                ],
+                outputSchema: [
+                    'type' => 'object',
+                    'properties' => [
+                        'count' => ['type' => 'integer'],
+                        'items' => ['type' => 'array'],
+                    ],
+                ],
+            ),
+            new AiToolDefinition(
                 key: 'seo.propose',
                 version: 1,
                 name: 'Propose SEO Metadata',

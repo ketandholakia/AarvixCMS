@@ -6,6 +6,7 @@ use App\AI\DTOs\AiScope;
 use App\AI\DTOs\AiToolDefinition;
 use App\AI\Exceptions\AiToolAuthorizationException;
 use App\AI\Exceptions\AiToolExecutionException;
+use App\Models\Media;
 use App\Models\AiTool;
 use App\Models\AiToolCall;
 use App\Models\User;
@@ -246,6 +247,7 @@ class AiToolRegistryService
         return match ($tool->key) {
             'content.search' => $this->executeContentSearch($tool, $input, $actor, $context, $source),
             'content.summary' => $this->executeContentSummary($tool, $input, $actor, $context, $source),
+            'media.search' => $this->executeMediaSearch($tool, $input, $actor, $context, $source),
             'seo.propose' => $this->executeSeoProposal($tool, $input, $actor, $context, $source),
             default => throw new AiToolExecutionException("AI tool [{$tool->key}] does not have an executor yet."),
         };
@@ -352,6 +354,62 @@ class AiToolRegistryService
     }
 
     /**
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    protected function executeMediaSearch(AiTool $tool, array $input, ?User $actor, array $context, ?Model $source): array
+    {
+        $query = trim((string) ($input['query'] ?? ''));
+        $limit = max(1, min(25, (int) ($input['limit'] ?? 10)));
+        $mimeType = is_string($input['mime_type'] ?? null) ? trim($input['mime_type']) : '';
+        $onlyImages = filter_var($input['images_only'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        $queryBuilder = Media::query()->latest('id');
+
+        if ($query !== '') {
+            $queryBuilder->where(function ($builder) use ($query): void {
+                $builder->where('filename', 'like', '%' . $query . '%')
+                    ->orWhere('original_filename', 'like', '%' . $query . '%')
+                    ->orWhere('alt_text', 'like', '%' . $query . '%')
+                    ->orWhere('caption', 'like', '%' . $query . '%');
+            });
+        }
+
+        if ($mimeType !== '') {
+            $queryBuilder->where('mime_type', 'like', $mimeType . '%');
+        }
+
+        if ($onlyImages) {
+            $queryBuilder->where('mime_type', 'like', 'image/%');
+        }
+
+        $media = $queryBuilder->limit($limit)->get();
+
+        return [
+            'query' => $query,
+            'count' => $media->count(),
+            'items' => $media->map(static function (Media $item): array {
+                return [
+                    'id' => $item->id,
+                    'filename' => $item->filename,
+                    'original_filename' => $item->original_filename,
+                    'url' => $item->url,
+                    'mime_type' => $item->mime_type,
+                    'size' => $item->size,
+                    'human_size' => $item->human_size,
+                    'width' => $item->width,
+                    'height' => $item->height,
+                    'alt_text' => $item->alt_text,
+                    'caption' => $item->caption,
+                    'uploaded_by' => $item->uploaded_by,
+                    'created_at' => optional($item->created_at)->toISOString(),
+                ];
+            })->values()->all(),
+        ];
+    }
+
+    /**
      * @param array<string, mixed> $result
      * @return array<string, mixed>
      */
@@ -363,8 +421,10 @@ class AiToolRegistryService
             'meta_title' => $result['meta_title'] ?? null,
             'meta_description' => $result['meta_description'] ?? null,
             'context' => $result['context'] ?? null,
+            'count' => isset($result['count']) ? (int) $result['count'] : null,
             'citation_count' => is_array($result['citations'] ?? null) ? count($result['citations']) : 0,
             'chunk_count' => isset($result['chunk_count']) ? (int) $result['chunk_count'] : null,
+            'items' => is_array($result['items'] ?? null) ? $this->summarizeMediaItems($result['items']) : [],
             'citations' => is_array($result['citations'] ?? null)
                 ? array_map(static fn (array $citation): array => Arr::only($citation, [
                     'source_type',
@@ -381,6 +441,28 @@ class AiToolRegistryService
             'highlights' => is_array($result['highlights'] ?? null) ? array_values($result['highlights']) : [],
             'warnings' => is_array($result['warnings'] ?? null) ? array_values($result['warnings']) : [],
         ];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $items
+     * @return array<int, array<string, mixed>>
+     */
+    protected function summarizeMediaItems(array $items): array
+    {
+        return array_map(static fn (array $item): array => Arr::only($item, [
+            'id',
+            'filename',
+            'original_filename',
+            'url',
+            'mime_type',
+            'human_size',
+            'width',
+            'height',
+            'alt_text',
+            'caption',
+            'uploaded_by',
+            'created_at',
+        ]), $items);
     }
 
     /**

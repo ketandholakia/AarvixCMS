@@ -489,6 +489,7 @@ Each step declares whether it drafts, proposes, or applies a change.
 - [x] Seed the first read-only and review-required tool definitions.
 - [x] Implement the first executable tool: authorized content search with audit logging.
 - [x] Implement `content.summary` and an approval flow for review-required tools such as `seo.propose`.
+- [x] Implement `media.search` as a read-only tool for the media library.
 
 Each tool declares:
 

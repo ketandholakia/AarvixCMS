@@ -76,6 +76,8 @@ class ContentEmbeddingServiceTest extends TestCase
         $this->assertSame(Entry::class, $entrySummary['source_type']);
         $this->assertSame('public', $entrySummary['visibility']);
         $this->assertSame('portfolio', $entrySummary['metadata']['content_type']);
+        $this->assertSame('1', $entrySummary['chunker_version']);
+        $this->assertSame(config('ai.embeddings.model'), $entrySummary['embedding_model']);
         $this->assertStringContainsString('Entry Title', $entrySummary['content_text']);
         $this->assertStringContainsString('Entry body text.', $entrySummary['content_text']);
 

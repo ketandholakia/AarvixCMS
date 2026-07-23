@@ -16,6 +16,9 @@ class ContentEmbeddingService
 
     public function summarize(Model $source, int $chunkIndex = 0): array
     {
+        $chunkerVersion = (string) config('ai.embeddings.chunker_version', '1');
+        $embeddingModel = config('ai.embeddings.model');
+        $embeddingModel = is_string($embeddingModel) && $embeddingModel !== '' ? $embeddingModel : null;
         $title = $this->sourceTitle($source);
         $bodyText = $this->extractBodyText($source);
         $extraText = $this->extractAdditionalText($source);
@@ -26,6 +29,8 @@ class ContentEmbeddingService
             $source::class,
             (string) $source->getKey(),
             (string) $chunkIndex,
+            $chunkerVersion,
+            (string) ($embeddingModel ?? ''),
             $contentText,
             $visibility,
         ]));
@@ -40,8 +45,8 @@ class ContentEmbeddingService
             'visibility' => $visibility,
             'vector_store' => null,
             'vector_id' => null,
-            'embedding_model' => null,
-            'chunker_version' => '1',
+            'embedding_model' => $embeddingModel,
+            'chunker_version' => $chunkerVersion,
         ];
     }
 

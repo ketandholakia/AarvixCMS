@@ -93,6 +93,11 @@ return [
         'retention_days' => (int) env('AI_LOG_RETENTION_DAYS', 30),
     ],
 
+    'embeddings' => [
+        'chunker_version' => env('AI_EMBEDDING_CHUNKER_VERSION', '1'),
+        'model' => env('AI_EMBEDDING_MODEL', env('AI_OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small')),
+    ],
+
     'vector_store' => [
         'driver' => env('AI_VECTOR_STORE_DRIVER', InMemoryVectorStore::class),
         'collection' => env('AI_VECTOR_STORE_COLLECTION', 'content_embeddings'),

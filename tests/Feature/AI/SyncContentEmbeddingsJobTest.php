@@ -135,4 +135,51 @@ class SyncContentEmbeddingsJobTest extends TestCase
             'visibility' => 'private',
         ]);
     }
+
+    public function test_embedding_version_changes_trigger_reindexing(): void
+    {
+        config()->set('ai.embeddings.chunker_version', '1');
+        config()->set('ai.embeddings.model', 'text-embedding-3-small');
+
+        $post = Post::withoutEvents(function () {
+            return Post::factory()->create([
+                'title' => 'Versioned index',
+                'excerpt' => 'Versioned summary',
+                'body' => json_encode([
+                    'blocks' => [
+                        ['type' => 'paragraph', 'data' => ['text' => 'Versioned body text.']],
+                    ],
+                ]),
+                'status' => 'published',
+            ]);
+        });
+
+        $job = new SyncContentEmbeddingsJob(Post::class, $post->id, 'request-version-1');
+
+        app()->call([$job, 'handle']);
+
+        $initialEmbedding = ContentEmbedding::query()->firstOrFail();
+        $initialJob = AiEmbeddingJob::query()->firstOrFail();
+
+        $this->assertSame('1', $initialEmbedding->chunker_version);
+        $this->assertSame('text-embedding-3-small', $initialEmbedding->embedding_model);
+
+        config()->set('ai.embeddings.chunker_version', '2');
+        config()->set('ai.embeddings.model', 'text-embedding-3-large');
+
+        app()->call([$job, 'handle']);
+
+        $this->assertDatabaseCount('content_embeddings', 1);
+        $this->assertDatabaseCount('ai_embedding_jobs', 1);
+
+        $updatedEmbedding = ContentEmbedding::query()->firstOrFail();
+        $updatedJob = AiEmbeddingJob::query()->firstOrFail();
+
+        $this->assertNotSame($initialEmbedding->chunk_hash, $updatedEmbedding->chunk_hash);
+        $this->assertSame('2', $updatedEmbedding->chunker_version);
+        $this->assertSame('text-embedding-3-large', $updatedEmbedding->embedding_model);
+        $this->assertSame($updatedEmbedding->chunk_hash, $updatedJob->source_hash);
+        $this->assertSame('succeeded', $updatedJob->status);
+        $this->assertGreaterThanOrEqual($initialJob->attempts + 1, $updatedJob->attempts);
+    }
 }

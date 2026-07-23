@@ -54,6 +54,22 @@ class AiPromptCrudTest extends TestCase
         $response->assertSee('Supports strict {{variable}} placeholders.', false);
     }
 
+    public function test_admin_can_view_prompt_create_form_with_a_session_cookie(): void
+    {
+        $admin = $this->admin();
+
+        $this->post(route('login'), [
+            'email' => $admin->email,
+            'password' => 'password',
+        ])->assertRedirect('http://localhost/admin');
+
+        $response = $this->get(route('admin.ai-prompts.create'));
+
+        $response->assertOk();
+        $response->assertSee('Create Prompt', false);
+        $response->assertSee('Supports strict {{variable}} placeholders.', false);
+    }
+
     public function test_admin_can_create_new_prompt_versions_and_rollback(): void
     {
         $prompt = AiPrompt::create([

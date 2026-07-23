@@ -6,6 +6,7 @@ use App\Models\AiImageAsset;
 use App\Models\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 
@@ -46,6 +47,42 @@ class MediaUploadService
             'size' => Storage::disk($disk)->size($fullPath),
             'alt_text' => $originalName,
         ]);
+    }
+
+    /**
+     * Persist generated image bytes through the same sanitization/conversion path.
+     */
+    public function uploadGeneratedImage(string $contents, string $originalName, string $disk = 'public', string $path = 'uploads', ?string $altText = null, ?string $caption = null): Media
+    {
+        $tempDir = storage_path('app/ai-generated');
+
+        if (! is_dir($tempDir)) {
+            mkdir($tempDir, 0777, true);
+        }
+
+        $tempPath = $tempDir . DIRECTORY_SEPARATOR . Str::uuid() . '-' . basename($originalName);
+        file_put_contents($tempPath, $contents);
+
+        try {
+            $media = $this->uploadImage(
+                new UploadedFile($tempPath, $originalName, null, null, true),
+                $disk,
+                $path
+            );
+
+            if ($altText !== null || $caption !== null) {
+                $media->fill([
+                    'alt_text' => $altText ?? $media->alt_text,
+                    'caption' => $caption ?? $media->caption,
+                ])->save();
+            }
+
+            return $media->fresh();
+        } finally {
+            if (is_file($tempPath)) {
+                @unlink($tempPath);
+            }
+        }
     }
 
     public function createAiImageAsset(Media $media, array $attributes): AiImageAsset

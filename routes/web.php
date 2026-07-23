@@ -61,6 +61,7 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
         Route::delete('menus/items/{id}', [\App\Http\Controllers\Admin\MenuController::class, 'destroyItem'])->name('menus.items.destroy')->middleware('can:manage_menus');
 
         Route::post('upload-image', [\App\Http\Controllers\Admin\ImageUploadController::class, 'store'])->name('upload.image'); // Used by editorjs etc.
+        Route::post('ai/images/generate', [\App\Http\Controllers\Admin\AiImageController::class, 'generate'])->name('ai.images.generate')->middleware('can:manage_media');
         
         Route::get('api-tokens', [\App\Http\Controllers\Admin\ApiTokenController::class, 'index'])->name('api_tokens.index')->middleware('can:manage_api_tokens');
         Route::post('api-tokens', [\App\Http\Controllers\Admin\ApiTokenController::class, 'store'])->name('api_tokens.store')->middleware('can:manage_api_tokens');

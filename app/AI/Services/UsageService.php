@@ -27,10 +27,11 @@ class UsageService
     {
         $this->ensureEnabled($request->feature);
         $this->enforceLimits($request, $provider, $model);
+        $userId = auth()->id() ?? ($request->options['user_id'] ?? null);
 
         return AiRequest::create([
             'request_uuid' => (string) Str::uuid(),
-            'user_id' => auth()->id(),
+            'user_id' => is_int($userId) ? $userId : null,
             'feature' => $request->feature ?? 'general',
             'status' => 'running',
             'provider' => $provider,
@@ -104,7 +105,7 @@ class UsageService
 
     public function enforceLimits(AiRequestData $request, string $provider, string $model): void
     {
-        $userId = auth()->id();
+        $userId = auth()->id() ?? ($request->options['user_id'] ?? null);
         $now = now();
         $feature = $request->feature ?? 'general';
 

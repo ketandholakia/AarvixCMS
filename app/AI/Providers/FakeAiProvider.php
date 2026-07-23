@@ -80,7 +80,10 @@ class FakeAiProvider implements AiProvider
     public function image(AiRequestData $request): AiResult
     {
         return $this->buildSuccessResult('image', $request, [
-            'url' => 'fake://image/generated',
+            'data_uri' => 'data:image/gif;base64,R0lGODlhAQABAPAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==',
+            'filename' => 'fake-ai-image.gif',
+            'alt' => 'Generated AI image',
+            'caption' => 'Generated AI image preview',
         ]);
     }
 

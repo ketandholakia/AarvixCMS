@@ -2,6 +2,7 @@
 
 use App\AI\Enums\AiCapability;
 use App\AI\Providers\FakeAiProvider;
+use App\AI\Providers\OpenAiProvider;
 
 return [
     'enabled' => env('AI_ENABLED', false),
@@ -29,6 +30,27 @@ return [
                 'supports_mask' => true,
                 'supports_seed' => true,
                 'supports_resolution' => true,
+            ],
+        ],
+        'openai' => [
+            'driver' => OpenAiProvider::class,
+            'api_key' => env('AI_OPENAI_API_KEY'),
+            'base_url' => env('AI_OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+            'organization' => env('AI_OPENAI_ORGANIZATION'),
+            'timeout' => (int) env('AI_OPENAI_TIMEOUT', 60),
+            'retries' => (int) env('AI_OPENAI_RETRIES', 2),
+            'capabilities' => [
+                AiCapability::Generate->value,
+                AiCapability::Stream->value,
+                AiCapability::Chat->value,
+                AiCapability::Embedding->value,
+                AiCapability::Json->value,
+            ],
+            'models' => [
+                'generate' => env('AI_OPENAI_CHAT_MODEL', 'gpt-4.1-mini'),
+                'chat' => env('AI_OPENAI_CHAT_MODEL', 'gpt-4.1-mini'),
+                'json' => env('AI_OPENAI_CHAT_MODEL', 'gpt-4.1-mini'),
+                'embedding' => env('AI_OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
             ],
         ],
     ],

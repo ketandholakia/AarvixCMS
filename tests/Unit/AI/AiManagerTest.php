@@ -28,7 +28,7 @@ class AiManagerTest extends TestCase
         $this->assertSame('fake', $result->provider);
         $this->assertSame('fake-summary-model', $result->model);
         $this->assertSame('generate', $result->metadata['capability']);
-        $this->assertSame('Write a summary', $result->response['input']['prompt']);
+        $this->assertSame('Rewritten draft: Write a summary', $result->response['plain_text']);
     }
 
     public function test_stream_returns_deterministic_chunks_from_the_fake_provider(): void

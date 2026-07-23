@@ -18,6 +18,13 @@ The AI layer is configured through these environment variables:
 - `AI_LOG_RESPONSES`
 - `AI_LOG_RETENTION_DAYS`
 - `AI_IMAGE_RETENTION_DAYS`
+- `AI_OPENAI_API_KEY`
+- `AI_OPENAI_BASE_URL`
+- `AI_OPENAI_ORGANIZATION`
+- `AI_OPENAI_TIMEOUT`
+- `AI_OPENAI_RETRIES`
+- `AI_OPENAI_CHAT_MODEL`
+- `AI_OPENAI_EMBEDDING_MODEL`
 
 Defaults are defined in [config/ai.php](../config/ai.php).
 

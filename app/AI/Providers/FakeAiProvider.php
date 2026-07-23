@@ -28,7 +28,7 @@ class FakeAiProvider implements AiProvider
     public function generate(AiRequestData $request): AiResult
     {
         $operation = $request->input['operation'] ?? 'rewrite';
-        $content = trim((string) ($request->input['content'] ?? ''));
+        $content = trim((string) ($request->input['content'] ?? $request->input['prompt'] ?? ''));
         $tone = trim((string) ($request->input['tone'] ?? ''));
         $title = trim((string) ($request->input['title'] ?? ''));
         $selection = trim((string) ($request->input['selection'] ?? ''));

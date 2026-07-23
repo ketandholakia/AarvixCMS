@@ -4,15 +4,24 @@ namespace App\AI\Services;
 
 use App\AI\DTOs\AiToolDefinition;
 use App\AI\Exceptions\AiToolAuthorizationException;
+use App\AI\Exceptions\AiToolExecutionException;
+use App\AI\Services\RetrievalService;
+use App\AI\DTOs\AiScope;
 use App\Models\AiTool;
 use App\Models\AiToolCall;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 class AiToolRegistryService
 {
+    public function __construct(
+        protected RetrievalService $retrievalService,
+    ) {
+    }
+
     /**
      * @param array<int, AiToolDefinition|array<string, mixed>> $definitions
      * @return Collection<int, AiTool>
@@ -116,5 +125,128 @@ class AiToolRegistryService
             ]),
             'result_summary' => null,
         ]);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    public function execute(string $toolKey, array $input = [], ?User $actor = null, array $context = [], ?Model $source = null): array
+    {
+        $tool = $this->find($toolKey);
+
+        if (! $tool) {
+            throw new AiToolExecutionException("AI tool [{$toolKey}] is not registered.");
+        }
+
+        $call = $this->recordCall($tool, $input, $actor, $context, $source);
+
+        try {
+            $result = match ($tool->key) {
+                'content.search' => $this->executeContentSearch($tool, $input, $actor, $context, $source),
+                default => throw new AiToolExecutionException("AI tool [{$tool->key}] does not have an executor yet."),
+            };
+
+            $call->forceFill([
+                'status' => 'succeeded',
+                'result_summary' => $this->summarizeResult($result),
+                'completed_at' => now(),
+            ])->save();
+
+            return $result;
+        } catch (\Throwable $throwable) {
+            $call->forceFill([
+                'status' => 'failed',
+                'error_class' => $throwable::class,
+                'error_message' => $throwable->getMessage(),
+                'completed_at' => now(),
+            ])->save();
+
+            throw $throwable;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    protected function executeContentSearch(AiTool $tool, array $input, ?User $actor, array $context, ?Model $source): array
+    {
+        $query = trim((string) ($input['query'] ?? ''));
+
+        if ($query === '') {
+            throw new AiToolExecutionException('content.search requires a non-empty query.');
+        }
+
+        $limit = max(1, (int) ($input['limit'] ?? 5));
+        $scope = new AiScope(
+            userId: $actor?->id,
+            site: is_string($context['site'] ?? null) ? $context['site'] : null,
+            feature: 'tool:' . $tool->key,
+            metadata: array_merge(
+                is_array($context['metadata'] ?? null) ? $context['metadata'] : [],
+                [
+                    'source_types' => $this->normalizeSourceTypes($input['source_types'] ?? null),
+                ]
+            ),
+        );
+
+        return $this->retrievalService->retrieve(
+            $scope,
+            $query,
+            $limit,
+            array_filter([
+                'source_types' => $this->normalizeSourceTypes($input['source_types'] ?? null),
+                'content_type' => is_string($input['content_type'] ?? null) ? $input['content_type'] : null,
+            ], static fn ($value): bool => $value !== null && $value !== [])
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     * @return array<string, mixed>
+     */
+    protected function summarizeResult(array $result): array
+    {
+        return [
+            'answer' => $result['answer'] ?? null,
+            'context' => $result['context'] ?? null,
+            'citation_count' => is_array($result['citations'] ?? null) ? count($result['citations']) : 0,
+            'citations' => is_array($result['citations'] ?? null)
+                ? array_map(static fn (array $citation): array => Arr::only($citation, [
+                    'source_type',
+                    'source_id',
+                    'title',
+                    'chunk_index',
+                    'score',
+                    'public_url',
+                    'accessible_url',
+                    'visibility',
+                    'content_type',
+                ]), $result['citations'])
+                : [],
+        ];
+    }
+
+    /**
+     * @param mixed $sourceTypes
+     * @return array<int, string>
+     */
+    protected function normalizeSourceTypes(mixed $sourceTypes): array
+    {
+        if (is_string($sourceTypes) && $sourceTypes !== '') {
+            return [$sourceTypes];
+        }
+
+        if (! is_array($sourceTypes)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            static fn ($sourceType): string => trim((string) $sourceType),
+            $sourceTypes,
+        )));
     }
 }

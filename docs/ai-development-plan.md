@@ -360,6 +360,9 @@ before nearest-neighbor ranking.
 
 #### 3.2 Ingestion pipeline
 
+- [x] Create content embedding and embedding-job tables, models, and source
+  summarizer for Post, Page, and Entry.
+
 ```text
 Post/Page/Entry/File
   -> authorization metadata

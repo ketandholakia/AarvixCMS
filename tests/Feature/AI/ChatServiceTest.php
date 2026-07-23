@@ -4,8 +4,10 @@ namespace Tests\Feature\AI;
 
 use App\AI\DTOs\AiScope;
 use App\AI\Services\ChatService;
+use App\AI\Providers\FakeAiProvider;
 use App\AI\Support\VectorStores\InMemoryVectorStore;
 use App\Jobs\SyncContentEmbeddingsJob;
+use App\Models\AiChatRun;
 use App\Models\AiConversation;
 use App\Models\AiMessage;
 use App\Models\Post;
@@ -23,6 +25,9 @@ class ChatServiceTest extends TestCase
         parent::setUp();
 
         $this->seed(\Database\Seeders\RoleSeeder::class);
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.driver', FakeAiProvider::class);
         config()->set('ai.vector_store.driver', InMemoryVectorStore::class);
         config()->set('ai.vector_store.collection', 'content_embeddings');
         config()->set('ai.embeddings.chunker_version', '1');
@@ -85,5 +90,65 @@ class ChatServiceTest extends TestCase
 
         $this->assertNotEmpty($result['citations']);
         $this->assertSame('Conversation source', $result['citations'][0]['title']);
+    }
+
+    public function test_chat_service_streams_answers_and_supports_cancel_and_retry(): void
+    {
+        $admin = User::factory()->create(['is_active' => true]);
+        $admin->roles()->attach(Role::where('name', 'Admin')->firstOrFail());
+
+        $post = Post::withoutEvents(function () {
+            return Post::factory()->create([
+                'title' => 'Streaming source',
+                'excerpt' => 'Streaming summary',
+                'body' => json_encode([
+                    'blocks' => [
+                        ['type' => 'paragraph', 'data' => ['text' => 'Streaming body text.']],
+                    ],
+                ]),
+                'status' => 'published',
+            ]);
+        });
+
+        app()->call([new SyncContentEmbeddingsJob(Post::class, $post->id, 'chat-stream-source'), 'handle']);
+
+        $conversation = $this->app->make(ChatService::class)->createConversation(
+            new AiScope(userId: $admin->id, site: 'default', feature: 'chat')
+        );
+
+        $service = $this->app->make(ChatService::class);
+        $stream = $service->streamConversation($conversation, 'What is the streaming source?');
+
+        $stream->rewind();
+        $firstChunk = $stream->current();
+        $this->assertIsString($firstChunk);
+        $this->assertNotSame('', $firstChunk);
+
+        $run = AiChatRun::query()->where('conversation_id', $conversation->id)->firstOrFail();
+        $service->cancelRun($run, $admin->id);
+
+        $stream->next();
+        $stream->next();
+
+        $run = $run->fresh();
+        $this->assertSame('cancelled', $run->status);
+        $this->assertNotNull($run->cancelled_at);
+        $this->assertStringContainsString($firstChunk, (string) $run->response_text);
+
+        $retryRun = $service->retryRun($run);
+        $this->assertSame($run->id, $retryRun->retry_of_id);
+        $this->assertSame('pending', $retryRun->status);
+
+        $retryStream = $service->streamRun($retryRun);
+        $retriedText = '';
+        foreach ($retryStream as $chunk) {
+            $retriedText .= $chunk;
+        }
+
+        $retryRun = $retryRun->fresh();
+        $this->assertSame('succeeded', $retryRun->status);
+        $this->assertNotSame('', $retriedText);
+        $this->assertStringContainsString('What is the streaming source?', $retriedText);
+        $this->assertNotEmpty($conversation->fresh()->messages()->where('role', 'assistant')->get());
     }
 }

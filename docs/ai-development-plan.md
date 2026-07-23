@@ -423,7 +423,7 @@ future tenant filter is added only when tenant ownership exists.
 #### Scope
 
 - Conversation and message persistence.
-- Streaming answers with cancel and retry.
+- [x] Streaming answers with cancel and retry.
 - Website/content search, summarization, and policy explanation.
 - Conversation rename, archive, and delete.
 - Explicit mode selection: knowledge answer or writing help.

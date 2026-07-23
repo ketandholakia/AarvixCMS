@@ -40,4 +40,9 @@ class AiConversation extends Model
     {
         return $this->hasMany(AiMessage::class, 'conversation_id');
     }
+
+    public function runs(): HasMany
+    {
+        return $this->hasMany(AiChatRun::class, 'conversation_id');
+    }
 }

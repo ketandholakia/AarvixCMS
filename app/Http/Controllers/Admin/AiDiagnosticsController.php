@@ -40,6 +40,11 @@ class AiDiagnosticsController extends Controller
                 'support_agent_enabled' => $settings->get('ai.agents.support.enabled', data_get($config, 'agents.support.is_enabled', true)),
                 'image_public_generation_enabled' => $settings->get('ai.image.public_generation_enabled', data_get($config, 'providers.fake.image.public_generation_enabled', false)),
                 'image_retention_days' => $settings->get('ai.image.retention_days', data_get($config, 'providers.fake.image.retention_days', 30)),
+                'seo_agent_seconds' => data_get($config, 'agents.seo.max_seconds', 45),
+                'marketing_agent_seconds' => data_get($config, 'agents.marketing.max_seconds', 60),
+                'translation_agent_seconds' => data_get($config, 'agents.translation.max_seconds', 45),
+                'documentation_agent_seconds' => data_get($config, 'agents.documentation.max_seconds', 60),
+                'support_agent_seconds' => data_get($config, 'agents.support.max_seconds', 30),
             ],
         ]);
     }

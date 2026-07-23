@@ -6,6 +6,7 @@ use App\AI\Contracts\AiProvider;
 use App\AI\Contracts\VectorStore;
 use App\AI\Services\AiManager;
 use App\AI\Services\AiAgentRegistryService;
+use App\AI\Services\AiAgentExecutionService;
 use App\AI\Services\AiPolicyService;
 use App\AI\Services\AiToolRegistryService;
 use App\AI\Services\ContentEmbeddingService;
@@ -41,6 +42,7 @@ class AiServiceProvider extends ServiceProvider
         $this->app->singleton(PromptService::class);
         $this->app->singleton(AiPolicyService::class);
         $this->app->singleton(AiAgentRegistryService::class);
+        $this->app->singleton(AiAgentExecutionService::class);
         $this->app->singleton(UsageService::class);
         $this->app->singleton(AiToolRegistryService::class);
         $this->app->singleton(ContentEmbeddingService::class);

@@ -519,6 +519,8 @@ model policy, budgets, and maximum steps.
 - [x] Add a config-driven agent registry with initial SEO, Marketing, Translation,
   Documentation, and Support definitions.
 - [x] Surface the agent layer in admin diagnostics with runtime enable overrides.
+- [x] Add agent execution scaffolding with tool allowlists, permission checks,
+  step limits, and approval-aware halting.
 
 #### Acceptance criteria
 

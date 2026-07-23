@@ -43,6 +43,7 @@ class AiAgentRegistryServiceTest extends TestCase
         $this->assertSame(['content.summary', 'seo.propose'], $agent->tools);
         $this->assertSame(['use_ai_writer'], $agent->permissions);
         $this->assertSame(5, $agent->maxSteps);
+        $this->assertSame(60, $agent->maxSeconds);
         $this->assertTrue($agent->isEnabled);
     }
 

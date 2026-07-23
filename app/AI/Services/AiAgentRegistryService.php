@@ -74,6 +74,7 @@ class AiAgentRegistryService
             modelPolicy: is_array($definition['model_policy'] ?? null) ? $definition['model_policy'] : [],
             budgets: is_array($definition['budgets'] ?? null) ? $definition['budgets'] : [],
             maxSteps: max(1, (int) ($definition['max_steps'] ?? 1)),
+            maxSeconds: max(1, (int) ($definition['max_seconds'] ?? 60)),
             isEnabled: filter_var($enabled, FILTER_VALIDATE_BOOLEAN),
         );
     }

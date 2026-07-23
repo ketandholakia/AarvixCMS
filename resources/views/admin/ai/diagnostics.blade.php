@@ -78,6 +78,7 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Permissions</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Budget</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Steps</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Runtime</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</th>
                     </tr>
                 </thead>
@@ -99,6 +100,7 @@
                                 <div>{{ data_get($agent, 'budgets.max_cost', 'n/a') }} max cost</div>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ $agent['max_steps'] }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ $agent['max_seconds'] }} sec</td>
                             <td class="px-6 py-4 text-sm">
                                 <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ ($agent['is_enabled'] ?? false) ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }}">
                                     {{ ($agent['is_enabled'] ?? false) ? 'Enabled' : 'Disabled' }}

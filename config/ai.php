@@ -96,6 +96,7 @@ return [
                 'max_cost' => '0.50',
             ],
             'max_steps' => 3,
+            'max_seconds' => 45,
             'is_enabled' => true,
         ],
         'marketing' => [
@@ -119,6 +120,7 @@ return [
                 'max_cost' => '1.00',
             ],
             'max_steps' => 4,
+            'max_seconds' => 60,
             'is_enabled' => true,
         ],
         'translation' => [
@@ -142,6 +144,7 @@ return [
                 'max_cost' => '0.80',
             ],
             'max_steps' => 3,
+            'max_seconds' => 45,
             'is_enabled' => true,
         ],
         'documentation' => [
@@ -165,6 +168,7 @@ return [
                 'max_cost' => '0.75',
             ],
             'max_steps' => 4,
+            'max_seconds' => 60,
             'is_enabled' => true,
         ],
         'support' => [
@@ -188,6 +192,7 @@ return [
                 'max_cost' => '0.40',
             ],
             'max_steps' => 2,
+            'max_seconds' => 30,
             'is_enabled' => true,
         ],
     ],

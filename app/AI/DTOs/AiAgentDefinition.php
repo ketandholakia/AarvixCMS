@@ -23,6 +23,7 @@ readonly class AiAgentDefinition
         public array $modelPolicy = [],
         public array $budgets = [],
         public int $maxSteps = 1,
+        public int $maxSeconds = 60,
         public bool $isEnabled = true,
     ) {
     }
@@ -44,6 +45,7 @@ readonly class AiAgentDefinition
             'model_policy' => $this->modelPolicy,
             'budgets' => $this->budgets,
             'max_steps' => $this->maxSteps,
+            'max_seconds' => $this->maxSeconds,
             'is_enabled' => $this->isEnabled,
         ];
     }

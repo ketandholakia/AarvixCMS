@@ -678,7 +678,7 @@ logging without exposing a production Writer UI.
 9. [x] Add limits, timeout, retry classification, and global kill switch.
 10. [x] Build an internal diagnostics command that performs a minimal generation request.
 11. [x] Add unit, contract, feature, authorization, and failure tests.
-12. Document queue workers, provider setup, secret handling, and rollback.
+12. [x] Document queue workers, provider setup, secret handling, and rollback.
 
 ### Sprint exit criteria
 

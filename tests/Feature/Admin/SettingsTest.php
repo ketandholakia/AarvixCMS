@@ -29,6 +29,7 @@ class SettingsTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Site Settings');
+        $response->assertSee('AI Agents');
     }
 
     public function test_admin_can_update_settings(): void
@@ -42,6 +43,11 @@ class SettingsTest extends TestCase
             'ai_writer_enabled' => 1,
             'ai_chat_enabled' => 0,
             'ai_image_enabled' => 1,
+            'ai_agent_seo_enabled' => 1,
+            'ai_agent_marketing_enabled' => 0,
+            'ai_agent_translation_enabled' => 1,
+            'ai_agent_documentation_enabled' => 0,
+            'ai_agent_support_enabled' => 1,
         ]);
 
         $response->assertRedirect(route('admin.settings.index'));
@@ -60,6 +66,11 @@ class SettingsTest extends TestCase
         $this->assertSame('https://twitter.com/awesomesite', Setting::get('social_twitter'));
         $this->assertTrue(app(SettingService::class)->get('ai.enabled', false));
         $this->assertFalse(app(SettingService::class)->get('ai.chat.enabled', true));
+        $this->assertTrue(app(SettingService::class)->get('ai.agents.seo.enabled', false));
+        $this->assertFalse(app(SettingService::class)->get('ai.agents.marketing.enabled', true));
+        $this->assertTrue(app(SettingService::class)->get('ai.agents.translation.enabled', false));
+        $this->assertFalse(app(SettingService::class)->get('ai.agents.documentation.enabled', true));
+        $this->assertTrue(app(SettingService::class)->get('ai.agents.support.enabled', false));
     }
 
     public function test_settings_service_rejects_unsupported_keys(): void

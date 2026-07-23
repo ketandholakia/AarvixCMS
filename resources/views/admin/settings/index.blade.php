@@ -97,6 +97,51 @@
                         </label>
                     </div>
                 </div>
+
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-800 pb-2">AI Agents</h3>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <label class="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                            <input type="checkbox" name="ai_agent_seo_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_agent_seo_enabled', $settings['ai_agent_seo_enabled'] ?? true) ? 'checked' : '' }}>
+                            <span>
+                                <span class="block text-sm font-medium text-gray-900 dark:text-white">SEO agent enabled</span>
+                                <span class="block text-sm text-gray-500 dark:text-gray-400">Controls the SEO-focused agent profile.</span>
+                            </span>
+                        </label>
+
+                        <label class="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                            <input type="checkbox" name="ai_agent_marketing_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_agent_marketing_enabled', $settings['ai_agent_marketing_enabled'] ?? true) ? 'checked' : '' }}>
+                            <span>
+                                <span class="block text-sm font-medium text-gray-900 dark:text-white">Marketing agent enabled</span>
+                                <span class="block text-sm text-gray-500 dark:text-gray-400">Controls the campaign and social copy agent.</span>
+                            </span>
+                        </label>
+
+                        <label class="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                            <input type="checkbox" name="ai_agent_translation_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_agent_translation_enabled', $settings['ai_agent_translation_enabled'] ?? true) ? 'checked' : '' }}>
+                            <span>
+                                <span class="block text-sm font-medium text-gray-900 dark:text-white">Translation agent enabled</span>
+                                <span class="block text-sm text-gray-500 dark:text-gray-400">Controls the localized content agent.</span>
+                            </span>
+                        </label>
+
+                        <label class="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                            <input type="checkbox" name="ai_agent_documentation_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_agent_documentation_enabled', $settings['ai_agent_documentation_enabled'] ?? true) ? 'checked' : '' }}>
+                            <span>
+                                <span class="block text-sm font-medium text-gray-900 dark:text-white">Documentation agent enabled</span>
+                                <span class="block text-sm text-gray-500 dark:text-gray-400">Controls the internal docs and reports agent.</span>
+                            </span>
+                        </label>
+
+                        <label class="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 p-4 md:col-span-2">
+                            <input type="checkbox" name="ai_agent_support_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_agent_support_enabled', $settings['ai_agent_support_enabled'] ?? true) ? 'checked' : '' }}>
+                            <span>
+                                <span class="block text-sm font-medium text-gray-900 dark:text-white">Support agent enabled</span>
+                                <span class="block text-sm text-gray-500 dark:text-gray-400">Controls the read-only support assistant profile.</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
             </div>
 
             <div class="px-6 py-4 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-3">

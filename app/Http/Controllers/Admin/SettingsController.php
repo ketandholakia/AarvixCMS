@@ -21,6 +21,11 @@ class SettingsController extends Controller
             'ai_writer_enabled' => $service->get('ai.writer.enabled', true),
             'ai_chat_enabled' => $service->get('ai.chat.enabled', true),
             'ai_image_enabled' => $service->get('ai.image.enabled', true),
+            'ai_agent_seo_enabled' => $service->get('ai.agents.seo.enabled', data_get(config('ai'), 'agents.seo.is_enabled', true)),
+            'ai_agent_marketing_enabled' => $service->get('ai.agents.marketing.enabled', data_get(config('ai'), 'agents.marketing.is_enabled', true)),
+            'ai_agent_translation_enabled' => $service->get('ai.agents.translation.enabled', data_get(config('ai'), 'agents.translation.is_enabled', true)),
+            'ai_agent_documentation_enabled' => $service->get('ai.agents.documentation.enabled', data_get(config('ai'), 'agents.documentation.is_enabled', true)),
+            'ai_agent_support_enabled' => $service->get('ai.agents.support.enabled', data_get(config('ai'), 'agents.support.is_enabled', true)),
         ];
 
         return view('admin.settings.index', compact('settings'));
@@ -37,6 +42,11 @@ class SettingsController extends Controller
             'ai_writer_enabled' => ['nullable', 'boolean'],
             'ai_chat_enabled' => ['nullable', 'boolean'],
             'ai_image_enabled' => ['nullable', 'boolean'],
+            'ai_agent_seo_enabled' => ['nullable', 'boolean'],
+            'ai_agent_marketing_enabled' => ['nullable', 'boolean'],
+            'ai_agent_translation_enabled' => ['nullable', 'boolean'],
+            'ai_agent_documentation_enabled' => ['nullable', 'boolean'],
+            'ai_agent_support_enabled' => ['nullable', 'boolean'],
         ]);
 
         $service = app(SettingService::class);
@@ -48,6 +58,11 @@ class SettingsController extends Controller
         $service->set('ai.writer.enabled', $request->boolean('ai_writer_enabled'), 'ai', 'boolean');
         $service->set('ai.chat.enabled', $request->boolean('ai_chat_enabled'), 'ai', 'boolean');
         $service->set('ai.image.enabled', $request->boolean('ai_image_enabled'), 'ai', 'boolean');
+        $service->set('ai.agents.seo.enabled', $request->boolean('ai_agent_seo_enabled'), 'ai', 'boolean');
+        $service->set('ai.agents.marketing.enabled', $request->boolean('ai_agent_marketing_enabled'), 'ai', 'boolean');
+        $service->set('ai.agents.translation.enabled', $request->boolean('ai_agent_translation_enabled'), 'ai', 'boolean');
+        $service->set('ai.agents.documentation.enabled', $request->boolean('ai_agent_documentation_enabled'), 'ai', 'boolean');
+        $service->set('ai.agents.support.enabled', $request->boolean('ai_agent_support_enabled'), 'ai', 'boolean');
 
         return redirect()->route('admin.settings.index')->with('success', 'Settings updated successfully.');
     }

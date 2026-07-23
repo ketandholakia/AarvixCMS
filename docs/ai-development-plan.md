@@ -544,7 +544,7 @@ model policy, budgets, and maximum steps.
 
 #### Scope
 
-- Screenshot analysis.
+- [x] Screenshot analysis.
 - [x] Document OCR and structured extraction.
 - Invoice-field extraction as unverified data.
 - Product/image classification.

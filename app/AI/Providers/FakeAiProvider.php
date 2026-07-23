@@ -108,13 +108,15 @@ class FakeAiProvider implements AiProvider
     {
         $filename = trim((string) ($request->input['media_filename'] ?? 'media item'));
         $mimeType = trim((string) ($request->input['media_mime_type'] ?? 'image/*'));
+        $analysisType = trim((string) ($request->input['analysis_type'] ?? 'vision'));
+        $isScreenshot = $analysisType === 'screenshot';
         $summary = $filename !== ''
-            ? "Vision analysis for {$filename}."
+            ? ($isScreenshot ? "Screenshot analysis for {$filename}." : "Vision analysis for {$filename}.")
             : 'Vision analysis complete.';
         $alt = $filename !== ''
-            ? 'Accessible description for ' . $filename
+            ? ($isScreenshot ? 'Accessible screenshot description for ' . $filename : 'Accessible description for ' . $filename)
             : 'Accessible description for this media item';
-        $caption = 'Generated vision caption for ' . ($filename !== '' ? $filename : 'the media item');
+        $caption = ($isScreenshot ? 'Generated screenshot caption for ' : 'Generated vision caption for ') . ($filename !== '' ? $filename : 'the media item');
 
         return $this->buildSuccessResult('vision', $request, [
             'summary' => $summary,
@@ -123,16 +125,17 @@ class FakeAiProvider implements AiProvider
             'tags' => array_values(array_filter([
                 'vision',
                 'analysis',
+                $isScreenshot ? 'screenshot' : 'image',
                 str_contains($mimeType, '/') ? explode('/', $mimeType, 2)[0] : 'media',
                 str_contains($mimeType, '/') ? explode('/', $mimeType, 2)[1] : 'item',
             ])),
-            'ocr_text' => 'Detected text from ' . ($filename !== '' ? $filename : 'the media item') . '.',
+            'ocr_text' => ($isScreenshot ? 'Detected UI text from ' : 'Detected text from ') . ($filename !== '' ? $filename : 'the media item') . '.',
             'structured_data' => [
                 'filename' => $filename,
                 'mime_type' => $mimeType,
+                'analysis_type' => $analysisType,
                 'width' => $request->input['media_width'] ?? null,
                 'height' => $request->input['media_height'] ?? null,
-                'analysis_type' => $request->input['analysis_type'] ?? 'vision',
             ],
         ]);
     }

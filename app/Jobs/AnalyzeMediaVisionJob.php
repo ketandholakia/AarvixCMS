@@ -23,6 +23,7 @@ class AnalyzeMediaVisionJob implements ShouldQueue
 
     public function __construct(
         public int $mediaId,
+        public string $analysisType = 'vision',
         public ?int $userId = null,
         public ?string $provider = null,
         public ?string $model = null,
@@ -37,10 +38,16 @@ class AnalyzeMediaVisionJob implements ShouldQueue
             throw new RuntimeException('Only image media can be analyzed.');
         }
 
+        $analysisType = $this->normalizeAnalysisType($this->analysisType);
+        $prompt = $analysisType === 'screenshot'
+            ? 'Analyze this screenshot for accessibility, OCR, and interface structure.'
+            : 'Analyze this media for accessibility, OCR, and structured extraction.';
+
         $result = $aiManager->vision(new AiRequestData(
             input: [
-                'prompt' => 'Analyze this media for accessibility, OCR, and structured extraction.',
+                'prompt' => $prompt,
                 'media_id' => $media->id,
+                'analysis_type' => $analysisType,
                 'media_filename' => $media->filename,
                 'media_url' => $media->url,
                 'media_mime_type' => $media->mime_type,
@@ -56,7 +63,7 @@ class AnalyzeMediaVisionJob implements ShouldQueue
             ],
             provider: $this->provider,
             model: $this->model,
-            promptKey: 'ai.vision.media.v1',
+            promptKey: $analysisType === 'screenshot' ? 'ai.vision.screenshot.v1' : 'ai.vision.media.v1',
             feature: 'vision',
         ));
 
@@ -76,7 +83,7 @@ class AnalyzeMediaVisionJob implements ShouldQueue
         AiMediaAnalysis::updateOrCreate(
             [
                 'media_id' => $media->id,
-                'analysis_type' => 'vision',
+                'analysis_type' => $analysisType,
             ],
             [
                 'ai_request_id' => $aiRequestId,
@@ -93,6 +100,11 @@ class AnalyzeMediaVisionJob implements ShouldQueue
                 'analyzed_at' => now(),
             ]
         );
+    }
+
+    protected function normalizeAnalysisType(string $analysisType): string
+    {
+        return in_array($analysisType, ['vision', 'screenshot'], true) ? $analysisType : 'vision';
     }
 
     protected function stringValue(mixed $value): ?string

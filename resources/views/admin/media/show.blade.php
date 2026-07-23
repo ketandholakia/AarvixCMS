@@ -25,8 +25,16 @@
             @if($media->isImage())
                 <form action="{{ route('admin.media.analyze', $media) }}" method="POST">
                     @csrf
+                    <input type="hidden" name="analysis_type" value="vision">
                     <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700">
                         Analyze with AI
+                    </button>
+                </form>
+                <form action="{{ route('admin.media.analyze', $media) }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="analysis_type" value="screenshot">
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-slate-700 text-white hover:bg-slate-800">
+                        Analyze screenshot
                     </button>
                 </form>
             @endif

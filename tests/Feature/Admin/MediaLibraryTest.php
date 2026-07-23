@@ -126,6 +126,39 @@ class MediaLibraryTest extends TestCase
 
         Bus::assertDispatched(AnalyzeMediaVisionJob::class, function (AnalyzeMediaVisionJob $job) use ($media) {
             return $job->mediaId === $media->id
+                && $job->analysisType === 'vision'
+                && $job->provider === 'fake'
+                && $job->model === 'fake-vision';
+        });
+    }
+
+    public function test_admin_can_queue_screenshot_analysis_for_image_media(): void
+    {
+        Bus::fake();
+
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.driver', FakeAiProvider::class);
+
+        $media = Media::create([
+            'disk' => 'public',
+            'path' => 'uploads/screenshot.webp',
+            'filename' => 'screenshot.webp',
+            'mime_type' => 'image/webp',
+            'size' => 2048,
+            'alt_text' => 'Screenshot',
+        ]);
+
+        $response = $this->actingAs($this->admin())->post(route('admin.media.analyze', $media), [
+            'analysis_type' => 'screenshot',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'AI vision analysis has been queued.');
+
+        Bus::assertDispatched(AnalyzeMediaVisionJob::class, function (AnalyzeMediaVisionJob $job) use ($media) {
+            return $job->mediaId === $media->id
+                && $job->analysisType === 'screenshot'
                 && $job->provider === 'fake'
                 && $job->model === 'fake-vision';
         });
@@ -178,7 +211,47 @@ class MediaLibraryTest extends TestCase
         $response->assertOk();
         $response->assertSee('Vision Analysis');
         $response->assertSee('Analyze with AI');
+        $response->assertSee('Analyze screenshot');
         $response->assertSee('Accessible description for vision-target.webp');
         $response->assertSee('Detected text from vision-target.webp.');
+    }
+
+    public function test_screenshot_analysis_job_persists_a_screenshot_specific_record(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.driver', FakeAiProvider::class);
+
+        $media = Media::create([
+            'disk' => 'public',
+            'path' => 'uploads/screenshot-target.webp',
+            'filename' => 'screenshot-target.webp',
+            'mime_type' => 'image/webp',
+            'size' => 4096,
+            'width' => 1440,
+            'height' => 900,
+            'alt_text' => 'Screenshot target',
+            'caption' => 'Screenshot target caption',
+        ]);
+
+        $job = new AnalyzeMediaVisionJob(
+            mediaId: $media->id,
+            analysisType: 'screenshot',
+            userId: $this->admin()->id,
+            provider: 'fake',
+            model: 'fake-vision'
+        );
+
+        app()->call([$job, 'handle']);
+
+        $analysis = AiMediaAnalysis::query()->firstOrFail();
+
+        $this->assertSame('screenshot', $analysis->analysis_type);
+        $this->assertSame('Screenshot analysis for screenshot-target.webp.', $analysis->summary);
+        $this->assertSame('Accessible screenshot description for screenshot-target.webp', $analysis->alt_text);
+        $this->assertSame('Generated screenshot caption for screenshot-target.webp', $analysis->caption);
+        $this->assertSame(['vision', 'analysis', 'screenshot', 'image', 'webp'], $analysis->tags);
+        $this->assertSame('Detected UI text from screenshot-target.webp.', $analysis->ocr_text);
+        $this->assertSame('screenshot', $analysis->structured_data['analysis_type'] ?? null);
     }
 }

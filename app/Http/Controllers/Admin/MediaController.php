@@ -47,9 +47,11 @@ class MediaController extends Controller
         }
 
         $policy->assertEnabled('vision');
+        $analysisType = $request->string('analysis_type')->toString() === 'screenshot' ? 'screenshot' : 'vision';
 
         AnalyzeMediaVisionJob::dispatch(
             mediaId: $media->id,
+            analysisType: $analysisType,
             userId: $request->user()?->id,
             provider: config('ai.default_provider', 'fake'),
             model: data_get(config('ai.models.vision'), 'model', 'fake-vision'),
@@ -60,6 +62,7 @@ class MediaController extends Controller
                 'status' => 'queued',
                 'queue' => config('ai.queue.low', 'ai-low'),
                 'message' => 'AI vision analysis has been queued.',
+                'analysis_type' => $analysisType,
             ], 202);
         }
 

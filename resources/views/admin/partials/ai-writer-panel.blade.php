@@ -58,7 +58,19 @@
             <template x-for="(block, index) in (preview.blocks || [])" :key="index">
                 <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
                     <div class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400" x-text="block.type"></div>
-                    <div class="mt-2 whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200" x-text="block.data?.text || block.data?.code || block.data?.caption || ''"></div>
+                    <template x-if="block.type === 'image'">
+                        <div class="mt-2 space-y-2">
+                            <img
+                                :src="block.data?.file?.url || ''"
+                                :alt="block.data?.alt || block.data?.caption || ''"
+                                class="max-h-64 w-auto rounded-xl border border-gray-200 object-contain dark:border-gray-700"
+                            >
+                            <div class="text-xs text-gray-500 dark:text-gray-400" x-show="block.data?.caption" x-text="block.data?.caption || ''"></div>
+                        </div>
+                    </template>
+                    <template x-if="block.type !== 'image'">
+                        <div class="mt-2 whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200" x-text="block.data?.text || block.data?.code || block.data?.caption || ''"></div>
+                    </template>
                 </div>
             </template>
         </div>

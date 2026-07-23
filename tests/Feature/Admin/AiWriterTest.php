@@ -9,6 +9,7 @@ use App\Models\Post;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ImageBlockAiProvider;
 use Tests\Support\ThrowingAiProvider;
 use Tests\TestCase;
 
@@ -101,6 +102,33 @@ class AiWriterTest extends TestCase
         $response->assertJsonPath('preview.actions.0', 'insert');
         $response->assertSee('Selected sentence only.', false);
         $response->assertDontSee('Whole document text.', false);
+    }
+
+    public function test_admin_can_generate_ai_writer_preview_with_image_blocks(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'image-block');
+        config()->set('ai.providers.image-block.driver', ImageBlockAiProvider::class);
+
+        $post = Post::factory()->create(['author_id' => $this->admin()->id]);
+
+        $response = $this->actingAs($this->admin())->postJson(route('admin.ai.writer.generate'), [
+            'context' => 'post',
+            'record_id' => $post->id,
+            'operation' => 'rewrite',
+            'document' => json_encode([
+                'blocks' => [
+                    ['type' => 'paragraph', 'data' => ['text' => 'Original draft text.']],
+                ],
+            ]),
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('provider', 'image-block');
+        $response->assertJsonPath('preview.blocks.1.type', 'image');
+        $response->assertJsonPath('preview.blocks.1.data.file.url', 'https://cdn.example.test/images/cover.jpg');
+        $response->assertJsonPath('preview.blocks.1.data.caption', 'Cover image');
+        $response->assertJsonPath('preview.blocks.1.data.alt', 'Cover image');
     }
 
     public function test_ai_writer_returns_a_recoverable_json_error_when_the_provider_fails(): void

@@ -105,6 +105,7 @@ class WriterPreview
             $normalizedBlock = match ($type) {
                 'list' => self::normalizeListBlock($data),
                 'header' => self::normalizeHeaderBlock($data),
+                'image' => self::normalizeImageBlock($data),
                 'quote' => self::normalizeQuoteBlock($data),
                 'code' => self::normalizeCodeBlock($data),
                 'delimiter' => ['type' => 'delimiter', 'data' => new \stdClass()],
@@ -207,6 +208,29 @@ class WriterPreview
         ];
     }
 
+    protected static function normalizeImageBlock(array $data): ?array
+    {
+        $url = self::sanitizeUrl($data['file']['url'] ?? null);
+
+        if ($url === '') {
+            return null;
+        }
+
+        return [
+            'type' => 'image',
+            'data' => [
+                'file' => [
+                    'url' => $url,
+                ],
+                'caption' => self::sanitizeText($data['caption'] ?? ''),
+                'alt' => self::sanitizeText($data['alt'] ?? $data['caption'] ?? ''),
+                'withBorder' => ! empty($data['withBorder']),
+                'withBackground' => ! empty($data['withBackground']),
+                'stretched' => ! empty($data['stretched']),
+            ],
+        ];
+    }
+
     protected static function normalizeSeo(mixed $seo): ?array
     {
         if (! is_array($seo)) {
@@ -262,5 +286,20 @@ class WriterPreview
         }
 
         return trim(Str::of($value)->stripTags()->replace(["\r\n", "\r"], "\n")->toString());
+    }
+
+    protected static function sanitizeUrl(mixed $value): string
+    {
+        if (! is_string($value)) {
+            return '';
+        }
+
+        $value = trim($value);
+
+        if ($value === '' || ! preg_match('#^(https?://|/)#i', $value)) {
+            return '';
+        }
+
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
     }
 }

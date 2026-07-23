@@ -48,4 +48,33 @@ class WriterPreviewTest extends TestCase
         $this->assertSame(['warning'], $preview['seo']['warnings']);
         $this->assertSame(40, $preview['seo']['lengths']['meta_title']);
     }
+
+    public function test_image_blocks_are_preserved_and_sanitized(): void
+    {
+        $preview = WriterPreview::fromResponse([
+            'blocks' => [
+                [
+                    'type' => 'image',
+                    'data' => [
+                        'file' => ['url' => 'https://cdn.example.test/images/cover.jpg'],
+                        'caption' => '<b>Cover image</b>',
+                        'alt' => '<b>Cover image</b>',
+                        'withBorder' => true,
+                        'withBackground' => false,
+                        'stretched' => true,
+                    ],
+                ],
+            ],
+        ], 'rewrite', [
+            'plain_text' => 'Fallback content.',
+        ]);
+
+        $this->assertSame('image', $preview['blocks'][0]['type']);
+        $this->assertSame('https://cdn.example.test/images/cover.jpg', $preview['blocks'][0]['data']['file']['url']);
+        $this->assertSame('Cover image', $preview['blocks'][0]['data']['caption']);
+        $this->assertSame('Cover image', $preview['blocks'][0]['data']['alt']);
+        $this->assertTrue($preview['blocks'][0]['data']['withBorder']);
+        $this->assertFalse($preview['blocks'][0]['data']['withBackground']);
+        $this->assertTrue($preview['blocks'][0]['data']['stretched']);
+    }
 }

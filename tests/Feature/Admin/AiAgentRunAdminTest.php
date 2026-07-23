@@ -38,6 +38,11 @@ class AiAgentRunAdminTest extends TestCase
             promptKey: 'ai.agents.documentation.v1',
             tools: ['ai.report'],
             permissions: ['view_ai_usage'],
+            modelPolicy: [
+                'primary' => 'writer',
+                'fallback' => 'chat',
+                'temperature' => 0.4,
+            ],
             budgets: ['max_tokens' => 500, 'max_cost' => '1.00'],
             maxSteps: 2,
             maxSeconds: 30,
@@ -92,6 +97,11 @@ class AiAgentRunAdminTest extends TestCase
             promptKey: 'ai.agents.documentation.v1',
             tools: ['ai.report'],
             permissions: ['view_ai_usage'],
+            modelPolicy: [
+                'primary' => 'writer',
+                'fallback' => 'chat',
+                'temperature' => 0.4,
+            ],
             budgets: ['max_tokens' => 500, 'max_cost' => '1.00'],
             maxSteps: 2,
             maxSeconds: 30,

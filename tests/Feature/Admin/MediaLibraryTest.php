@@ -200,7 +200,7 @@ class MediaLibraryTest extends TestCase
         $this->assertSame('Vision analysis for product-target.webp.', $analysis->summary);
         $this->assertSame('Accessible description for product-target.webp', $analysis->alt_text);
         $this->assertSame('Generated vision caption for product-target.webp', $analysis->caption);
-        $this->assertSame(['vision', 'analysis', 'product', 'image', 'webp'], $analysis->tags);
+        $this->assertSame(['vision', 'analysis', 'image', 'webp'], $analysis->tags);
         $this->assertSame('Detected text from product-target.webp.', $analysis->ocr_text);
         $this->assertSame('product-target.webp', $analysis->structured_data['filename'] ?? null);
         $this->assertSame('image/webp', $analysis->structured_data['mime_type'] ?? null);

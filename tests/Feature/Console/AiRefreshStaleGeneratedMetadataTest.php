@@ -78,7 +78,7 @@ class AiRefreshStaleGeneratedMetadataTest extends TestCase
             ->whereHas('workflow', static function ($query): void {
                 $query->where('key', 'content.publish.seo-review');
             })
-            ->latest('completed_at')
+            ->latest('id')
             ->firstOrFail();
 
         $this->assertSame('succeeded', $latestSeoRun->status);

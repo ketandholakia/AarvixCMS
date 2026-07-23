@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\AI\DTOs\AiRequestData;
 use App\AI\Services\AiManager;
+use App\AI\Services\AiPolicyService;
 use App\AI\Services\ContentEmbeddingService;
 use App\Models\AiWorkflow;
 use App\Models\AiWorkflowRun;
@@ -23,6 +24,10 @@ class WorkflowService
     public function handlePublishedContent(Model $source, ?User $actor = null): ?AiWorkflowRun
     {
         if ((string) ($source->status ?? '') !== 'published') {
+            return null;
+        }
+
+        if (! app(AiPolicyService::class)->isEnabled('writer')) {
             return null;
         }
 
@@ -53,6 +58,10 @@ class WorkflowService
             return [];
         }
 
+        if (! app(AiPolicyService::class)->isEnabled('writer')) {
+            return [];
+        }
+
         $summary = $this->contentEmbeddingService->summarize($source);
         $contentText = trim((string) ($summary['content_text'] ?? ''));
         $fingerprint = $this->workflowFingerprint($source, $summary);
@@ -65,6 +74,10 @@ class WorkflowService
 
     public function handleTranslationRequest(Model $source, string $contentText, array $locales = [], ?User $actor = null): ?AiWorkflowRun
     {
+        if (! app(AiPolicyService::class)->isEnabled('writer')) {
+            return null;
+        }
+
         $contentText = trim($contentText);
 
         if ($contentText === '') {
@@ -86,7 +99,8 @@ class WorkflowService
         }
 
         $summary = $this->contentEmbeddingService->summarize($source);
-        $run = $this->createWorkflowRun($workflow, $source, $actor, $summary, [
+        $fingerprint = $this->translationFingerprint($source, $contentText, $locales);
+        $run = $this->createWorkflowRun($workflow, $source, $actor, $summary, $fingerprint, [
             'content_text' => $contentText,
             'locales' => $locales,
         ]);
@@ -355,8 +369,7 @@ class WorkflowService
             $workflow->version,
             $source::class,
             (string) $source->getKey(),
-            hash('sha256', $contentText),
-            implode(',', $locales),
+            $this->translationFingerprint($source, $contentText, $locales),
         ]));
     }
 
@@ -368,6 +381,19 @@ class WorkflowService
             $source::class,
             (string) $source->getKey(),
             $fingerprint,
+        ]));
+    }
+
+    /**
+     * @param array<int, string> $locales
+     */
+    protected function translationFingerprint(Model $source, string $contentText, array $locales): string
+    {
+        return hash('sha256', implode('|', [
+            $source::class,
+            (string) $source->getKey(),
+            hash('sha256', $contentText),
+            implode(',', $locales),
         ]));
     }
 
@@ -500,6 +526,6 @@ class WorkflowService
             $locales = $supported;
         }
 
-        return array_values(array_unique(array_values(array_intersect($locales, $supported))));
+        return array_values(array_unique(array_values(array_intersect($supported, $locales))));
     }
 }

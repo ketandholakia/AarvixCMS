@@ -94,7 +94,7 @@ class SyncContentEmbeddingsJobTest extends TestCase
         $this->assertSame('public', $embedding->visibility);
         $this->assertSame('succeeded', $embeddingJob->status);
         $this->assertSame('request-embedding-1', $embeddingJob->request_uuid);
-        $this->assertSame($embedding->chunk_hash, $embeddingJob->source_hash);
+        $this->assertSame(hash('sha256', $embedding->chunk_hash), $embeddingJob->source_hash);
         $this->assertGreaterThanOrEqual(2, $embeddingJob->attempts);
 
         $post->delete();
@@ -178,7 +178,7 @@ class SyncContentEmbeddingsJobTest extends TestCase
         $this->assertNotSame($initialEmbedding->chunk_hash, $updatedEmbedding->chunk_hash);
         $this->assertSame('2', $updatedEmbedding->chunker_version);
         $this->assertSame('text-embedding-3-large', $updatedEmbedding->embedding_model);
-        $this->assertSame($updatedEmbedding->chunk_hash, $updatedJob->source_hash);
+        $this->assertSame(hash('sha256', $updatedEmbedding->chunk_hash), $updatedJob->source_hash);
         $this->assertSame('succeeded', $updatedJob->status);
         $this->assertGreaterThanOrEqual($initialJob->attempts + 1, $updatedJob->attempts);
     }

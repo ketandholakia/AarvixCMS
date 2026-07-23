@@ -168,7 +168,7 @@ class AiToolSeeder extends Seeder
                 description: 'Draft SEO metadata for review without applying changes automatically.',
                 category: 'writer',
                 handler: 'proposeSeoMetadata',
-                requiredPermission: 'edit_posts',
+                requiredPermission: 'use_ai_writer',
                 confirmationPolicy: 'review',
                 riskClassification: 'write',
                 inputSchema: [

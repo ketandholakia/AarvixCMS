@@ -8,6 +8,7 @@ use App\Services\ThemeManager;
 use App\Services\ThemeSettingsService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class ThemeController extends Controller
@@ -117,7 +118,20 @@ class ThemeController extends Controller
             }
         }
 
-        $data = $request->validate($rules);
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'errors' => $validator->errors()->toArray(),
+                ], 422);
+            }
+
+            throw ValidationException::withMessages($validator->errors()->toArray());
+        }
+
+        $data = $validator->validated();
 
         foreach ($settingsSchema as $field) {
             $key = $field['key'] ?? null;

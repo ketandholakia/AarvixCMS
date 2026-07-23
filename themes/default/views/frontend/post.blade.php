@@ -77,6 +77,7 @@
         </div>
     @endif
     
+    @php($model = $post)
     @themePart('comments')
 </article>
 @endsection

@@ -49,13 +49,15 @@ class AiAgentRegistryServiceTest extends TestCase
 
     public function test_it_respects_runtime_disable_overrides(): void
     {
-        config()->set('ai.agents.support', [
-            'version' => 1,
-            'name' => 'Support Agent',
-            'prompt' => 'ai.agents.support.v1',
-            'tools' => ['content.search'],
-            'permissions' => [],
-            'is_enabled' => true,
+        config()->set('ai.agents', [
+            'support' => [
+                'version' => 1,
+                'name' => 'Support Agent',
+                'prompt' => 'ai.agents.support.v1',
+                'tools' => ['content.search'],
+                'permissions' => [],
+                'is_enabled' => true,
+            ],
         ]);
 
         $settings = new class extends SettingService

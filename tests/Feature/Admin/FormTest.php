@@ -17,7 +17,7 @@ class FormTest extends TestCase
     {
         $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
         $admin = User::factory()->create(['is_active' => true]);
-        $admin->roles()->attach(Role::where('slug', 'admin')->first());
+        $admin->roles()->attach(Role::where('name', 'Admin')->first());
         return $admin;
     }
 

@@ -30,7 +30,7 @@ class RagEvaluationServiceTest extends TestCase
         $this->assertSame(2, $report['case_count']);
         $this->assertGreaterThan(0.0, $report['recall']);
         $this->assertGreaterThan(0.0, $report['citation_correctness']);
-        $this->assertSame(1.0, $report['injection_safety']);
+        $this->assertEquals(1.0, $report['injection_safety']);
         $this->assertCount(2, $report['cases']);
     }
 }

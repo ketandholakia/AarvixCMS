@@ -92,6 +92,7 @@ class RetrievalServiceTest extends TestCase
         $privatePage = Page::withoutEvents(function () {
             return Page::factory()->create([
                 'title' => 'Incident response',
+                'slug' => 'incident-response',
                 'body' => json_encode([
                     'blocks' => [
                         ['type' => 'paragraph', 'data' => ['text' => 'Private incident response plan and contacts.']],

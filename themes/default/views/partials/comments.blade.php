@@ -1,3 +1,11 @@
+@php
+    $model = $model ?? $post ?? $page ?? $entry ?? null;
+
+    if (! $model) {
+        return;
+    }
+@endphp
+
 <div class="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800" id="comments">
     <h3 class="text-2xl font-heading font-bold text-gray-900 dark:text-white mb-8">Comments</h3>
 

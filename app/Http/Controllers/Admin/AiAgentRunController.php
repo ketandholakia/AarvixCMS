@@ -6,11 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\AiAgentRun;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class AiAgentRunController extends Controller
 {
-    public function index(Request $request): View|StreamedResponse
+    public function index(Request $request): View|Response
     {
         $query = AiAgentRun::query()
             ->with(['actor'])
@@ -42,7 +42,7 @@ class AiAgentRunController extends Controller
         ]);
     }
 
-    protected function exportCsv(iterable $runs): StreamedResponse
+    protected function exportCsv(iterable $runs): Response
     {
         $handle = fopen('php://temp', 'r+');
 
@@ -84,12 +84,9 @@ class AiAgentRunController extends Controller
         $csv = (string) stream_get_contents($handle);
         fclose($handle);
 
-        return response()->streamDownload(
-            static function () use ($csv): void {
-                echo $csv;
-            },
-            'ai-agent-runs-' . now()->format('Y-m-d-His') . '.csv',
-            ['Content-Type' => 'text/csv']
-        );
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="ai-agent-runs-' . now()->format('Y-m-d-His') . '.csv"',
+        ]);
     }
 }

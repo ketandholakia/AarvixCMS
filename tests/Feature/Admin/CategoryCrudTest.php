@@ -17,7 +17,7 @@ class CategoryCrudTest extends TestCase
         $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
         
         $admin = User::factory()->create(['is_active' => true]);
-        $adminRole = Role::where('slug', 'admin')->first();
+        $adminRole = Role::where('name', 'Admin')->first();
         $admin->roles()->attach($adminRole);
 
         return $admin;

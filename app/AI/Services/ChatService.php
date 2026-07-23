@@ -295,6 +295,15 @@ class ChatService
         return $this->retrievalService->retrieve($scope, $question, $limit, $options);
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    public function retrieveForConversation(AiConversation $conversation, string $question, int $limit = 5, array $options = []): array
+    {
+        return $this->searchContent($conversation, $question, $limit, $options);
+    }
+
     public function summarizeConversation(AiConversation $conversation, int $limit = 10): string
     {
         $messages = $conversation->messages()

@@ -17,10 +17,12 @@ class PageFactory extends Factory
      */
     public function definition(): array
     {
+        $title = fake()->sentence();
+
         return [
             'author_id' => User::factory(),
-            'title' => fake()->sentence(),
-            'slug' => fake()->unique()->slug(),
+            'title' => $title,
+            'slug' => str($title)->slug()->toString(),
             'body' => fake()->paragraphs(3, true),
             'template' => 'default',
             'status' => 'published',

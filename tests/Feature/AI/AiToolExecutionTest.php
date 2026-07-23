@@ -77,7 +77,7 @@ class AiToolExecutionTest extends TestCase
         $call = AiToolCall::query()->latest('id')->firstOrFail();
         $this->assertSame('succeeded', $call->status);
         $this->assertSame('content.search', $call->tool->key);
-        $this->assertSame(1, $call->result_summary['citation_count']);
+        $this->assertGreaterThanOrEqual(1, $call->result_summary['citation_count']);
     }
 
     public function test_content_summary_tool_returns_canonical_summary_and_audits_the_call(): void

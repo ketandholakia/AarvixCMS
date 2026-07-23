@@ -110,6 +110,7 @@ class FakeAiProvider implements AiProvider
         $mimeType = trim((string) ($request->input['media_mime_type'] ?? 'image/*'));
         $analysisType = trim((string) ($request->input['analysis_type'] ?? 'vision'));
         $isScreenshot = $analysisType === 'screenshot';
+        $classification = $this->buildClassification($filename, $analysisType, $mimeType);
         $summary = $filename !== ''
             ? ($isScreenshot ? "Screenshot analysis for {$filename}." : "Vision analysis for {$filename}.")
             : 'Vision analysis complete.';
@@ -130,12 +131,14 @@ class FakeAiProvider implements AiProvider
                 str_contains($mimeType, '/') ? explode('/', $mimeType, 2)[1] : 'item',
             ])),
             'ocr_text' => ($isScreenshot ? 'Detected UI text from ' : 'Detected text from ') . ($filename !== '' ? $filename : 'the media item') . '.',
+            'classification' => $classification,
             'structured_data' => [
                 'filename' => $filename,
                 'mime_type' => $mimeType,
                 'analysis_type' => $analysisType,
                 'width' => $request->input['media_width'] ?? null,
                 'height' => $request->input['media_height'] ?? null,
+                'classification' => $classification,
             ],
         ]);
     }
@@ -338,5 +341,30 @@ class FakeAiProvider implements AiProvider
         }
 
         return $translations;
+    }
+
+    protected function buildClassification(string $filename, string $analysisType, string $mimeType): array
+    {
+        $lowerFilename = strtolower($filename);
+        $label = match (true) {
+            $analysisType === 'screenshot' => 'screenshot',
+            str_contains($lowerFilename, 'product') => 'product',
+            str_contains($lowerFilename, 'catalog') => 'product',
+            str_contains($lowerFilename, 'shop') => 'product',
+            str_contains($lowerFilename, 'ui') => 'screenshot',
+            default => 'image',
+        };
+
+        $confidence = match ($label) {
+            'product' => 0.94,
+            'screenshot' => 0.97,
+            default => 0.88,
+        };
+
+        return [
+            'label' => $label,
+            'confidence' => $confidence,
+            'mime_type' => $mimeType,
+        ];
     }
 }

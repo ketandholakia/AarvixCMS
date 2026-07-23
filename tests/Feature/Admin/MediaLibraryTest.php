@@ -172,14 +172,14 @@ class MediaLibraryTest extends TestCase
 
         $media = Media::create([
             'disk' => 'public',
-            'path' => 'uploads/vision-target.webp',
-            'filename' => 'vision-target.webp',
+            'path' => 'uploads/product-target.webp',
+            'filename' => 'product-target.webp',
             'mime_type' => 'image/webp',
             'size' => 4096,
             'width' => 1200,
             'height' => 800,
-            'alt_text' => 'Vision target',
-            'caption' => 'Vision target caption',
+            'alt_text' => 'Product target',
+            'caption' => 'Product target caption',
         ]);
 
         $job = new AnalyzeMediaVisionJob(
@@ -197,13 +197,15 @@ class MediaLibraryTest extends TestCase
         $this->assertSame('vision', $analysis->analysis_type);
         $this->assertSame('fake', $analysis->provider);
         $this->assertSame('fake-vision', $analysis->model);
-        $this->assertSame('Vision analysis for vision-target.webp.', $analysis->summary);
-        $this->assertSame('Accessible description for vision-target.webp', $analysis->alt_text);
-        $this->assertSame('Generated vision caption for vision-target.webp', $analysis->caption);
-        $this->assertSame(['vision', 'analysis', 'image', 'webp'], $analysis->tags);
-        $this->assertSame('Detected text from vision-target.webp.', $analysis->ocr_text);
-        $this->assertSame('vision-target.webp', $analysis->structured_data['filename'] ?? null);
+        $this->assertSame('Vision analysis for product-target.webp.', $analysis->summary);
+        $this->assertSame('Accessible description for product-target.webp', $analysis->alt_text);
+        $this->assertSame('Generated vision caption for product-target.webp', $analysis->caption);
+        $this->assertSame(['vision', 'analysis', 'product', 'image', 'webp'], $analysis->tags);
+        $this->assertSame('Detected text from product-target.webp.', $analysis->ocr_text);
+        $this->assertSame('product-target.webp', $analysis->structured_data['filename'] ?? null);
         $this->assertSame('image/webp', $analysis->structured_data['mime_type'] ?? null);
+        $this->assertSame('product', $analysis->structured_data['classification']['label'] ?? null);
+        $this->assertSame(0.94, $analysis->structured_data['classification']['confidence'] ?? null);
         $this->assertSame(hash('sha256', 'Analyze this media for accessibility, OCR, and structured extraction.'), $analysis->prompt_hash);
         $this->assertNotNull($analysis->analyzed_at);
 
@@ -212,8 +214,11 @@ class MediaLibraryTest extends TestCase
         $response->assertSee('Vision Analysis');
         $response->assertSee('Analyze with AI');
         $response->assertSee('Analyze screenshot');
-        $response->assertSee('Accessible description for vision-target.webp');
-        $response->assertSee('Detected text from vision-target.webp.');
+        $response->assertSee('Accessible description for product-target.webp');
+        $response->assertSee('Detected text from product-target.webp.');
+        $response->assertSee('Classification');
+        $response->assertSee('product');
+        $response->assertSee('94.0%');
     }
 
     public function test_screenshot_analysis_job_persists_a_screenshot_specific_record(): void
@@ -253,5 +258,7 @@ class MediaLibraryTest extends TestCase
         $this->assertSame(['vision', 'analysis', 'screenshot', 'image', 'webp'], $analysis->tags);
         $this->assertSame('Detected UI text from screenshot-target.webp.', $analysis->ocr_text);
         $this->assertSame('screenshot', $analysis->structured_data['analysis_type'] ?? null);
+        $this->assertSame('screenshot', $analysis->structured_data['classification']['label'] ?? null);
+        $this->assertSame(0.97, $analysis->structured_data['classification']['confidence'] ?? null);
     }
 }

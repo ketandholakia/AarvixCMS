@@ -547,7 +547,7 @@ model policy, budgets, and maximum steps.
 - [x] Screenshot analysis.
 - [x] Document OCR and structured extraction.
 - Invoice-field extraction as unverified data.
-- Product/image classification.
+- [x] Product/image classification.
 - Image moderation support.
 - [x] Accessibility checks and alt-text suggestions.
 

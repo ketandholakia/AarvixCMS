@@ -231,6 +231,19 @@
                                 <p class="mt-1 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{{ $media->aiVisionAnalysis->ocr_text }}</p>
                             </div>
                         @endif
+                        @if(! empty($media->aiVisionAnalysis->structured_data['classification'] ?? null))
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Classification</p>
+                                <div class="mt-1 text-sm text-gray-800 dark:text-gray-200">
+                                    <p class="font-medium">{{ $media->aiVisionAnalysis->structured_data['classification']['label'] ?? 'n/a' }}</p>
+                                    @if(isset($media->aiVisionAnalysis->structured_data['classification']['confidence']))
+                                        <p class="text-gray-500 dark:text-gray-400">
+                                            Confidence: {{ number_format(((float) $media->aiVisionAnalysis->structured_data['classification']['confidence']) * 100, 1) }}%
+                                        </p>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
                         @if(! empty($media->aiVisionAnalysis->structured_data))
                             <div>
                                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Structured data</p>

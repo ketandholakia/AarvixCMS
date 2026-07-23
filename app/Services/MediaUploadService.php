@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AiImageAsset;
 use App\Models\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -44,6 +45,22 @@ class MediaUploadService
             'mime_type' => 'image/webp',
             'size' => Storage::disk($disk)->size($fullPath),
             'alt_text' => $originalName,
+        ]);
+    }
+
+    public function createAiImageAsset(Media $media, array $attributes): AiImageAsset
+    {
+        return $media->aiImageAsset()->create([
+            'source_media_id' => $attributes['source_media_id'] ?? null,
+            'ai_request_id' => $attributes['ai_request_id'] ?? null,
+            'provider' => $attributes['provider'],
+            'model' => $attributes['model'],
+            'operation' => $attributes['operation'],
+            'prompt_hash' => $attributes['prompt_hash'],
+            'resolution' => $attributes['resolution'] ?? null,
+            'seed' => $attributes['seed'] ?? null,
+            'estimated_cost' => $attributes['estimated_cost'] ?? 0,
+            'metadata' => $attributes['metadata'] ?? null,
         ]);
     }
 }

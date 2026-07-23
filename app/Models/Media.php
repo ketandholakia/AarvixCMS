@@ -28,6 +28,11 @@ class Media extends Model
 
     protected $appends = ['url', 'human_size'];
 
+    public function aiImageAsset()
+    {
+        return $this->hasOne(AiImageAsset::class);
+    }
+
     /**
      * Get the public URL of the media file.
      */

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\AI\Services\AiPolicyService;
 use App\Http\Controllers\Controller;
+use App\Jobs\AnalyzeMediaVisionJob;
 use App\Models\Media;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -32,9 +35,35 @@ class MediaController extends Controller
 
     public function show(string $id)
     {
-        $media = Media::with('aiImageAsset')->findOrFail($id);
+        $media = Media::with(['aiImageAsset', 'aiVisionAnalysis'])->findOrFail($id);
 
         return view('admin.media.show', compact('media'));
+    }
+
+    public function analyze(Request $request, Media $media, AiPolicyService $policy): JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if (! $media->isImage()) {
+            abort(422, 'Only image media can be analyzed.');
+        }
+
+        $policy->assertEnabled('vision');
+
+        AnalyzeMediaVisionJob::dispatch(
+            mediaId: $media->id,
+            userId: $request->user()?->id,
+            provider: config('ai.default_provider', 'fake'),
+            model: data_get(config('ai.models.vision'), 'model', 'fake-vision'),
+        )->onQueue(config('ai.queue.low', 'ai-low'));
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => 'queued',
+                'queue' => config('ai.queue.low', 'ai-low'),
+                'message' => 'AI vision analysis has been queued.',
+            ], 202);
+        }
+
+        return back()->with('success', 'AI vision analysis has been queued.');
     }
 
     public function store(Request $request)

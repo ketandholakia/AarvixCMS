@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
 class Media extends Model
@@ -31,6 +32,12 @@ class Media extends Model
     public function aiImageAsset()
     {
         return $this->hasOne(AiImageAsset::class);
+    }
+
+    public function aiVisionAnalysis(): HasOne
+    {
+        return $this->hasOne(AiMediaAnalysis::class)
+            ->latestOfMany();
     }
 
     /**

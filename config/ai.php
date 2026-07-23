@@ -72,6 +72,10 @@ return [
             'provider' => 'fake',
             'model' => 'fake-chat',
         ],
+        'vision' => [
+            'provider' => 'fake',
+            'model' => 'fake-vision',
+        ],
     ],
 
     'agents' => [

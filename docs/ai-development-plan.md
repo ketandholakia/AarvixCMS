@@ -545,11 +545,11 @@ model policy, budgets, and maximum steps.
 #### Scope
 
 - Screenshot analysis.
-- Document OCR and structured extraction.
+- [x] Document OCR and structured extraction.
 - Invoice-field extraction as unverified data.
 - Product/image classification.
 - Image moderation support.
-- Accessibility checks and alt-text suggestions.
+- [x] Accessibility checks and alt-text suggestions.
 
 High-impact extracted fields require confidence display and human verification.
 Uploaded documents must follow file validation, malware-scanning policy, page limits,

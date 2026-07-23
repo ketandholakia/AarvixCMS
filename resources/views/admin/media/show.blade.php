@@ -22,6 +22,14 @@
             <a href="{{ route('admin.media.index') }}" class="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">
                 Back to media
             </a>
+            @if($media->isImage())
+                <form action="{{ route('admin.media.analyze', $media) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700">
+                        Analyze with AI
+                    </button>
+                </form>
+            @endif
             <a href="{{ $media->url }}" target="_blank" class="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700">
                 View file
             </a>
@@ -157,6 +165,78 @@
                 @else
                     <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
                         This media item does not have AI provenance attached.
+                    </p>
+                @endif
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Vision Analysis</h3>
+
+                @if($media->aiVisionAnalysis)
+                    <dl class="mt-4 space-y-3 text-sm">
+                        <div class="flex items-center justify-between gap-4">
+                            <dt class="text-gray-500 dark:text-gray-400">Type</dt>
+                            <dd class="font-medium text-gray-900 dark:text-white">{{ $media->aiVisionAnalysis->analysis_type }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-4">
+                            <dt class="text-gray-500 dark:text-gray-400">Provider</dt>
+                            <dd class="font-medium text-gray-900 dark:text-white">{{ $media->aiVisionAnalysis->provider }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-4">
+                            <dt class="text-gray-500 dark:text-gray-400">Model</dt>
+                            <dd class="font-medium text-gray-900 dark:text-white">{{ $media->aiVisionAnalysis->model }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-4">
+                            <dt class="text-gray-500 dark:text-gray-400">Analyzed</dt>
+                            <dd class="font-medium text-gray-900 dark:text-white">{{ optional($media->aiVisionAnalysis->analyzed_at)->format('Y-m-d H:i') ?? 'n/a' }}</dd>
+                        </div>
+                    </dl>
+
+                    <div class="mt-6 space-y-4">
+                        @if($media->aiVisionAnalysis->summary)
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Summary</p>
+                                <p class="mt-1 text-sm text-gray-800 dark:text-gray-200">{{ $media->aiVisionAnalysis->summary }}</p>
+                            </div>
+                        @endif
+                        @if($media->aiVisionAnalysis->alt_text)
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Suggested alt text</p>
+                                <p class="mt-1 text-sm text-gray-800 dark:text-gray-200">{{ $media->aiVisionAnalysis->alt_text }}</p>
+                            </div>
+                        @endif
+                        @if($media->aiVisionAnalysis->caption)
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Suggested caption</p>
+                                <p class="mt-1 text-sm text-gray-800 dark:text-gray-200">{{ $media->aiVisionAnalysis->caption }}</p>
+                            </div>
+                        @endif
+                        @if(! empty($media->aiVisionAnalysis->tags))
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tags</p>
+                                <p class="mt-1 text-sm text-gray-800 dark:text-gray-200">{{ implode(', ', $media->aiVisionAnalysis->tags) }}</p>
+                            </div>
+                        @endif
+                        @if($media->aiVisionAnalysis->ocr_text)
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">OCR text</p>
+                                <p class="mt-1 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{{ $media->aiVisionAnalysis->ocr_text }}</p>
+                            </div>
+                        @endif
+                        @if(! empty($media->aiVisionAnalysis->structured_data))
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Structured data</p>
+                                <pre class="mt-1 overflow-x-auto rounded-lg bg-gray-950 p-3 text-[11px] leading-5 text-gray-100">{{ json_encode($media->aiVisionAnalysis->structured_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                            </div>
+                        @endif
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Prompt hash</p>
+                            <p class="mt-1 font-mono text-xs text-gray-700 dark:text-gray-300 break-all">{{ $media->aiVisionAnalysis->prompt_hash }}</p>
+                        </div>
+                    </div>
+                @else
+                    <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                        No vision analysis has been queued for this media item yet.
                     </p>
                 @endif
             </div>

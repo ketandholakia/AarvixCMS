@@ -3,10 +3,14 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\AiImageAsset;
+use App\Models\AiMediaAnalysis;
 use App\Models\Media;
 use App\Models\Role;
 use App\Models\User;
+use App\Jobs\AnalyzeMediaVisionJob;
+use App\AI\Providers\FakeAiProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Tests\TestCase;
 
 class MediaLibraryTest extends TestCase
@@ -96,5 +100,85 @@ class MediaLibraryTest extends TestCase
         $response->assertSee('detail, ai');
         $response->assertSee('Detail OCR text.');
         $response->assertSee(hash('sha256', 'detail prompt'));
+    }
+
+    public function test_admin_can_queue_vision_analysis_for_image_media(): void
+    {
+        Bus::fake();
+
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.driver', FakeAiProvider::class);
+
+        $media = Media::create([
+            'disk' => 'public',
+            'path' => 'uploads/analyze-me.webp',
+            'filename' => 'analyze-me.webp',
+            'mime_type' => 'image/webp',
+            'size' => 2048,
+            'alt_text' => 'Analyze me',
+        ]);
+
+        $response = $this->actingAs($this->admin())->post(route('admin.media.analyze', $media));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'AI vision analysis has been queued.');
+
+        Bus::assertDispatched(AnalyzeMediaVisionJob::class, function (AnalyzeMediaVisionJob $job) use ($media) {
+            return $job->mediaId === $media->id
+                && $job->provider === 'fake'
+                && $job->model === 'fake-vision';
+        });
+    }
+
+    public function test_vision_analysis_job_persists_a_structured_analysis_record(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.driver', FakeAiProvider::class);
+
+        $media = Media::create([
+            'disk' => 'public',
+            'path' => 'uploads/vision-target.webp',
+            'filename' => 'vision-target.webp',
+            'mime_type' => 'image/webp',
+            'size' => 4096,
+            'width' => 1200,
+            'height' => 800,
+            'alt_text' => 'Vision target',
+            'caption' => 'Vision target caption',
+        ]);
+
+        $job = new AnalyzeMediaVisionJob(
+            mediaId: $media->id,
+            userId: $this->admin()->id,
+            provider: 'fake',
+            model: 'fake-vision'
+        );
+
+        app()->call([$job, 'handle']);
+
+        $analysis = AiMediaAnalysis::query()->firstOrFail();
+
+        $this->assertSame($media->id, $analysis->media_id);
+        $this->assertSame('vision', $analysis->analysis_type);
+        $this->assertSame('fake', $analysis->provider);
+        $this->assertSame('fake-vision', $analysis->model);
+        $this->assertSame('Vision analysis for vision-target.webp.', $analysis->summary);
+        $this->assertSame('Accessible description for vision-target.webp', $analysis->alt_text);
+        $this->assertSame('Generated vision caption for vision-target.webp', $analysis->caption);
+        $this->assertSame(['vision', 'analysis', 'image', 'webp'], $analysis->tags);
+        $this->assertSame('Detected text from vision-target.webp.', $analysis->ocr_text);
+        $this->assertSame('vision-target.webp', $analysis->structured_data['filename'] ?? null);
+        $this->assertSame('image/webp', $analysis->structured_data['mime_type'] ?? null);
+        $this->assertSame(hash('sha256', 'Analyze this media for accessibility, OCR, and structured extraction.'), $analysis->prompt_hash);
+        $this->assertNotNull($analysis->analyzed_at);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.media.show', $media));
+        $response->assertOk();
+        $response->assertSee('Vision Analysis');
+        $response->assertSee('Analyze with AI');
+        $response->assertSee('Accessible description for vision-target.webp');
+        $response->assertSee('Detected text from vision-target.webp.');
     }
 }

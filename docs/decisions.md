@@ -194,3 +194,112 @@ When `pestphp/pest-plugin-laravel` releases a version requiring `laravel/framewo
 composer require pestphp/pest pestphp/pest-plugin-laravel --dev
 ```
 Existing PHPUnit tests are compatible with Pest after running `php artisan pest:install`.
+
+---
+
+## ADR-010: AI Provider Boundary - Internal Contracts First
+
+**Date:** 2026-07-23
+**Status:** Accepted
+
+### Context
+The AI roadmap needs a provider-neutral architecture that can support text, image,
+embedding, and future tool-capable workflows without controller code depending on
+vendor-specific SDK classes.
+
+### Decision
+Keep Aarvix's own `App\AI` contracts, DTOs, and services as the application-facing
+API. Provider-specific SDKs or HTTP clients may be wrapped behind those contracts,
+but the app will not depend on a generic third-party AI orchestration layer for v1.
+
+### Rationale
+- The current `AiManager` and `FakeAiProvider` already give us a stable boundary.
+- Direct contracts make capability checks, usage logging, and tests predictable.
+- A wrapper layer keeps provider fallback and future adapter swaps isolated.
+- Avoids importing an orchestration dependency before the provider mix is proven.
+
+### Alternatives Considered
+- Adopt a third-party AI orchestration package: rejected until a concrete need
+  appears and it proves compatible with Laravel 13, fakes, streaming, and usage logs.
+- Call provider SDKs directly from controllers: rejected because it couples UI code
+  to provider quirks and makes testing and failover harder.
+
+---
+
+## ADR-011: AI Scope and Tenancy - Single Site First
+
+**Date:** 2026-07-23
+**Status:** Accepted
+
+### Context
+The roadmap calls for tenant-aware AI scopes, but the CMS is currently a single-site
+application and has no real tenant ownership model in the data schema.
+
+### Decision
+Model AI authorization and filtering around an optional `AiScope` value object, but
+treat the current site as the only scope for v1. Do not add `tenant_id` columns or
+tenant-specific policies until a real multi-site or tenant ownership model exists.
+
+### Rationale
+- Prevents decorative tenancy columns that will be wrong later.
+- Keeps the public API ready for future scope expansion without forcing schema churn.
+- Matches the current product shape and the existing admin authorization model.
+
+### Alternatives Considered
+- Add tenant columns now: rejected because there is no owning tenant model.
+- Ignore scope entirely: rejected because future retrieval and tool authorization need
+  an explicit place to carry content boundaries.
+
+---
+
+## ADR-012: Vector Store Strategy - Benchmark Before Choosing
+
+**Date:** 2026-07-23
+**Status:** Accepted
+
+### Context
+Phase 3 depends on a vector store, but the deployment target is WAMP and the stack
+must remain compatible with MySQL/MariaDB before any platform expansion is justified.
+
+### Decision
+Keep the `VectorStore` contract abstract for now. Before Phase 3, benchmark a
+MySQL/MariaDB-compatible option, a dedicated vector/search service, and PostgreSQL
+with pgvector. Do not require PostgreSQL in the application baseline until the
+benchmark results justify it.
+
+### Rationale
+- Preserves the WAMP deployment target.
+- Lets retrieval code stay storage-agnostic until a real benchmark is available.
+- Avoids locking the CMS to a database change that has not been justified by data.
+
+### Alternatives Considered
+- Commit to pgvector now: rejected because it expands the platform dependency set.
+- Commit to a dedicated vector service now: rejected until throughput, filtering,
+  backup, and ops cost are measured against the other options.
+
+---
+
+## ADR-013: AI Cost Source - Provider Usage First, Estimated Cost Second
+
+**Date:** 2026-07-23
+**Status:** Accepted
+
+### Context
+AI requests need a cost number for limits, reporting, and diagnostics, but provider
+responses vary in how much usage data they expose.
+
+### Decision
+Record provider-reported usage whenever the provider supplies it. If the provider
+does not return usable pricing data, compute an estimated cost from stored model
+pricing metadata. Persist costs as decimal strings, never floating-point values.
+
+### Rationale
+- Provider-reported usage is the most accurate source when available.
+- Estimated cost keeps reporting and budget enforcement working for providers that
+  do not expose full billing details.
+- Decimal strings avoid rounding drift in budget calculations.
+
+### Alternatives Considered
+- Store only provider billing totals: rejected because some adapters will not expose
+  them consistently.
+- Store floats: rejected because money math needs deterministic decimal handling.

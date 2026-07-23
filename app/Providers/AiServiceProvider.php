@@ -10,6 +10,7 @@ use App\AI\Services\ContentEmbeddingService;
 use App\AI\Services\ContentEmbeddingSourceResolver;
 use App\AI\Services\PromptService;
 use App\AI\Services\RetrievalService;
+use App\AI\Services\ChatService;
 use App\AI\Services\TextEmbeddingService;
 use App\AI\Services\VectorStoreBenchmarkService;
 use App\AI\Services\UsageService;
@@ -42,6 +43,7 @@ class AiServiceProvider extends ServiceProvider
         $this->app->singleton(ContentEmbeddingSourceResolver::class);
         $this->app->singleton(TextEmbeddingService::class);
         $this->app->singleton(RetrievalService::class);
+        $this->app->singleton(ChatService::class);
         $this->app->singleton(VectorStoreBenchmarkService::class);
         $this->app->singleton(VectorStore::class, function ($app) {
             $driver = config('ai.vector_store.driver', InMemoryVectorStore::class);

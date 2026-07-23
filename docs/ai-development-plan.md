@@ -433,6 +433,8 @@ Chat is read-only in this phase. Requests such as "find my article" may return l
 but requests such as "update this article" cannot mutate content until the tool
 framework and approval flow ship.
 
+- [x] Add conversation and message persistence models and a transcript service for Phase 4 chat history.
+
 #### Acceptance criteria
 
 - Every retrieval turn repeats authorization; access is not inherited from old context.

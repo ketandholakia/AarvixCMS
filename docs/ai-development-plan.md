@@ -488,6 +488,7 @@ Each step declares whether it drafts, proposes, or applies a change.
 - [x] Create `ai_tools` and `ai_tool_calls` tables, models, and a permission-aware registry service.
 - [x] Seed the first read-only and review-required tool definitions.
 - [x] Implement the first executable tool: authorized content search with audit logging.
+- [x] Implement `content.summary` and an approval flow for review-required tools such as `seo.propose`.
 
 Each tool declares:
 

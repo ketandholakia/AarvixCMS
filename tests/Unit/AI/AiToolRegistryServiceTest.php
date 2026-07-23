@@ -49,7 +49,7 @@ class AiToolRegistryServiceTest extends TestCase
             ['request_uuid' => 'request-123'],
         );
 
-        $this->assertSame('pending', $call->status);
+        $this->assertSame('awaiting_approval', $call->status);
         $this->assertSame('pending', $call->approval_state);
         $this->assertSame('request-123', $call->request_uuid);
         $this->assertSame('Example article', $call->input_payload['title']);

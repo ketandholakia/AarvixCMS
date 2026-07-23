@@ -9,6 +9,7 @@ use App\Traits\HasSlug;
 use App\Traits\HasRevisions;
 use App\Jobs\SyncContentEmbeddingsJob;
 use App\Models\ContentEmbedding;
+use App\AI\Contracts\VectorStore;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -67,6 +68,19 @@ class Page extends Model
         static::deleted(function ($page) {
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/' . $page->slug)));
             app(\App\Services\WebhookService::class)->dispatch('page.deleted', ['id' => $page->id, 'slug' => $page->slug]);
+
+            $vectorIds = ContentEmbedding::query()
+                ->where('source_type', $page::class)
+                ->where('source_id', $page->id)
+                ->pluck('vector_id')
+                ->filter()
+                ->map(static fn ($vectorId) => (string) $vectorId)
+                ->values()
+                ->all();
+
+            if ($vectorIds !== []) {
+                app(VectorStore::class)->delete((string) config('ai.vector_store.collection', 'content_embeddings'), $vectorIds);
+            }
 
             ContentEmbedding::query()
                 ->where('source_type', $page::class)

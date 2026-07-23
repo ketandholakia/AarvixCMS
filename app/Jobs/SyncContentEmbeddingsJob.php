@@ -2,7 +2,9 @@
 
 namespace App\Jobs;
 
+use App\AI\Contracts\VectorStore;
 use App\AI\Services\ContentEmbeddingSourceResolver;
+use App\AI\Services\TextEmbeddingService;
 use App\Models\AiEmbeddingJob;
 use App\Models\ContentEmbedding;
 use App\Models\Entry;
@@ -33,6 +35,11 @@ class SyncContentEmbeddingsJob implements ShouldQueue
 
     public function handle(ContentEmbeddingSourceResolver $resolver): void
     {
+        /** @var VectorStore $vectorStore */
+        $vectorStore = app(VectorStore::class);
+        /** @var TextEmbeddingService $embeddingService */
+        $embeddingService = app(TextEmbeddingService::class);
+
         $source = $this->resolveSource();
         $requestUuid = $this->requestUuid ?? (string) Str::uuid();
         $job = AiEmbeddingJob::query()->firstOrCreate(
@@ -67,19 +74,33 @@ class SyncContentEmbeddingsJob implements ShouldQueue
                 throw new RuntimeException('Embedding source produced no content hash.');
             }
 
-            if ($job->source_hash === $sourceHash && $job->status === 'succeeded' && $this->allChunksIndexed($summaries)) {
-                return;
-            }
-
             $completedChunkIndices = [];
+            $collection = (string) config('ai.vector_store.collection', 'content_embeddings');
 
             foreach ($summaries as $summary) {
                 $chunkIndex = (int) ($summary['chunk_index'] ?? 0);
                 $chunkHash = (string) ($summary['chunk_hash'] ?? '');
-
                 if ($chunkHash === '') {
                     throw new RuntimeException('Embedding source produced no chunk hash.');
                 }
+
+                $contentText = (string) ($summary['content_text'] ?? '');
+                $vector = $embeddingService->vectorize($contentText);
+                $vectorId = $this->vectorId($chunkIndex);
+                $vectorStoreName = $vectorStore->name();
+                $metadata = array_merge((array) ($summary['metadata'] ?? []), [
+                    'source_type' => $this->sourceType,
+                    'source_id' => $this->sourceId,
+                    'chunk_index' => $chunkIndex,
+                    'chunk_hash' => $chunkHash,
+                    'visibility' => (string) ($summary['visibility'] ?? 'private'),
+                ]);
+                $vectorStore->upsert($collection, [[
+                    'id' => $vectorId,
+                    'vector' => $vector,
+                    'metadata' => $metadata,
+                    'text' => $contentText,
+                ]]);
 
                 if ($this->chunkIsIndexed($chunkIndex, $chunkHash)) {
                     $completedChunkIndices[] = $chunkIndex;
@@ -92,10 +113,10 @@ class SyncContentEmbeddingsJob implements ShouldQueue
                     'chunk_index' => $chunkIndex,
                 ], [
                     'chunk_hash' => $chunkHash,
-                    'content_text' => (string) ($summary['content_text'] ?? ''),
-                    'metadata' => $summary['metadata'] ?? [],
-                    'vector_store' => $summary['vector_store'] ?? null,
-                    'vector_id' => $summary['vector_id'] ?? null,
+                    'content_text' => $contentText,
+                    'metadata' => $metadata,
+                    'vector_store' => $vectorStoreName,
+                    'vector_id' => $vectorId,
                     'visibility' => (string) ($summary['visibility'] ?? 'private'),
                     'embedding_model' => $summary['embedding_model'] ?? null,
                     'chunker_version' => (string) ($summary['chunker_version'] ?? '1'),
@@ -190,6 +211,11 @@ class SyncContentEmbeddingsJob implements ShouldQueue
             'chunk_index' => $chunkIndex,
             'chunk_hash' => $chunkHash,
         ])->exists();
+    }
+
+    protected function vectorId(int $chunkIndex): string
+    {
+        return $this->sourceType . ':' . $this->sourceId . ':' . $chunkIndex;
     }
 
     protected function resolveSource(): Model

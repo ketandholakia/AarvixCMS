@@ -9,6 +9,7 @@ use App\Traits\HasSlug;
 use App\Traits\HasRevisions;
 use App\Jobs\SyncContentEmbeddingsJob;
 use App\Models\ContentEmbedding;
+use App\AI\Contracts\VectorStore;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -73,6 +74,19 @@ class Post extends Model
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/')));
             
             app(\App\Services\WebhookService::class)->dispatch('post.deleted', ['id' => $post->id, 'slug' => $post->slug]);
+
+            $vectorIds = ContentEmbedding::query()
+                ->where('source_type', $post::class)
+                ->where('source_id', $post->id)
+                ->pluck('vector_id')
+                ->filter()
+                ->map(static fn ($vectorId) => (string) $vectorId)
+                ->values()
+                ->all();
+
+            if ($vectorIds !== []) {
+                app(VectorStore::class)->delete((string) config('ai.vector_store.collection', 'content_embeddings'), $vectorIds);
+            }
 
             ContentEmbedding::query()
                 ->where('source_type', $post::class)

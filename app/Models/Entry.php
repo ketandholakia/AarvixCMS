@@ -9,6 +9,7 @@ use App\Traits\HasSlug;
 use App\Traits\HasRevisions;
 use App\Jobs\SyncContentEmbeddingsJob;
 use App\Models\ContentEmbedding;
+use App\AI\Contracts\VectorStore;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -76,6 +77,19 @@ class Entry extends Model
         static::deleted(function (Entry $entry) {
             $prefix = $entry->contentType?->slug ?? 'entry';
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url("/{$prefix}/{$entry->slug}")));
+
+            $vectorIds = ContentEmbedding::query()
+                ->where('source_type', $entry::class)
+                ->where('source_id', $entry->id)
+                ->pluck('vector_id')
+                ->filter()
+                ->map(static fn ($vectorId) => (string) $vectorId)
+                ->values()
+                ->all();
+
+            if ($vectorIds !== []) {
+                app(VectorStore::class)->delete((string) config('ai.vector_store.collection', 'content_embeddings'), $vectorIds);
+            }
 
             ContentEmbedding::query()
                 ->where('source_type', $entry::class)

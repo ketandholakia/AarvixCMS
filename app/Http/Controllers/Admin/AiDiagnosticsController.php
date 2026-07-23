@@ -39,6 +39,7 @@ class AiDiagnosticsController extends Controller
     {
         $driver = $providerConfig['driver'] ?? null;
         $capabilities = array_values(array_map('strval', $providerConfig['capabilities'] ?? []));
+        $imageCapabilities = is_array($providerConfig['image'] ?? null) ? $providerConfig['image'] : [];
 
         try {
             if (! is_string($driver) || $driver === '') {
@@ -62,6 +63,7 @@ class AiDiagnosticsController extends Controller
             'name' => $name,
             'driver' => is_string($driver) ? $driver : 'n/a',
             'configured_capabilities' => $capabilities,
+            'image_capabilities' => $imageCapabilities,
             'resolved_capabilities' => $resolvedCapabilities,
             'status' => $status,
             'enabled' => (bool) ($providerConfig['is_enabled'] ?? true),

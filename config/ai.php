@@ -21,6 +21,12 @@ return [
                 AiCapability::Vision->value,
                 AiCapability::Json->value,
             ],
+            'image' => [
+                'supports_edit' => true,
+                'supports_mask' => true,
+                'supports_seed' => true,
+                'supports_resolution' => true,
+            ],
         ],
     ],
 

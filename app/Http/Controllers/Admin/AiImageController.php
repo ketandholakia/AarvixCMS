@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\AI\Exceptions\AiImageCapabilityException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AiImageRequest;
 use App\Jobs\GenerateAiImageJob;
+use App\Services\AiImageCapabilityService;
 
 class AiImageController extends Controller
 {
-    public function generate(AiImageRequest $request)
+    public function generate(AiImageRequest $request, AiImageCapabilityService $capabilities)
     {
         $data = $request->validated();
 
@@ -18,6 +20,15 @@ class AiImageController extends Controller
                 'errors' => [
                     'confirm_replace' => ['Confirm replacement before overwriting an existing media asset.'],
                 ],
+            ], 422);
+        }
+
+        try {
+            $capabilities->assertSupported($data, config('ai.default_provider', 'fake'));
+        } catch (AiImageCapabilityException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'errors' => $e->errors(),
             ], 422);
         }
 

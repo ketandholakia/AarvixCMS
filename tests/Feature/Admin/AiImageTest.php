@@ -172,4 +172,51 @@ class AiImageTest extends TestCase
         Storage::disk('public')->assertExists($media->path . '/' . $media->filename);
         Storage::disk('public')->assertExists($media->path . '/thumbs/thumb-' . $media->filename);
     }
+
+    public function test_admin_cannot_request_unsupported_image_edit_operations(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.image.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.image.supports_edit', false);
+
+        $media = Media::create([
+            'disk' => 'public',
+            'path' => 'uploads/source.webp',
+            'filename' => 'source.webp',
+            'mime_type' => 'image/webp',
+            'size' => 1024,
+            'alt_text' => 'Source image',
+        ]);
+
+        $response = $this->actingAs($this->admin())->postJson(route('admin.ai.images.generate'), [
+            'prompt' => 'Edit the source image',
+            'operation' => 'edit',
+            'source_media_id' => $media->id,
+            'resolution' => '1024x1024',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('errors.operation.0', 'AI provider [fake] does not support image operation [edit].');
+    }
+
+    public function test_admin_cannot_request_unsupported_seed_or_resolution_options(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.image.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.image.supports_seed', false);
+        config()->set('ai.providers.fake.image.supports_resolution', false);
+
+        $response = $this->actingAs($this->admin())->postJson(route('admin.ai.images.generate'), [
+            'prompt' => 'Generate an image',
+            'operation' => 'generate',
+            'seed' => 99,
+            'resolution' => '1024x1024',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('errors.seed.0', 'AI provider [fake] does not support seed control.');
+        $response->assertJsonPath('errors.resolution.0', 'AI provider [fake] does not support custom image resolutions.');
+    }
 }

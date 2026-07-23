@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\AI\DTOs\AiRequestData;
 use App\AI\Services\AiManager;
 use App\Models\Media;
+use App\Services\AiImageCapabilityService;
 use App\Services\MediaUploadService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -33,8 +34,16 @@ class GenerateAiImageJob implements ShouldQueue
     ) {
     }
 
-    public function handle(AiManager $aiManager, MediaUploadService $mediaUploadService): void
+    public function handle(AiManager $aiManager, MediaUploadService $mediaUploadService, AiImageCapabilityService $capabilities): void
     {
+        $capabilities->assertSupported([
+            'operation' => $this->operation,
+            'source_media_id' => $this->sourceMediaId,
+            'resolution' => $this->resolution,
+            'seed' => $this->seed,
+            'replace_media_id' => $this->replaceMediaId,
+        ], $this->provider ?? config('ai.default_provider', 'fake'));
+
         $result = $aiManager->image(new AiRequestData(
             input: [
                 'prompt' => $this->prompt,

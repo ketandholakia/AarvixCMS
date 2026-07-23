@@ -26,7 +26,12 @@ class AiImageRequest extends FormRequest
         return [
             'prompt' => ['required', 'string', 'max:2000'],
             'operation' => ['required', Rule::in(['generate', 'edit', 'remove_background', 'upscale', 'resize'])],
-            'source_media_id' => ['nullable', 'integer', 'exists:media,id'],
+            'source_media_id' => [
+                'nullable',
+                'integer',
+                Rule::requiredIf(fn (): bool => in_array($this->input('operation'), ['edit', 'remove_background', 'upscale', 'resize'], true)),
+                'exists:media,id',
+            ],
             'replace_media_id' => ['nullable', 'integer', 'exists:media,id'],
             'confirm_replace' => ['nullable', 'boolean'],
             'resolution' => ['nullable', 'string', 'max:20', 'regex:/^\d+x\d+$/'],

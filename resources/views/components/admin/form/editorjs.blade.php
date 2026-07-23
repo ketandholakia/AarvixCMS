@@ -110,6 +110,7 @@
                 });
             },
             applyPreview(blocks, mode) {
+                const snapshot = JSON.parse(JSON.stringify(this.documentData || {}));
                 const nextBlocks = mode === 'insert'
                     ? [...(this.documentData?.blocks || []), ...blocks]
                     : blocks;
@@ -122,7 +123,13 @@
                 this.documentData = nextData;
                 this.$refs.textarea.value = JSON.stringify(nextData);
 
-                return this.editor.render(nextData);
+                return this.editor.render(nextData).catch((error) => {
+                    this.documentData = snapshot;
+                    this.$refs.textarea.value = JSON.stringify(snapshot);
+                    return this.editor.render(snapshot).then(() => {
+                        throw error;
+                    });
+                });
             }
         }));
     });

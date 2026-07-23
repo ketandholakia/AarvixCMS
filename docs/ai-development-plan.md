@@ -451,7 +451,7 @@ framework and approval flow ship.
 
 #### Initial workflows
 
-- On publish: generate missing SEO suggestions and create an editor review task.
+- [x] On publish: generate missing SEO suggestions and create an editor review task.
 - On publish: draft social post variants.
 - On request: translate selected content into configured locales.
 - Scheduled: refresh stale generated metadata.

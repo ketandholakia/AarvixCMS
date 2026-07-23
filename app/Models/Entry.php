@@ -72,6 +72,10 @@ class Entry extends Model
             SyncContentEmbeddingsJob::dispatch($entry::class, $entry->id)
                 ->onQueue(config('ai.queue.low', 'ai-low'))
                 ->afterCommit();
+
+            if ((string) $entry->status === 'published' && ($entry->wasRecentlyCreated || $entry->wasChanged('status'))) {
+                app(\App\Services\WorkflowService::class)->handlePublishedContent($entry);
+            }
         });
 
         static::deleted(function (Entry $entry) {

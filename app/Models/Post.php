@@ -67,6 +67,10 @@ class Post extends Model
             SyncContentEmbeddingsJob::dispatch($post::class, $post->id)
                 ->onQueue(config('ai.queue.low', 'ai-low'))
                 ->afterCommit();
+
+            if ((string) $post->status === 'published' && ($post->wasRecentlyCreated || $post->wasChanged('status'))) {
+                app(\App\Services\WorkflowService::class)->handlePublishedContent($post);
+            }
         });
 
         static::deleted(function ($post) {

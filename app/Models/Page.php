@@ -63,6 +63,10 @@ class Page extends Model
             SyncContentEmbeddingsJob::dispatch($page::class, $page->id)
                 ->onQueue(config('ai.queue.low', 'ai-low'))
                 ->afterCommit();
+
+            if ((string) $page->status === 'published' && ($page->wasRecentlyCreated || $page->wasChanged('status'))) {
+                app(\App\Services\WorkflowService::class)->handlePublishedContent($page);
+            }
         });
 
         static::deleted(function ($page) {

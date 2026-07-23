@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\AI\Contracts\AiProvider;
 use App\AI\Services\AiManager;
+use App\AI\Services\AiPolicyService;
 use App\AI\Services\PromptService;
 use App\AI\Services\UsageService;
 use Illuminate\Support\ServiceProvider;
@@ -13,7 +14,12 @@ class AiServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(AiManager::class, function ($app) {
-            return new AiManager($app, config('ai', []), $app->make(UsageService::class));
+            return new AiManager(
+                $app,
+                config('ai', []),
+                $app->make(UsageService::class),
+                $app->make(AiPolicyService::class),
+            );
         });
 
         $this->app->alias(AiManager::class, 'ai.manager');
@@ -23,6 +29,7 @@ class AiServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(PromptService::class);
+        $this->app->singleton(AiPolicyService::class);
         $this->app->singleton(UsageService::class);
     }
 }

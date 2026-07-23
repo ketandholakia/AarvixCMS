@@ -6,9 +6,16 @@ use App\AI\Providers\OpenAiProvider;
 
 return [
     'enabled' => env('AI_ENABLED', false),
+    'timeout' => (int) env('AI_TIMEOUT', 60),
 
     'default_provider' => env('AI_DEFAULT_PROVIDER', 'fake'),
     'fallback_provider' => env('AI_FALLBACK_PROVIDER', 'fake'),
+
+    'retry' => [
+        'attempts' => (int) env('AI_RETRY_ATTEMPTS', 2),
+        'delay_ms' => (int) env('AI_RETRY_DELAY_MS', 250),
+        'retryable_status_codes' => [408, 425, 429, 500, 502, 503, 504],
+    ],
 
     'providers' => [
         'fake' => [
@@ -37,8 +44,8 @@ return [
             'api_key' => env('AI_OPENAI_API_KEY'),
             'base_url' => env('AI_OPENAI_BASE_URL', 'https://api.openai.com/v1'),
             'organization' => env('AI_OPENAI_ORGANIZATION'),
-            'timeout' => (int) env('AI_OPENAI_TIMEOUT', 60),
-            'retries' => (int) env('AI_OPENAI_RETRIES', 2),
+            'timeout' => (int) env('AI_OPENAI_TIMEOUT', env('AI_TIMEOUT', 60)),
+            'retries' => (int) env('AI_OPENAI_RETRIES', env('AI_RETRY_ATTEMPTS', 2)),
             'capabilities' => [
                 AiCapability::Generate->value,
                 AiCapability::Stream->value,

@@ -18,6 +18,9 @@ class AiHealthCheck extends Command
 
         $this->table(['Setting', 'Value'], [
             ['Enabled', config('ai.enabled') ? 'yes' : 'no'],
+            ['Timeout', (string) config('ai.timeout', 60) . 's'],
+            ['Retry attempts', (string) config('ai.retry.attempts', 2)],
+            ['Retry delay', (string) config('ai.retry.delay_ms', 250) . 'ms'],
             ['Default provider', (string) config('ai.default_provider', 'n/a')],
             ['Fallback provider', (string) config('ai.fallback_provider', 'n/a')],
             ['High queue', (string) config('ai.queue.high', 'ai-high')],

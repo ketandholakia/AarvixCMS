@@ -26,11 +26,17 @@ class AiCommandsTest extends TestCase
     public function test_ai_health_command_reports_provider_status(): void
     {
         config()->set('ai.enabled', true);
+        config()->set('ai.timeout', 45);
+        config()->set('ai.retry.attempts', 3);
+        config()->set('ai.retry.delay_ms', 125);
         config()->set('ai.default_provider', 'fake');
         config()->set('ai.providers.fake.driver', FakeAiProvider::class);
 
         $this->artisan('ai:health')
             ->expectsOutputToContain('AI health check')
+            ->expectsOutputToContain('45s')
+            ->expectsOutputToContain('3')
+            ->expectsOutputToContain('125ms')
             ->expectsOutputToContain('fake')
             ->assertExitCode(0);
     }

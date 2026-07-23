@@ -10,6 +10,7 @@ use App\AI\Enums\AiStatus;
 use App\AI\Exceptions\AiCapabilityException;
 use App\AI\Exceptions\AiRateLimitException;
 use App\AI\Exceptions\AiProviderException;
+use App\AI\Services\AiPolicyService;
 use App\AI\Services\UsageService;
 use Illuminate\Contracts\Container\Container;
 use Throwable;
@@ -25,6 +26,7 @@ class AiManager
         protected Container $container,
         protected array $config = [],
         protected ?UsageService $usageService = null,
+        protected ?AiPolicyService $policyService = null,
     ) {
     }
 
@@ -97,6 +99,7 @@ class AiManager
     protected function callResult(AiCapability $capability, string $method, AiRequestData $request): AiResult
     {
         $request = $request->feature === null ? $request->withFeature($method) : $request;
+        $this->policyService?->assertEnabled($request->feature);
         $provider = $this->provider($request->provider);
         $this->assertCapability($provider, $capability);
 
@@ -144,6 +147,7 @@ class AiManager
     protected function callStream(AiCapability $capability, string $method, AiRequestData $request): iterable
     {
         $request = $request->feature === null ? $request->withFeature($method) : $request;
+        $this->policyService?->assertEnabled($request->feature);
         $provider = $this->provider($request->provider);
         $this->assertCapability($provider, $capability);
 

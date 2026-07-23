@@ -6,11 +6,9 @@ use App\AI\DTOs\AiRequestData;
 use App\AI\DTOs\AiResult;
 use App\AI\Enums\AiStatus;
 use App\AI\Exceptions\AiRateLimitException;
-use App\AI\Exceptions\AiTimeoutException;
 use App\Models\AiRequest;
 use App\Models\AiUsageDaily;
 use App\Services\ActivityLogger;
-use App\Services\SettingService;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -19,13 +17,13 @@ use Throwable;
 class UsageService
 {
     public function __construct(
-        protected SettingService $settings,
+        protected AiPolicyService $policy,
     ) {
     }
 
     public function logStart(AiRequestData $request, string $provider, string $model): AiRequest
     {
-        $this->ensureEnabled($request->feature);
+        $this->policy->assertEnabled($request->feature);
         $this->enforceLimits($request, $provider, $model);
         $userId = auth()->id() ?? ($request->options['user_id'] ?? null);
 
@@ -142,22 +140,6 @@ class UsageService
             $monthlyCostCap
         )) {
             throw new AiRateLimitException("AI monthly cost cap reached for feature [{$feature}].");
-        }
-    }
-
-    protected function ensureEnabled(?string $feature): void
-    {
-        $enabled = $this->settings->get('ai.enabled', config('ai.enabled', false));
-
-        if (! filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
-            throw new AiTimeoutException('AI is disabled.');
-        }
-
-        if ($feature) {
-            $enabled = $this->settings->get("ai.{$feature}.enabled", null);
-            if ($enabled !== null && ! filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
-                throw new AiTimeoutException("AI feature [{$feature}] is disabled.");
-            }
         }
     }
 

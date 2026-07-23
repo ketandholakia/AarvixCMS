@@ -9,6 +9,7 @@ use App\AI\DTOs\AiUsage;
 use App\AI\Enums\AiCapability;
 use App\AI\Enums\AiStatus;
 use App\AI\Exceptions\AiProviderException;
+use App\AI\Services\AiPolicyService;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -167,7 +168,7 @@ class OpenAiProvider implements AiProvider
             ->acceptJson()
             ->asJson()
             ->withToken($apiKey)
-            ->timeout((int) config('ai.providers.openai.timeout', 60));
+            ->timeout((int) config('ai.providers.openai.timeout', config('ai.timeout', 60)));
 
         $organization = (string) config('ai.providers.openai.organization', '');
         if ($organization !== '') {
@@ -176,9 +177,14 @@ class OpenAiProvider implements AiProvider
             ]);
         }
 
-        $retries = max(0, (int) config('ai.providers.openai.retries', 0));
+        $policy = app(AiPolicyService::class);
+        $retries = $policy->retryAttempts($this->name());
         if ($retries > 0) {
-            $client = $client->retry($retries, 250);
+            $client = $client->retry($retries, $policy->retryDelayMs(), function (...$arguments) use ($policy) {
+                $exception = $arguments[0] ?? null;
+
+                return $exception instanceof Throwable && $policy->isRetryable($exception);
+            });
         }
 
         return $client;

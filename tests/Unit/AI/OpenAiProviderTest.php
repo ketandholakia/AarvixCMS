@@ -94,4 +94,45 @@ class OpenAiProviderTest extends TestCase
         $this->assertSame('embeddings-test', $result->requestId);
         $this->assertSame(4, $result->usage?->totalTokens);
     }
+
+    public function test_generate_retries_retryable_gateway_failures(): void
+    {
+        config()->set('ai.timeout', 20);
+        config()->set('ai.retry.attempts', 2);
+        config()->set('ai.retry.delay_ms', 0);
+        config()->set('ai.providers.openai.api_key', 'test-key');
+        config()->set('ai.providers.openai.base_url', 'https://api.openai.test/v1');
+        config()->set('ai.providers.openai.timeout', 20);
+        config()->set('ai.providers.openai.retries', 2);
+        config()->set('ai.providers.openai.models.chat', 'test-chat-model');
+
+        Http::fakeSequence()
+            ->push('Temporary upstream failure.', 503)
+            ->push([
+                'id' => 'chatcmpl-retry',
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => 'Recovered summary text.',
+                        ],
+                    ],
+                ],
+                'usage' => [
+                    'prompt_tokens' => 8,
+                    'completion_tokens' => 4,
+                    'total_tokens' => 12,
+                    'estimated_cost' => '0.00026000',
+                ],
+            ], 200);
+
+        $provider = new OpenAiProvider();
+        $result = $provider->generate(new AiRequestData([
+            'prompt' => 'Retry this summary.',
+        ]));
+
+        $this->assertSame('Recovered summary text.', $result->response);
+        $this->assertSame('chatcmpl-retry', $result->requestId);
+
+        Http::assertSentCount(2);
+    }
 }

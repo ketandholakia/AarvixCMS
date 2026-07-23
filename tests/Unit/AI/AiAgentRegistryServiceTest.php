@@ -71,4 +71,55 @@ class AiAgentRegistryServiceTest extends TestCase
         $this->assertFalse($service->isEnabled('support'));
         $this->assertCount(0, $service->all(true));
     }
+
+    public function test_it_merges_runtime_model_and_budget_overrides(): void
+    {
+        config()->set('ai.agents.seo', [
+            'version' => 1,
+            'name' => 'SEO Agent',
+            'prompt' => 'ai.agents.seo.v1',
+            'tools' => ['content.summary', 'seo.propose'],
+            'model_policy' => [
+                'primary' => 'writer',
+                'fallback' => 'chat',
+                'temperature' => 0.4,
+            ],
+            'budgets' => [
+                'max_tokens' => 1800,
+                'max_cost' => '0.50',
+            ],
+            'max_steps' => 3,
+            'max_seconds' => 45,
+            'is_enabled' => true,
+        ]);
+
+        $settings = new class extends SettingService
+        {
+            public function get(string $key, mixed $default = null): mixed
+            {
+                return match ($key) {
+                    'ai.agents.seo.primary_model' => 'gpt-4.1',
+                    'ai.agents.seo.fallback_model' => 'gpt-4.1-mini',
+                    'ai.agents.seo.temperature' => '0.3',
+                    'ai.agents.seo.max_tokens' => '2048',
+                    'ai.agents.seo.max_cost' => '0.75',
+                    'ai.agents.seo.max_steps' => '5',
+                    'ai.agents.seo.max_seconds' => '90',
+                    default => $default,
+                };
+            }
+        };
+
+        $service = new AiAgentRegistryService($settings);
+        $agent = $service->find('seo');
+
+        $this->assertNotNull($agent);
+        $this->assertSame('gpt-4.1', $agent->modelPolicy['primary']);
+        $this->assertSame('gpt-4.1-mini', $agent->modelPolicy['fallback']);
+        $this->assertSame(0.3, $agent->modelPolicy['temperature']);
+        $this->assertSame(2048, $agent->budgets['max_tokens']);
+        $this->assertSame('0.75', $agent->budgets['max_cost']);
+        $this->assertSame(5, $agent->maxSteps);
+        $this->assertSame(90, $agent->maxSeconds);
+    }
 }

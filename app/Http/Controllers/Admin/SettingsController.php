@@ -28,7 +28,24 @@ class SettingsController extends Controller
             'ai_agent_support_enabled' => $service->get('ai.agents.support.enabled', data_get(config('ai'), 'agents.support.is_enabled', true)),
         ];
 
-        return view('admin.settings.index', compact('settings'));
+        $agentPolicies = [];
+
+        foreach (array_keys((array) config('ai.agents', [])) as $agentKey) {
+            $agentPolicies[$agentKey] = [
+                'name' => data_get(config('ai'), "agents.{$agentKey}.name", ucfirst($agentKey)),
+                'description' => data_get(config('ai'), "agents.{$agentKey}.description", ''),
+                'enabled' => $service->get("ai.agents.{$agentKey}.enabled", data_get(config('ai'), "agents.{$agentKey}.is_enabled", true)),
+                'primary_model' => $service->get("ai.agents.{$agentKey}.primary_model", data_get(config('ai'), "agents.{$agentKey}.model_policy.primary")),
+                'fallback_model' => $service->get("ai.agents.{$agentKey}.fallback_model", data_get(config('ai'), "agents.{$agentKey}.model_policy.fallback")),
+                'temperature' => $service->get("ai.agents.{$agentKey}.temperature", data_get(config('ai'), "agents.{$agentKey}.model_policy.temperature")),
+                'max_tokens' => $service->get("ai.agents.{$agentKey}.max_tokens", data_get(config('ai'), "agents.{$agentKey}.budgets.max_tokens")),
+                'max_cost' => $service->get("ai.agents.{$agentKey}.max_cost", data_get(config('ai'), "agents.{$agentKey}.budgets.max_cost")),
+                'max_steps' => $service->get("ai.agents.{$agentKey}.max_steps", data_get(config('ai'), "agents.{$agentKey}.max_steps")),
+                'max_seconds' => $service->get("ai.agents.{$agentKey}.max_seconds", data_get(config('ai'), "agents.{$agentKey}.max_seconds")),
+            ];
+        }
+
+        return view('admin.settings.index', compact('settings', 'agentPolicies'));
     }
 
     public function update(Request $request)
@@ -63,6 +80,20 @@ class SettingsController extends Controller
         $service->set('ai.agents.translation.enabled', $request->boolean('ai_agent_translation_enabled'), 'ai', 'boolean');
         $service->set('ai.agents.documentation.enabled', $request->boolean('ai_agent_documentation_enabled'), 'ai', 'boolean');
         $service->set('ai.agents.support.enabled', $request->boolean('ai_agent_support_enabled'), 'ai', 'boolean');
+
+        foreach (array_keys((array) config('ai.agents', [])) as $agentKey) {
+            $currentModelPolicy = data_get(config('ai'), "agents.{$agentKey}.model_policy", []);
+            $currentBudgets = data_get(config('ai'), "agents.{$agentKey}.budgets", []);
+
+            $service->set("ai.agents.{$agentKey}.enabled", $request->boolean("ai_agent_{$agentKey}_enabled"), 'ai', 'boolean');
+            $service->set("ai.agents.{$agentKey}.primary_model", $request->input("ai_agent_{$agentKey}_primary_model", data_get($currentModelPolicy, 'primary')), 'ai');
+            $service->set("ai.agents.{$agentKey}.fallback_model", $request->input("ai_agent_{$agentKey}_fallback_model", data_get($currentModelPolicy, 'fallback')), 'ai');
+            $service->set("ai.agents.{$agentKey}.temperature", $request->input("ai_agent_{$agentKey}_temperature", data_get($currentModelPolicy, 'temperature')), 'ai');
+            $service->set("ai.agents.{$agentKey}.max_tokens", $request->input("ai_agent_{$agentKey}_max_tokens", data_get($currentBudgets, 'max_tokens')), 'ai');
+            $service->set("ai.agents.{$agentKey}.max_cost", $request->input("ai_agent_{$agentKey}_max_cost", data_get($currentBudgets, 'max_cost')), 'ai');
+            $service->set("ai.agents.{$agentKey}.max_steps", $request->input("ai_agent_{$agentKey}_max_steps", data_get(config('ai'), "agents.{$agentKey}.max_steps")), 'ai');
+            $service->set("ai.agents.{$agentKey}.max_seconds", $request->input("ai_agent_{$agentKey}_max_seconds", data_get(config('ai'), "agents.{$agentKey}.max_seconds")), 'ai');
+        }
 
         return redirect()->route('admin.settings.index')->with('success', 'Settings updated successfully.');
     }

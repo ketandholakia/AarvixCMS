@@ -53,8 +53,11 @@ class AiAgentRegistryService
     protected function makeDefinition(string $key, array $definition): AiAgentDefinition
     {
         $configEnabled = (bool) ($definition['is_enabled'] ?? true);
-        $overrideKey = "ai.agents.{$key}.enabled";
-        $enabled = $this->settings->get($overrideKey, $configEnabled);
+        $enabled = $this->settings->get("ai.agents.{$key}.enabled", $configEnabled);
+        $modelPolicy = $this->resolveModelPolicy($key, $definition);
+        $budgets = $this->resolveBudgets($key, $definition);
+        $maxSteps = $this->settings->get("ai.agents.{$key}.max_steps", (int) ($definition['max_steps'] ?? 1));
+        $maxSeconds = $this->settings->get("ai.agents.{$key}.max_seconds", (int) ($definition['max_seconds'] ?? 60));
 
         return new AiAgentDefinition(
             key: $key,
@@ -71,11 +74,62 @@ class AiAgentRegistryService
                 static fn ($permission): string => trim((string) $permission),
                 is_array($definition['permissions'] ?? null) ? $definition['permissions'] : [],
             ))),
-            modelPolicy: is_array($definition['model_policy'] ?? null) ? $definition['model_policy'] : [],
-            budgets: is_array($definition['budgets'] ?? null) ? $definition['budgets'] : [],
-            maxSteps: max(1, (int) ($definition['max_steps'] ?? 1)),
-            maxSeconds: max(1, (int) ($definition['max_seconds'] ?? 60)),
+            modelPolicy: $modelPolicy,
+            budgets: $budgets,
+            maxSteps: max(1, (int) $maxSteps),
+            maxSeconds: max(1, (int) $maxSeconds),
             isEnabled: filter_var($enabled, FILTER_VALIDATE_BOOLEAN),
         );
+    }
+
+    /**
+     * @param array<string, mixed> $definition
+     * @return array<string, mixed>
+     */
+    protected function resolveModelPolicy(string $key, array $definition): array
+    {
+        $modelPolicy = is_array($definition['model_policy'] ?? null) ? $definition['model_policy'] : [];
+
+        $primary = $this->settings->get(
+            "ai.agents.{$key}.primary_model",
+            is_string($modelPolicy['primary'] ?? null) ? $modelPolicy['primary'] : null
+        );
+        $fallback = $this->settings->get(
+            "ai.agents.{$key}.fallback_model",
+            is_string($modelPolicy['fallback'] ?? null) ? $modelPolicy['fallback'] : null
+        );
+        $temperature = $this->settings->get(
+            "ai.agents.{$key}.temperature",
+            $modelPolicy['temperature'] ?? null
+        );
+
+        return array_filter([
+            'primary' => is_string($primary) && $primary !== '' ? $primary : null,
+            'fallback' => is_string($fallback) && $fallback !== '' ? $fallback : null,
+            'temperature' => is_numeric($temperature) ? (float) $temperature : null,
+        ], static fn (mixed $value): bool => $value !== null);
+    }
+
+    /**
+     * @param array<string, mixed> $definition
+     * @return array<string, mixed>
+     */
+    protected function resolveBudgets(string $key, array $definition): array
+    {
+        $budgets = is_array($definition['budgets'] ?? null) ? $definition['budgets'] : [];
+
+        $maxTokens = $this->settings->get(
+            "ai.agents.{$key}.max_tokens",
+            isset($budgets['max_tokens']) ? (int) $budgets['max_tokens'] : null
+        );
+        $maxCost = $this->settings->get(
+            "ai.agents.{$key}.max_cost",
+            is_string($budgets['max_cost'] ?? null) ? $budgets['max_cost'] : null
+        );
+
+        return array_filter([
+            'max_tokens' => is_numeric($maxTokens) ? (int) $maxTokens : null,
+            'max_cost' => is_string($maxCost) && $maxCost !== '' ? $maxCost : null,
+        ], static fn (mixed $value): bool => $value !== null);
     }
 }

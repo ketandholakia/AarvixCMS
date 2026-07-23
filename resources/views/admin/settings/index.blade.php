@@ -142,6 +142,83 @@
                         </label>
                     </div>
                 </div>
+
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-800 pb-2">Agent Policies</h3>
+                    <div class="space-y-6">
+                        @foreach($agentPolicies as $agentKey => $agentPolicy)
+                            <div class="rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+                                <div class="flex flex-col gap-1 md:flex-row md:items-start md:justify-between">
+                                    <div>
+                                        <div class="text-base font-semibold text-gray-900 dark:text-white">{{ $agentPolicy['name'] }}</div>
+                                        @if(! empty($agentPolicy['description']))
+                                            <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $agentPolicy['description'] }}</div>
+                                        @endif
+                                    </div>
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ ($agentPolicy['enabled'] ?? false) ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }}">
+                                        {{ ($agentPolicy['enabled'] ?? false) ? 'Enabled' : 'Disabled' }}
+                                    </span>
+                                </div>
+
+                                <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                    <x-admin.form.input
+                                        :name="'ai_agent_' . $agentKey . '_primary_model'"
+                                        label="Primary model"
+                                        :value="$agentPolicy['primary_model'] ?? ''"
+                                        help="Main model used by this agent."
+                                    />
+                                    <x-admin.form.input
+                                        :name="'ai_agent_' . $agentKey . '_fallback_model'"
+                                        label="Fallback model"
+                                        :value="$agentPolicy['fallback_model'] ?? ''"
+                                        help="Fallback model used when the primary model is unavailable."
+                                    />
+                                    <x-admin.form.input
+                                        :name="'ai_agent_' . $agentKey . '_temperature'"
+                                        label="Temperature"
+                                        type="number"
+                                        step="0.1"
+                                        min="0"
+                                        max="2"
+                                        :value="$agentPolicy['temperature'] ?? ''"
+                                        help="Creativity level for the agent policy."
+                                    />
+                                    <x-admin.form.input
+                                        :name="'ai_agent_' . $agentKey . '_max_steps'"
+                                        label="Max steps"
+                                        type="number"
+                                        min="1"
+                                        :value="$agentPolicy['max_steps'] ?? ''"
+                                        help="Hard cap on the number of tool calls."
+                                    />
+                                    <x-admin.form.input
+                                        :name="'ai_agent_' . $agentKey . '_max_tokens'"
+                                        label="Max tokens"
+                                        type="number"
+                                        min="1"
+                                        :value="$agentPolicy['max_tokens'] ?? ''"
+                                        help="Estimated token budget for the plan."
+                                    />
+                                    <x-admin.form.input
+                                        :name="'ai_agent_' . $agentKey . '_max_cost'"
+                                        label="Max cost"
+                                        type="text"
+                                        :value="$agentPolicy['max_cost'] ?? ''"
+                                        help="Decimal cost ceiling for the plan."
+                                    />
+                                    <x-admin.form.input
+                                        :name="'ai_agent_' . $agentKey . '_max_seconds'"
+                                        label="Max seconds"
+                                        type="number"
+                                        min="1"
+                                        :value="$agentPolicy['max_seconds'] ?? ''"
+                                        help="Wall-clock time limit for execution."
+                                    />
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
             </div>
 
             <div class="px-6 py-4 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-3">

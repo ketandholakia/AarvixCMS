@@ -671,7 +671,7 @@ logging without exposing a production Writer UI.
 2. [x] Create `config/ai.php` and document environment variables.
 3. [x] Add core contracts, DTOs, enums, typed exceptions, and service provider.
 4. [x] Implement fake provider and one real text-provider adapter.
-5. Implement `AiManager::generate()` and `AiManager::json()`.
+5. [x] Implement `AiManager::generate()` and `AiManager::json()`.
 6. Add prompt and prompt-version migrations, models, renderer, and seed prompts.
 7. Add request and daily-usage migrations, models, logger, and cost calculator.
 8. Add permission seeds and authorization middleware.

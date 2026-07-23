@@ -31,6 +31,23 @@ class AiManagerTest extends TestCase
         $this->assertSame('Rewritten draft: Write a summary', $result->response['plain_text']);
     }
 
+    public function test_json_uses_the_configured_provider_and_returns_a_normalized_result(): void
+    {
+        $manager = $this->makeManager();
+
+        $result = $manager->json(new AiRequestData(
+            input: ['prompt' => 'Return JSON'],
+            model: 'fake-json-model',
+        ));
+
+        $this->assertInstanceOf(AiResult::class, $result);
+        $this->assertSame(AiStatus::Succeeded, $result->status);
+        $this->assertSame('fake', $result->provider);
+        $this->assertSame('fake-json-model', $result->model);
+        $this->assertSame('json', $result->metadata['capability']);
+        $this->assertSame(['ok' => true], $result->response);
+    }
+
     public function test_stream_returns_deterministic_chunks_from_the_fake_provider(): void
     {
         $manager = $this->makeManager();

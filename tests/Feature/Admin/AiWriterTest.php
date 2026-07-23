@@ -102,6 +102,33 @@ class AiWriterTest extends TestCase
         $response->assertDontSee('Whole document text.', false);
     }
 
+    public function test_author_cannot_generate_ai_writer_preview_for_someone_elses_post(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.driver', FakeAiProvider::class);
+
+        $authorRole = Role::where('name', 'Author')->first();
+        $author = User::factory()->create(['is_active' => true]);
+        $author->roles()->attach($authorRole);
+
+        $otherAuthor = User::factory()->create(['is_active' => true]);
+        $post = Post::factory()->create(['author_id' => $otherAuthor->id]);
+
+        $response = $this->actingAs($author)->postJson(route('admin.ai.writer.generate'), [
+            'context' => 'post',
+            'record_id' => $post->id,
+            'operation' => 'rewrite',
+            'document' => json_encode([
+                'blocks' => [
+                    ['type' => 'paragraph', 'data' => ['text' => 'Protected draft text.']],
+                ],
+            ]),
+        ]);
+
+        $response->assertForbidden();
+    }
+
     public function test_admin_can_generate_seo_preview_for_a_post(): void
     {
         config()->set('ai.enabled', true);

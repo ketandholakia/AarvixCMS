@@ -20,7 +20,6 @@ class AiWriterController extends Controller
     {
         $data = $request->validated();
         $subject = $this->resolveSubject($data);
-        $this->authorizeSubject($data['context'], $subject);
 
         $writerDocument = WriterDocument::fromEditorJs(
             $data['document'],
@@ -84,38 +83,4 @@ class AiWriterController extends Controller
 
         return $entry;
     }
-
-    protected function authorizeSubject(string $context, Model|Post|Page|Entry|null $subject): void
-    {
-        if ($subject instanceof Post || $subject instanceof Page) {
-            $this->authorize('update', $subject);
-            return;
-        }
-
-        if ($subject instanceof Entry) {
-            $slug = $subject->contentType?->slug;
-            if (! $slug || ! auth()->user()?->hasPermission("edit_{$slug}")) {
-                abort(403, 'You do not have the required permissions.');
-            }
-
-            return;
-        }
-
-        if ($context === 'post' && ! auth()->user()?->hasPermission('create_posts')) {
-            abort(403, 'You do not have the required permissions.');
-        }
-
-        if ($context === 'page' && ! auth()->user()?->hasPermission('create_pages')) {
-            abort(403, 'You do not have the required permissions.');
-        }
-
-        if ($context === 'entry') {
-            $slug = request('content_type_slug');
-            if (! is_string($slug) || $slug === '' || ! auth()->user()?->hasPermission("create_{$slug}")) {
-                abort(403, 'You do not have the required permissions.');
-            }
-        }
-    }
-
-
 }

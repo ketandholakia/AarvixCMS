@@ -1,0 +1,57 @@
+@extends('layouts.admin')
+
+@section('header', 'AI Prompts')
+
+@section('content')
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Prompt Library</h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Versioned prompt templates used by the AI services.</p>
+        </div>
+        <a href="{{ route('admin.ai-prompts.create') }}" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium">
+            Create Prompt
+        </a>
+    </div>
+
+    @if(session('success'))
+        <div class="p-4 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-xl">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <x-admin.table :headers="['Key', 'Category', 'Title', 'Active Version', 'Versions', 'State']" :records="$prompts" actions="true">
+        @forelse($prompts as $prompt)
+            <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-700 dark:text-gray-300">{{ $prompt->prompt_key }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ $prompt->category }}</td>
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white">{{ $prompt->title }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ $prompt->active_version_number }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ $prompt->versions_count }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $prompt->is_enabled ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }}">
+                        {{ $prompt->is_enabled ? 'Enabled' : 'Disabled' }}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <div class="flex justify-end gap-3">
+                        <a href="{{ route('admin.ai-prompts.show', $prompt) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">History</a>
+                        <a href="{{ route('admin.ai-prompts.edit', $prompt) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">Edit</a>
+                        <form action="{{ route('admin.ai-prompts.destroy', $prompt) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete this prompt and all versions?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                    No prompts found. <a href="{{ route('admin.ai-prompts.create') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Create one</a>.
+                </td>
+            </tr>
+        @endforelse
+    </x-admin.table>
+</div>
+@endsection

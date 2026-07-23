@@ -9,7 +9,19 @@ class SettingService
 {
     private const CACHE_KEY = 'cms_settings';
     private const CACHE_TTL = 86400; // 24 hours
-    private const ALLOWED_KEYS = ['site_name', 'site_description', 'social_twitter', 'social_github', 'active_theme'];
+    private const ALLOWED_KEYS = [
+        'site_name',
+        'site_description',
+        'social_twitter',
+        'social_github',
+        'active_theme',
+        'ai.enabled',
+        'ai.default_provider',
+        'ai.fallback_provider',
+        'ai.writer.enabled',
+        'ai.chat.enabled',
+        'ai.image.enabled',
+    ];
 
     /**
      * Get a setting value by key.

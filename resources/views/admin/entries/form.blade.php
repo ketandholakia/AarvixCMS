@@ -34,9 +34,14 @@
 
                 {{-- Editor.js body --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Body</label>
-                    <div id="editorjs" class="border border-gray-200 dark:border-gray-700 rounded-xl min-h-48 p-3 bg-white dark:bg-gray-800"></div>
-                    <input type="hidden" name="body" id="body-input" value="{{ old('body', $record->body) }}">
+                    <x-admin.form.editorjs
+                        name="body"
+                        label="Body"
+                        :value="$record->body"
+                        ai-context="entry"
+                        :ai-record-id="$record->exists ? $record->id : null"
+                        :ai-content-type-slug="$contentType->slug"
+                    />
                 </div>
             </div>
 

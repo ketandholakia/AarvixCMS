@@ -60,6 +60,43 @@
                         />
                     </div>
                 </div>
+
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-800 pb-2">AI Controls</h3>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <label class="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                            <input type="checkbox" name="ai_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_enabled', $settings['ai_enabled'] ?? config('ai.enabled', false)) ? 'checked' : '' }}>
+                            <span>
+                                <span class="block text-sm font-medium text-gray-900 dark:text-white">Global AI enabled</span>
+                                <span class="block text-sm text-gray-500 dark:text-gray-400">Master kill switch for all AI requests.</span>
+                            </span>
+                        </label>
+
+                        <label class="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                            <input type="checkbox" name="ai_writer_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_writer_enabled', $settings['ai_writer_enabled'] ?? true) ? 'checked' : '' }}>
+                            <span>
+                                <span class="block text-sm font-medium text-gray-900 dark:text-white">Writer enabled</span>
+                                <span class="block text-sm text-gray-500 dark:text-gray-400">Controls content generation and rewrite tools.</span>
+                            </span>
+                        </label>
+
+                        <label class="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                            <input type="checkbox" name="ai_chat_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_chat_enabled', $settings['ai_chat_enabled'] ?? true) ? 'checked' : '' }}>
+                            <span>
+                                <span class="block text-sm font-medium text-gray-900 dark:text-white">Chat enabled</span>
+                                <span class="block text-sm text-gray-500 dark:text-gray-400">Controls conversational AI surfaces.</span>
+                            </span>
+                        </label>
+
+                        <label class="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                            <input type="checkbox" name="ai_image_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_image_enabled', $settings['ai_image_enabled'] ?? true) ? 'checked' : '' }}>
+                            <span>
+                                <span class="block text-sm font-medium text-gray-900 dark:text-white">Image enabled</span>
+                                <span class="block text-sm text-gray-500 dark:text-gray-400">Controls generation and editing utilities.</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
             </div>
 
             <div class="px-6 py-4 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-3">

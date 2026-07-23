@@ -66,6 +66,10 @@
                             name="{{ $prefix }}body{{ $suffix }}" 
                             label="Page Body ({{ strtoupper($loc) }})" 
                             :value="$trans->body" 
+                            @if($loc === 'en')
+                                ai-context="page"
+                                :ai-record-id="$record->exists ? $record->id : null"
+                            @endif
                         />
                     </div>
                 @endforeach

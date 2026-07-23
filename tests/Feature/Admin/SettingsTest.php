@@ -38,6 +38,10 @@ class SettingsTest extends TestCase
         $response = $this->actingAs($admin)->put(route('admin.settings.update'), [
             'site_name' => 'New Awesome Site',
             'social_twitter' => 'https://twitter.com/awesomesite',
+            'ai_enabled' => 1,
+            'ai_writer_enabled' => 1,
+            'ai_chat_enabled' => 0,
+            'ai_image_enabled' => 1,
         ]);
 
         $response->assertRedirect(route('admin.settings.index'));
@@ -54,6 +58,8 @@ class SettingsTest extends TestCase
 
         $this->assertSame('New Awesome Site', app(SettingService::class)->get('site_name'));
         $this->assertSame('https://twitter.com/awesomesite', Setting::get('social_twitter'));
+        $this->assertTrue(app(SettingService::class)->get('ai.enabled', false));
+        $this->assertFalse(app(SettingService::class)->get('ai.chat.enabled', true));
     }
 
     public function test_settings_service_rejects_unsupported_keys(): void

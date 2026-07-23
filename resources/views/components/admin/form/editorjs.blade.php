@@ -1,10 +1,22 @@
-@props(['name', 'label' => '', 'value' => '', 'required' => false, 'help' => ''])
+@props(['name', 'label' => '', 'value' => '', 'required' => false, 'help' => '', 'aiContext' => null, 'aiRecordId' => null, 'aiContentTypeSlug' => null])
 
-<div class="space-y-1.5" x-data="editorJsComponent('{{ $name }}', `{{ old($name, $value) }}`)">
+<div class="space-y-3" x-data="editorJsComponent('{{ $name }}', @js(old($name, $value)), @js([
+    'aiContext' => $aiContext,
+    'aiRecordId' => $aiRecordId,
+    'aiContentTypeSlug' => $aiContentTypeSlug,
+]))">
     @if($label)
         <label for="{{ $name }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
             {{ $label }} @if($required)<span class="text-red-500">*</span>@endif
         </label>
+    @endif
+
+    @if($aiContext)
+        @include('admin.partials.ai-writer-panel', [
+            'aiContext' => $aiContext,
+            'aiRecordId' => $aiRecordId,
+            'aiContentTypeSlug' => $aiContentTypeSlug,
+        ])
     @endif
     
     <!-- Hidden textarea that the form actually submits -->
@@ -38,8 +50,9 @@
 
 <script>
     document.addEventListener('alpine:init', () => {
-        Alpine.data('editorJsComponent', (name, initialData) => ({
+        Alpine.data('editorJsComponent', (name, initialData, aiConfig) => ({
             editor: null,
+            aiConfig,
             init() {
                 let parsedData = {};
                 try {

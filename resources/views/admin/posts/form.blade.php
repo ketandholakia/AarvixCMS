@@ -77,6 +77,10 @@
                             name="{{ $prefix }}body{{ $suffix }}" 
                             label="Body Content ({{ strtoupper($loc) }})" 
                             :value="$trans->body" 
+                            @if($loc === 'en')
+                                ai-context="post"
+                                :ai-record-id="$record->exists ? $record->id : null"
+                            @endif
                         />
                     </div>
                 @endforeach

@@ -1,0 +1,136 @@
+@php
+    $aiConfig = [
+        'enabled' => config('ai.enabled', false),
+        'context' => $aiContext ?? null,
+        'recordId' => $aiRecordId ?? null,
+        'contentTypeSlug' => $aiContentTypeSlug ?? null,
+    ];
+@endphp
+
+<div class="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4 shadow-sm dark:border-indigo-900/40 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950" x-data='aiWriterPanel(@js($aiConfig))'>
+    <div class="flex items-center justify-between gap-3">
+        <div>
+            <div class="text-sm font-semibold text-indigo-700 dark:text-indigo-300">AI Writer</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">Generate a preview before you apply anything.</div>
+        </div>
+        <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ config('ai.enabled', false) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+            {{ config('ai.enabled', false) ? 'Ready' : 'Disabled' }}
+        </span>
+    </div>
+
+    <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <select x-model="operation" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+            <option value="rewrite">Rewrite</option>
+            <option value="shorten">Shorten</option>
+            <option value="expand">Expand</option>
+            <option value="summarize">Summarize</option>
+            <option value="grammar">Grammar</option>
+        </select>
+
+        <select x-model="scope" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+            <option value="document">Whole document</option>
+            <option value="selection">Selected text</option>
+        </select>
+
+        <input x-model="tone" type="text" placeholder="Tone, e.g. friendly" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+
+        <button type="button" @click="generate" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
+            <span x-show="!loading">Generate Preview</span>
+            <span x-show="loading" style="display:none;">Generating...</span>
+        </button>
+    </div>
+
+    <div class="mt-4">
+        <p class="text-xs text-gray-500 dark:text-gray-400">Selection is used when available; otherwise the whole document is sent.</p>
+    </div>
+
+    <div x-show="error" class="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-300" style="display:none;" x-text="error"></div>
+
+    <div x-show="preview" class="mt-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950" style="display:none;">
+        <div class="flex items-center justify-between gap-3">
+            <div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">Preview</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Review the suggestion before applying it.</div>
+            </div>
+            <button type="button" @click="copyPreview" class="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">Copy</button>
+        </div>
+        <pre class="mt-3 whitespace-pre-wrap rounded-xl bg-gray-50 p-4 text-sm text-gray-700 dark:bg-gray-900 dark:text-gray-200" x-text="preview"></pre>
+    </div>
+</div>
+
+@once
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('aiWriterPanel', (config) => ({
+        operation: 'rewrite',
+        scope: 'document',
+        tone: '',
+        loading: false,
+        error: '',
+        preview: '',
+        config,
+        async generate() {
+            if (! this.config.enabled) {
+                this.error = 'AI is disabled in settings.';
+                return;
+            }
+
+            this.loading = true;
+            this.error = '';
+            this.preview = '';
+
+            try {
+                const selection = window.getSelection ? String(window.getSelection()) : '';
+                const textarea = this.$root.closest('form')?.querySelector('textarea[name="body"], textarea[name$="[body]"]');
+                const documentValue = textarea ? textarea.value : '';
+                const scope = this.scope || 'document';
+
+                if (scope === 'selection' && (! selection || ! selection.trim())) {
+                    throw new Error('Highlight text first or switch to whole document.');
+                }
+
+                const response = await fetch('{{ route('admin.ai.writer.generate') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                    body: JSON.stringify({
+                        context: this.config.context,
+                        record_id: this.config.recordId || null,
+                        content_type_slug: this.config.contentTypeSlug || null,
+                        operation: this.operation,
+                        scope,
+                        tone: this.tone || null,
+                        selection: scope === 'selection' ? (selection || null) : null,
+                        document: documentValue,
+                    }),
+                });
+
+                const payload = await response.json();
+
+                if (! response.ok) {
+                    throw new Error(payload.message || 'AI writer request failed.');
+                }
+
+                this.preview = payload.suggestion || '';
+            } catch (error) {
+                this.error = error.message || 'AI writer request failed.';
+            } finally {
+                this.loading = false;
+            }
+        },
+        copyPreview() {
+            if (! this.preview) {
+                return;
+            }
+
+            navigator.clipboard?.writeText(this.preview);
+        },
+    }));
+});
+</script>
+@endpush
+@endonce

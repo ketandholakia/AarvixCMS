@@ -35,6 +35,11 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
 
         Route::get('settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index')->middleware('can:manage_settings');
         Route::put('settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update')->middleware('can:manage_settings');
+        Route::get('ai/diagnostics', [\App\Http\Controllers\Admin\AiDiagnosticsController::class, 'index'])->name('ai.diagnostics')->middleware('can:manage_settings');
+        Route::resource('ai-prompts', \App\Http\Controllers\Admin\AiPromptController::class)->middleware('can:manage_settings');
+        Route::get('ai-prompts/{ai_prompt}/versions/{version}/compare', [\App\Http\Controllers\Admin\AiPromptController::class, 'compare'])->name('ai-prompts.compare')->middleware('can:manage_settings');
+        Route::post('ai-prompts/{ai_prompt}/versions/{version}/rollback', [\App\Http\Controllers\Admin\AiPromptController::class, 'rollback'])->name('ai-prompts.rollback')->middleware('can:manage_settings');
+        Route::post('ai/writer/generate', [\App\Http\Controllers\Admin\AiWriterController::class, 'generate'])->name('ai.writer.generate');
         
         Route::resource('forms', \App\Http\Controllers\Admin\FormController::class);
         Route::resource('form_submissions', \App\Http\Controllers\Admin\FormSubmissionController::class)->only(['index', 'show', 'destroy']);

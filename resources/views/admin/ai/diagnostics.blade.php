@@ -10,6 +10,15 @@
         </div>
     @endif
 
+    <div class="flex flex-wrap gap-3">
+        <a href="{{ route('admin.ai-tool-calls.index') }}" class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">
+            Tool calls
+        </a>
+        <a href="{{ route('admin.ai-agent-runs.index') }}" class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">
+            Agent runs
+        </a>
+    </div>
+
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <div class="text-sm text-gray-500 dark:text-gray-400">AI platform</div>

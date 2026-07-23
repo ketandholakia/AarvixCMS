@@ -6,6 +6,7 @@ use App\AI\DTOs\AiAgentDefinition;
 use App\AI\DTOs\AiAgentStep;
 use App\AI\Exceptions\AiAgentExecutionException;
 use App\AI\Services\AiAgentExecutionService;
+use App\Models\AiAgentRun;
 use App\Models\AiToolCall;
 use App\Models\Role;
 use App\Models\User;
@@ -70,10 +71,18 @@ class AiAgentExecutionTest extends TestCase
         $this->assertSame('0.01500000', $result['estimated_cost']);
         $this->assertCount(1, $result['steps']);
         $this->assertSame('ai.report', $result['steps'][0]['tool_key']);
+        $this->assertNotEmpty($result['run_uuid']);
 
         $call = AiToolCall::query()->latest('id')->firstOrFail();
         $this->assertSame('succeeded', $call->status);
         $this->assertSame('ai.report', $call->tool->key);
+
+        $run = AiAgentRun::query()->latest('id')->firstOrFail();
+        $this->assertSame('succeeded', $run->status);
+        $this->assertSame('reporting', $run->agent_key);
+        $this->assertSame(1, $run->steps_completed);
+        $this->assertCount(1, $run->steps);
+        $this->assertSame('succeeded', $run->steps->first()->status);
     }
 
     public function test_agent_halts_when_step_requires_approval(): void
@@ -114,10 +123,16 @@ class AiAgentExecutionTest extends TestCase
         $this->assertSame('approval_required', $result['status']);
         $this->assertSame('seo.propose', $result['halt']['tool_key']);
         $this->assertSame(1, $result['completed_steps']);
+        $this->assertNotEmpty($result['run_uuid']);
 
         $call = AiToolCall::query()->latest('id')->firstOrFail();
         $this->assertSame('awaiting_approval', $call->status);
         $this->assertSame('pending', $call->approval_state);
+
+        $run = AiAgentRun::query()->latest('id')->firstOrFail();
+        $this->assertSame('approval_required', $run->status);
+        $this->assertCount(1, $run->steps);
+        $this->assertSame('approval_required', $run->steps->first()->status);
     }
 
     public function test_agent_enforces_step_and_budget_limits(): void

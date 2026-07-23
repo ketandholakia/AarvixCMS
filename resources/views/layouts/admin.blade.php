@@ -69,6 +69,11 @@
                         AI Diagnostics
                     </a>
 
+                    <a href="{{ route('admin.ai-agent-runs.index') }}" class="flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors {{ request()->routeIs('admin.ai-agent-runs.*') ? 'bg-gray-100 dark:bg-gray-800 text-indigo-600 dark:text-indigo-400' : '' }}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5h6m-6 7h6m-6 7h6M5 5h.01M5 12h.01M5 19h.01"></path></svg>
+                        AI Agent Runs
+                    </a>
+
                     <a href="{{ route('admin.ai-prompts.index') }}" class="flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors {{ request()->routeIs('admin.ai-prompts.*') ? 'bg-gray-100 dark:bg-gray-800 text-indigo-600 dark:text-indigo-400' : '' }}">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         AI Prompts

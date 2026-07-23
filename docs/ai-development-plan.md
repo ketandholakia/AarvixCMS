@@ -521,6 +521,8 @@ model policy, budgets, and maximum steps.
 - [x] Surface the agent layer in admin diagnostics with runtime enable overrides.
 - [x] Add agent execution scaffolding with tool allowlists, permission checks,
   step limits, and approval-aware halting.
+- [x] Persist agent runs and step history with admin inspection screens.
+- [x] Add an `ai:agent-run` console command for launching a JSON step plan.
 
 #### Acceptance criteria
 

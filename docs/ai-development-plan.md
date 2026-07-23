@@ -282,7 +282,7 @@ The schema should be introduced only as each phase requires it.
 - [x] Ask the provider for structured block-level output and validate it before preview.
 - [x] Render a diff/preview with `Replace`, `Insert`, and `Cancel`; never autosave.
 - [x] Reuse the panel in Post, Page, and Entry forms.
-- Apply SEO output to existing meta fields; add missing social metadata only through a
+- [x] Apply SEO output to existing meta fields; add missing social metadata only through a
   separate schema change after UI ownership is clear.
 
 #### API endpoints

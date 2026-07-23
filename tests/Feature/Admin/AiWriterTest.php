@@ -100,4 +100,34 @@ class AiWriterTest extends TestCase
         $response->assertSee('Selected sentence only.', false);
         $response->assertDontSee('Whole document text.', false);
     }
+
+    public function test_admin_can_generate_seo_preview_for_a_post(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.driver', FakeAiProvider::class);
+
+        $post = Post::factory()->create([
+            'author_id' => $this->admin()->id,
+            'title' => 'SEO Ready Title',
+        ]);
+
+        $response = $this->actingAs($this->admin())->postJson(route('admin.ai.writer.generate'), [
+            'context' => 'post',
+            'record_id' => $post->id,
+            'title' => 'SEO Ready Title',
+            'operation' => 'seo',
+            'document' => json_encode([
+                'blocks' => [
+                    ['type' => 'paragraph', 'data' => ['text' => 'This article explains SEO planning for editors.']],
+                ],
+            ]),
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('preview.seo.meta_title', 'SEO Ready Title');
+        $response->assertJsonPath('preview.seo.slug', 'seo-ready-title');
+        $response->assertJsonCount(2, 'preview.seo.warnings');
+        $response->assertJsonPath('preview.seo.warnings.0', 'Meta title is short. Aim for 25 to 60 characters.');
+        }
 }

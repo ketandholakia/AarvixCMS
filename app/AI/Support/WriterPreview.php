@@ -12,12 +12,14 @@ class WriterPreview
         $summary = null;
         $plainText = null;
         $blocks = [];
+        $seo = null;
 
         if (is_array($response)) {
             $mode = self::normalizeMode($response['mode'] ?? null, $mode);
             $summary = self::sanitizeText($response['summary'] ?? null);
             $plainText = self::sanitizeText($response['plain_text'] ?? $response['suggestion'] ?? null);
             $blocks = self::normalizeBlocks($response['blocks'] ?? null);
+            $seo = self::normalizeSeo($response['seo'] ?? null);
         } elseif (is_string($response)) {
             $plainText = self::sanitizeText($response);
         }
@@ -46,6 +48,7 @@ class WriterPreview
             'summary' => $summary,
             'plain_text' => $plainText,
             'blocks' => $blocks,
+            'seo' => $seo,
         ];
     }
 
@@ -202,6 +205,54 @@ class WriterPreview
                 'code' => $code,
             ],
         ];
+    }
+
+    protected static function normalizeSeo(mixed $seo): ?array
+    {
+        if (! is_array($seo)) {
+            return null;
+        }
+
+        $metaTitle = self::sanitizeText($seo['meta_title'] ?? null);
+        $metaDescription = self::sanitizeText($seo['meta_description'] ?? null);
+        $slug = self::sanitizeText($seo['slug'] ?? null);
+
+        $keywords = [];
+        foreach (($seo['keywords'] ?? []) as $keyword) {
+            $keyword = self::sanitizeText($keyword);
+            if ($keyword !== '') {
+                $keywords[] = $keyword;
+            }
+        }
+
+        return [
+            'meta_title' => $metaTitle,
+            'meta_description' => $metaDescription,
+            'slug' => $slug,
+            'keywords' => $keywords,
+            'og_title' => self::sanitizeText($seo['og_title'] ?? $metaTitle),
+            'og_description' => self::sanitizeText($seo['og_description'] ?? $metaDescription),
+            'twitter_title' => self::sanitizeText($seo['twitter_title'] ?? $metaTitle),
+            'twitter_description' => self::sanitizeText($seo['twitter_description'] ?? $metaDescription),
+            'warnings' => self::normalizeStringList($seo['warnings'] ?? []),
+            'lengths' => [
+                'meta_title' => isset($seo['lengths']['meta_title']) ? (int) $seo['lengths']['meta_title'] : mb_strlen($metaTitle),
+                'meta_description' => isset($seo['lengths']['meta_description']) ? (int) $seo['lengths']['meta_description'] : mb_strlen($metaDescription),
+                'keywords' => isset($seo['lengths']['keywords']) ? (int) $seo['lengths']['keywords'] : count($keywords),
+            ],
+        ];
+    }
+
+    protected static function normalizeStringList(mixed $values): array
+    {
+        if (! is_array($values)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            static fn ($value) => self::sanitizeText($value),
+            $values
+        )));
     }
 
     protected static function sanitizeText(mixed $value): string

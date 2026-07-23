@@ -160,6 +160,16 @@
                     <textarea name="meta_description" rows="2"
                               class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">{{ old('meta_description', $record->meta_description) }}</textarea>
                 </div>
+                @include('admin.partials.ai-seo-panel', [
+                    'aiContext' => 'entry',
+                    'aiRecordId' => $record->exists ? $record->id : null,
+                    'aiContentTypeSlug' => $contentType->slug,
+                    'aiTitleField' => 'title',
+                    'aiBodyField' => 'body',
+                    'aiSlugField' => 'slug',
+                    'aiMetaTitleField' => 'meta_title',
+                    'aiMetaDescriptionField' => 'meta_description',
+                ])
             </div>
         </div>
     </div>

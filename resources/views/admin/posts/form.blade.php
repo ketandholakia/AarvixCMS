@@ -212,6 +212,16 @@
                                 rows="3"
                                 help="Appears in search engine results." 
                             />
+
+                            @include('admin.partials.ai-seo-panel', [
+                                'aiContext' => 'post',
+                                'aiRecordId' => $record->exists ? $record->id : null,
+                                'aiTitleField' => $loc === 'en' ? 'title' : "translations[{$loc}][title]",
+                                'aiBodyField' => $loc === 'en' ? 'body' : "translations[{$loc}][body]",
+                                'aiSlugField' => $loc === 'en' ? 'slug' : null,
+                                'aiMetaTitleField' => $prefix . 'meta_title' . $suffix,
+                                'aiMetaDescriptionField' => $prefix . 'meta_description' . $suffix,
+                            ])
                         </div>
                     @endforeach
                 </div>

@@ -35,8 +35,8 @@ class AiWriterController extends Controller
                 'document' => $writerDocument,
                 'content' => $writerDocument['plain_text'],
                 'selection' => $writerDocument['selection'],
+                'title' => $data['title'] ?? ($subject?->title ?? null),
                 'tone' => $data['tone'] ?? null,
-                'title' => $subject?->title ?? null,
             ],
             options: [
                 'content_length' => Str::length($writerDocument['plain_text']),

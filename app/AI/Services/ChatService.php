@@ -12,6 +12,8 @@ use RuntimeException;
 
 class ChatService
 {
+    protected const SUPPORTED_MODES = ['knowledge', 'summary', 'policy', 'writing'];
+
     public function __construct(
         protected AiManager $aiManager,
         protected RetrievalService $retrievalService,
@@ -61,7 +63,7 @@ class ChatService
             'conversation_id' => $conversation->id,
             'retry_of_id' => $retryOf?->id,
             'request_uuid' => (string) Str::uuid(),
-            'mode' => (string) ($options['mode'] ?? 'knowledge'),
+            'mode' => $this->normalizeMode($options['mode'] ?? 'knowledge'),
             'status' => 'pending',
             'question' => $question,
             'options' => $options,
@@ -209,6 +211,60 @@ class ChatService
     }
 
     /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    public function searchContent(AiConversation $conversation, string $question, int $limit = 5, array $options = []): array
+    {
+        $scope = $this->scopeForConversation($conversation);
+
+        return $this->retrievalService->retrieve($scope, $question, $limit, $options);
+    }
+
+    public function summarizeConversation(AiConversation $conversation, int $limit = 10): string
+    {
+        $messages = $conversation->messages()
+            ->orderBy('message_order')
+            ->limit(max(1, $limit))
+            ->get(['role', 'content'])
+            ->map(static function (AiMessage $message): string {
+                return ucfirst($message->role) . ': ' . trim((string) $message->content);
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($messages === []) {
+            return 'No conversation messages yet.';
+        }
+
+        return 'Conversation summary: ' . implode(' | ', $messages);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function explainPolicy(AiConversation $conversation): array
+    {
+        $scope = $this->scopeForConversation($conversation);
+        $user = $conversation->user;
+        $isAdmin = $user?->hasRole('Admin') ?? false;
+
+        $allowedVisibilities = $isAdmin ? ['public', 'restricted', 'private'] : ['public'];
+
+        return [
+            'conversation_id' => $conversation->id,
+            'owner_user_id' => $conversation->user_id,
+            'is_admin' => $isAdmin,
+            'allowed_visibilities' => $allowedVisibilities,
+            'explanation' => $isAdmin
+                ? 'Admin conversations can cite public, restricted, and private CMS content.'
+                : 'Non-admin conversations can only cite public CMS content.',
+            'scope' => $scope->toArray(),
+        ];
+    }
+
+    /**
      * @param array<string, mixed> $retrieval
      */
     protected function buildPrompt(string $question, array $retrieval): string
@@ -228,5 +284,22 @@ class ChatService
             $context !== '' ? 'Context: ' . $context : null,
             $citations !== [] ? 'Citations: ' . implode("\n", $citations) : null,
         ]))));
+    }
+
+    protected function normalizeMode(mixed $mode): string
+    {
+        $mode = is_string($mode) ? strtolower(trim($mode)) : 'knowledge';
+
+        return in_array($mode, self::SUPPORTED_MODES, true) ? $mode : 'knowledge';
+    }
+
+    protected function scopeForConversation(AiConversation $conversation): AiScope
+    {
+        return new AiScope(
+            userId: $conversation->user_id,
+            site: data_get($conversation->scope, 'site'),
+            feature: 'chat',
+            metadata: is_array($conversation->scope['metadata'] ?? null) ? $conversation->scope['metadata'] : [],
+        );
     }
 }

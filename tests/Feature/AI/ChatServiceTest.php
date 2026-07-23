@@ -92,6 +92,51 @@ class ChatServiceTest extends TestCase
         $this->assertSame('Conversation source', $result['citations'][0]['title']);
     }
 
+    public function test_chat_service_supports_search_summary_and_policy_explanations(): void
+    {
+        $admin = User::factory()->create(['is_active' => true]);
+        $admin->roles()->attach(Role::where('name', 'Admin')->firstOrFail());
+
+        $conversation = $this->app->make(ChatService::class)->createConversation(
+            new AiScope(userId: $admin->id, site: 'default', feature: 'chat')
+        );
+
+        $service = $this->app->make(ChatService::class);
+
+        $service->appendMessage($conversation, 'user', 'First question', ['request_uuid' => 'msg-1']);
+        $service->appendMessage($conversation, 'assistant', 'First answer', ['request_uuid' => 'msg-2']);
+        $service->appendMessage($conversation, 'user', 'Second question', ['request_uuid' => 'msg-3']);
+
+        $summary = $service->summarizeConversation($conversation);
+        $this->assertStringContainsString('Conversation summary:', $summary);
+        $this->assertStringContainsString('User: First question', $summary);
+        $this->assertStringContainsString('Assistant: First answer', $summary);
+
+        $policy = $service->explainPolicy($conversation);
+        $this->assertTrue($policy['is_admin']);
+        $this->assertSame(['public', 'restricted', 'private'], $policy['allowed_visibilities']);
+        $this->assertStringContainsString('Admin conversations', $policy['explanation']);
+
+        $search = $service->searchContent($conversation, 'second question');
+        $this->assertIsArray($search['citations']);
+    }
+
+    public function test_chat_service_normalizes_unknown_modes_to_knowledge(): void
+    {
+        $admin = User::factory()->create(['is_active' => true]);
+        $admin->roles()->attach(Role::where('name', 'Admin')->firstOrFail());
+
+        $conversation = $this->app->make(ChatService::class)->createConversation(
+            new AiScope(userId: $admin->id, site: 'default', feature: 'chat')
+        );
+
+        $run = $this->app->make(ChatService::class)->createRun($conversation, 'What mode is this?', [
+            'mode' => 'unsupported-mode',
+        ]);
+
+        $this->assertSame('knowledge', $run->mode);
+    }
+
     public function test_chat_service_streams_answers_and_supports_cancel_and_retry(): void
     {
         $admin = User::factory()->create(['is_active' => true]);

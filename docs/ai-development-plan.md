@@ -424,7 +424,7 @@ future tenant filter is added only when tenant ownership exists.
 
 - Conversation and message persistence.
 - [x] Streaming answers with cancel and retry.
-- Website/content search, summarization, and policy explanation.
+- [x] Website/content search, summarization, and policy explanation.
 - Conversation rename, archive, and delete.
 - Explicit mode selection: knowledge answer or writing help.
 - Citations that open only sources the user may access.

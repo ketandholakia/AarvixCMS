@@ -516,6 +516,10 @@ Only after tools are proven, define SEO, Marketing, Translation, Documentation, 
 Support agents as versioned configurations of prompt, tools, memory, permissions,
 model policy, budgets, and maximum steps.
 
+- [x] Add a config-driven agent registry with initial SEO, Marketing, Translation,
+  Documentation, and Support definitions.
+- [x] Surface the agent layer in admin diagnostics with runtime enable overrides.
+
 #### Acceptance criteria
 
 - The server reauthorizes every tool call; model output never grants permission.

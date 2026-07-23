@@ -21,6 +21,11 @@ class SettingService
         'ai.writer.enabled',
         'ai.chat.enabled',
         'ai.image.enabled',
+        'ai.agents.seo.enabled',
+        'ai.agents.marketing.enabled',
+        'ai.agents.translation.enabled',
+        'ai.agents.documentation.enabled',
+        'ai.agents.support.enabled',
     ];
 
     /**

@@ -62,6 +62,57 @@
 
     <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
         <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Agent Layer</h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Versioned agent configurations that combine prompts, tools, permissions, model policy, budgets, and step limits.
+            </p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                <thead class="bg-gray-50 dark:bg-gray-800/50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Agent</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Version</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Prompt</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tools</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Permissions</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Budget</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Steps</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                    @foreach($agents as $agent)
+                        <tr>
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-gray-900 dark:text-white">{{ $agent['name'] }}</div>
+                                @if(! empty($agent['description']))
+                                    <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $agent['description'] }}</div>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">v{{ $agent['version'] }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ $agent['prompt_key'] ?? 'n/a' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ implode(', ', $agent['tools'] ?? []) ?: 'n/a' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ implode(', ', $agent['permissions'] ?? []) ?: 'n/a' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                <div>{{ data_get($agent, 'budgets.max_tokens', 'n/a') }} tokens</div>
+                                <div>{{ data_get($agent, 'budgets.max_cost', 'n/a') }} max cost</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ $agent['max_steps'] }}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ ($agent['is_enabled'] ?? false) ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }}">
+                                    {{ ($agent['is_enabled'] ?? false) ? 'Enabled' : 'Disabled' }}
+                                </span>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+        <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Providers</h2>
         </div>
         <div class="overflow-x-auto">

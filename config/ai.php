@@ -74,6 +74,124 @@ return [
         ],
     ],
 
+    'agents' => [
+        'seo' => [
+            'version' => 1,
+            'name' => 'SEO Agent',
+            'description' => 'Produces search-friendly content suggestions and metadata proposals.',
+            'prompt' => 'ai.agents.seo.v1',
+            'tools' => ['content.summary', 'seo.propose'],
+            'memory' => [
+                'store' => 'session',
+                'retention' => 'single-turn',
+            ],
+            'permissions' => ['use_ai_writer'],
+            'model_policy' => [
+                'primary' => 'writer',
+                'fallback' => 'chat',
+                'temperature' => 0.4,
+            ],
+            'budgets' => [
+                'max_tokens' => 1800,
+                'max_cost' => '0.50',
+            ],
+            'max_steps' => 3,
+            'is_enabled' => true,
+        ],
+        'marketing' => [
+            'version' => 1,
+            'name' => 'Marketing Agent',
+            'description' => 'Drafts campaign copy and social variants from approved content.',
+            'prompt' => 'ai.agents.marketing.v1',
+            'tools' => ['content.summary', 'content.draft', 'media.search'],
+            'memory' => [
+                'store' => 'session',
+                'retention' => 'multi-turn',
+            ],
+            'permissions' => ['use_ai_writer', 'view_media'],
+            'model_policy' => [
+                'primary' => 'writer',
+                'fallback' => 'chat',
+                'temperature' => 0.65,
+            ],
+            'budgets' => [
+                'max_tokens' => 2400,
+                'max_cost' => '1.00',
+            ],
+            'max_steps' => 4,
+            'is_enabled' => true,
+        ],
+        'translation' => [
+            'version' => 1,
+            'name' => 'Translation Agent',
+            'description' => 'Translates CMS content while preserving structure and links.',
+            'prompt' => 'ai.agents.translation.v1',
+            'tools' => ['content.summary'],
+            'memory' => [
+                'store' => 'none',
+                'retention' => 'single-turn',
+            ],
+            'permissions' => ['use_ai_writer'],
+            'model_policy' => [
+                'primary' => 'writer',
+                'fallback' => 'chat',
+                'temperature' => 0.2,
+            ],
+            'budgets' => [
+                'max_tokens' => 2200,
+                'max_cost' => '0.80',
+            ],
+            'max_steps' => 3,
+            'is_enabled' => true,
+        ],
+        'documentation' => [
+            'version' => 1,
+            'name' => 'Documentation Agent',
+            'description' => 'Turns internal knowledge into admin-facing documentation drafts.',
+            'prompt' => 'ai.agents.documentation.v1',
+            'tools' => ['content.search', 'content.summary', 'ai.report'],
+            'memory' => [
+                'store' => 'session',
+                'retention' => 'multi-turn',
+            ],
+            'permissions' => ['view_ai_usage'],
+            'model_policy' => [
+                'primary' => 'chat',
+                'fallback' => 'writer',
+                'temperature' => 0.3,
+            ],
+            'budgets' => [
+                'max_tokens' => 2000,
+                'max_cost' => '0.75',
+            ],
+            'max_steps' => 4,
+            'is_enabled' => true,
+        ],
+        'support' => [
+            'version' => 1,
+            'name' => 'Support Agent',
+            'description' => 'Answers CMS support requests using only approved read tools.',
+            'prompt' => 'ai.agents.support.v1',
+            'tools' => ['content.search', 'content.summary', 'media.search'],
+            'memory' => [
+                'store' => 'conversation',
+                'retention' => 'rolling',
+            ],
+            'permissions' => ['view_ai_usage'],
+            'model_policy' => [
+                'primary' => 'chat',
+                'fallback' => 'writer',
+                'temperature' => 0.15,
+            ],
+            'budgets' => [
+                'max_tokens' => 1600,
+                'max_cost' => '0.40',
+            ],
+            'max_steps' => 2,
+            'is_enabled' => true,
+        ],
+    ],
+
     'queue' => [
         'high' => env('AI_QUEUE_HIGH', 'ai-high'),
         'medium' => env('AI_QUEUE_MEDIUM', 'ai-medium'),

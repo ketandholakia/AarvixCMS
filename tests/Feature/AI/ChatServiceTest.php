@@ -207,6 +207,51 @@ class ChatServiceTest extends TestCase
         $this->assertStringNotContainsString('Citations:', $buffer);
     }
 
+    public function test_chat_service_stores_chat_safe_citation_urls(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+
+        $post = Post::withoutEvents(function () {
+            return Post::factory()->create([
+                'title' => 'Public source',
+                'excerpt' => 'Public citation summary',
+                'body' => json_encode([
+                    'blocks' => [
+                        ['type' => 'paragraph', 'data' => ['text' => 'Public citation body text.']],
+                    ],
+                ]),
+                'status' => 'published',
+            ]);
+        });
+
+        app()->call([new SyncContentEmbeddingsJob(Post::class, $post->id, 'chat-public-source'), 'handle']);
+
+        $conversation = $this->app->make(ChatService::class)->createConversation(
+            new AiScope(userId: $user->id, site: 'default', feature: 'chat')
+        );
+
+        $service = $this->app->make(ChatService::class);
+        $stream = $service->streamConversation($conversation, 'What is the public source?');
+
+        $buffer = '';
+        foreach ($stream as $chunk) {
+            $buffer .= $chunk;
+        }
+
+        $assistantMessage = $conversation->fresh()->messages()
+            ->where('role', 'assistant')
+            ->firstOrFail();
+
+        $citations = $assistantMessage->citations;
+
+        $this->assertNotEmpty($citations);
+        $this->assertSame('Public source', $citations[0]['title']);
+        $this->assertSame(url('/blog/' . $post->slug), $citations[0]['url']);
+        $this->assertArrayNotHasKey('admin_url', $citations[0]);
+        $this->assertArrayNotHasKey('public_url', $citations[0]);
+        $this->assertStringContainsString('What is the public source?', $buffer);
+    }
+
     public function test_chat_service_streams_answers_and_supports_cancel_and_retry(): void
     {
         $admin = User::factory()->create(['is_active' => true]);

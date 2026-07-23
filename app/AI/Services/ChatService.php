@@ -105,6 +105,7 @@ class ChatService
         }
 
         $conversation = $run->conversation()->firstOrFail();
+        $conversationUser = $conversation->user()->first();
         $scope = new AiScope(
             userId: $conversation->user_id,
             site: data_get($conversation->scope, 'site'),
@@ -142,7 +143,12 @@ class ChatService
             'context' => $retrieval,
         ])->save();
 
-        $prompt = $this->buildPrompt($run->question, $retrieval, $mode);
+        $chatCitations = $this->chatCitations($retrieval['citations'] ?? [], $conversationUser);
+        $chatRetrieval = array_merge($retrieval, [
+            'citations' => $chatCitations,
+        ]);
+
+        $prompt = $this->buildPrompt($run->question, $chatRetrieval, $mode);
         $request = new AiRequestData(
             input: [
                 'prompt' => $prompt,
@@ -191,7 +197,7 @@ class ChatService
         $conversation->messages()->create([
             'role' => 'assistant',
             'content' => $buffer,
-            'citations' => $retrieval['citations'] ?? [],
+            'citations' => $chatCitations,
             'request_uuid' => $run->request_uuid,
             'message_order' => ((int) $conversation->messages()->max('message_order')) + 1,
         ]);
@@ -200,7 +206,7 @@ class ChatService
             'status' => 'succeeded',
             'response_text' => $buffer,
             'response_metadata' => [
-                'citations' => $retrieval['citations'] ?? [],
+                'citations' => $chatCitations,
             ],
             'completed_at' => now(),
         ])->save();
@@ -350,7 +356,7 @@ class ChatService
             static fn (array $citation): string => sprintf(
                 '- %s (%s)',
                 (string) ($citation['title'] ?? 'Untitled'),
-                (string) ($citation['public_url'] ?? $citation['admin_url'] ?? 'no-url')
+                (string) ($citation['url'] ?? $citation['accessible_url'] ?? $citation['public_url'] ?? $citation['admin_url'] ?? 'no-url')
             ),
             is_array($retrieval['citations'] ?? null) ? $retrieval['citations'] : []
         );
@@ -367,6 +373,33 @@ class ChatService
         return $mode === 'writing'
             ? 'Help the user draft or revise writing. Do not cite CMS sources unless they are explicitly provided.'
             : 'Answer only using the provided context. Cite source titles when helpful.';
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $citations
+     * @return array<int, array<string, mixed>>
+     */
+    protected function chatCitations(array $citations, ?User $user): array
+    {
+        $isAdmin = $user?->hasRole('Admin') ?? false;
+
+        return array_values(array_map(static function (array $citation) use ($isAdmin): array {
+            $url = $isAdmin
+                ? ($citation['accessible_url'] ?? $citation['admin_url'] ?? $citation['public_url'] ?? null)
+                : ($citation['accessible_url'] ?? $citation['public_url'] ?? null);
+
+            return array_filter([
+                'source_type' => $citation['source_type'] ?? null,
+                'source_id' => $citation['source_id'] ?? null,
+                'title' => $citation['title'] ?? null,
+                'chunk_index' => $citation['chunk_index'] ?? null,
+                'score' => $citation['score'] ?? null,
+                'snippet' => $citation['snippet'] ?? null,
+                'url' => $url,
+                'visibility' => $citation['visibility'] ?? null,
+                'content_type' => $citation['content_type'] ?? null,
+            ], static fn ($value): bool => $value !== null && $value !== '');
+        }, $citations));
     }
 
     protected function normalizeMode(mixed $mode): string

@@ -66,6 +66,7 @@ class RetrievalServiceTest extends TestCase
         $this->assertSame('public', $result['citations'][0]['visibility']);
         $this->assertSame(url('/blog/' . $publicPost->slug), $result['citations'][0]['public_url']);
         $this->assertSame(url('/admin/posts/' . $publicPost->id . '/edit'), $result['citations'][0]['admin_url']);
+        $this->assertSame(url('/blog/' . $publicPost->slug), $result['citations'][0]['accessible_url']);
         $this->assertStringContainsString('Launch checklist', $result['answer']);
         $this->assertStringContainsString('authorized source chunk', $result['answer']);
     }
@@ -111,6 +112,7 @@ class RetrievalServiceTest extends TestCase
         $this->assertSame('private', $result['citations'][0]['visibility']);
         $this->assertSame(url('/incident-response'), $result['citations'][0]['public_url']);
         $this->assertSame(url('/admin/pages/' . $privatePage->id . '/edit'), $result['citations'][0]['admin_url']);
+        $this->assertSame(url('/admin/pages/' . $privatePage->id . '/edit'), $result['citations'][0]['accessible_url']);
         $this->assertStringContainsString('Incident response', $result['context']);
     }
 }

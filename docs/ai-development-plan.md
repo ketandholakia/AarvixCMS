@@ -427,7 +427,7 @@ future tenant filter is added only when tenant ownership exists.
 - [x] Website/content search, summarization, and policy explanation.
 - [x] Conversation rename, archive, and delete.
 - [x] Explicit mode selection: knowledge answer or writing help.
-- Citations that open only sources the user may access.
+- [x] Citations that open only sources the user may access.
 
 Chat is read-only in this phase. Requests such as "find my article" may return links,
 but requests such as "update this article" cannot mutate content until the tool

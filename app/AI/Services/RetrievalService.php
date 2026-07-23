@@ -55,7 +55,7 @@ class RetrievalService
         usort($results, static fn (array $left, array $right): int => $right['score'] <=> $left['score']);
         $results = array_slice($results, 0, $limit);
 
-        $citations = array_map(fn (array $match): array => $this->buildCitation($match), $results);
+        $citations = array_map(fn (array $match): array => $this->buildCitation($scope, $match), $results);
 
         return [
             'question' => $question,
@@ -138,7 +138,7 @@ class RetrievalService
      * @param array<string, mixed> $match
      * @return array<string, mixed>
      */
-    protected function buildCitation(array $match): array
+    protected function buildCitation(AiScope $scope, array $match): array
     {
         $metadata = is_array($match['metadata'] ?? null) ? $match['metadata'] : [];
         $sourceType = (string) ($metadata['source_type'] ?? '');
@@ -158,6 +158,7 @@ class RetrievalService
             'snippet' => $snippet,
             'public_url' => $this->publicUrl($sourceType, $slug, $metadata),
             'admin_url' => $this->adminUrl($sourceType, $sourceId, $metadata),
+            'accessible_url' => $this->accessibleUrl($scope, $sourceType, $sourceId, $slug, $metadata),
             'visibility' => (string) ($metadata['visibility'] ?? $match['visibility'] ?? 'public'),
             'content_type' => $metadata['content_type'] ?? null,
         ];
@@ -225,5 +226,21 @@ class RetrievalService
                 : null,
             default => null,
         };
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    protected function accessibleUrl(AiScope $scope, string $sourceType, int $sourceId, string $slug, array $metadata): ?string
+    {
+        $user = $scope->userId ? User::query()->find($scope->userId) : null;
+        $publicUrl = $this->publicUrl($sourceType, $slug, $metadata);
+        $adminUrl = $this->adminUrl($sourceType, $sourceId, $metadata);
+
+        if ($user && $user->hasRole('Admin')) {
+            return $adminUrl ?? $publicUrl;
+        }
+
+        return $publicUrl;
     }
 }

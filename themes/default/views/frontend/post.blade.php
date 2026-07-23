@@ -77,6 +77,6 @@
         </div>
     @endif
     
-    @include('partials.comments', ['model' => $post])
+    @themePart('comments')
 </article>
 @endsection

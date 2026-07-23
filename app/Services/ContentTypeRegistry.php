@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ContentType;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class ContentTypeRegistry
 {
@@ -16,9 +17,26 @@ class ContentTypeRegistry
      */
     public function all(): Collection
     {
-        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
-            return ContentType::active()->orderBy('name')->get();
-        });
+        if (!Schema::hasTable('content_types')) {
+            $this->invalidate();
+            return collect();
+        }
+
+        $cached = Cache::get(self::CACHE_KEY);
+
+        if ($cached instanceof Collection) {
+            return $cached;
+        }
+
+        if ($cached !== null) {
+            $this->invalidate();
+        }
+
+        $fresh = ContentType::active()->orderBy('name')->get();
+
+        Cache::put(self::CACHE_KEY, $fresh, self::CACHE_TTL);
+
+        return $fresh;
     }
 
     /**

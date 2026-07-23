@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Plugin;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 
 class PluginManager
@@ -23,7 +24,12 @@ class PluginManager
             
             if (File::exists($pluginJsonPath)) {
                 $info = json_decode(File::get($pluginJsonPath), true);
-                
+
+                if (! is_array($info)) {
+                    Log::warning("Invalid plugin manifest: {$pluginJsonPath}");
+                    continue;
+                }
+
                 if (isset($info['namespace'])) {
                     $namespace = $info['namespace'];
                     $scannedNamespaces[] = $namespace;

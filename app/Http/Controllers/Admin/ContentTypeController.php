@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\ContentType;
-use App\Models\Permission;
-use App\Models\Role;
 use App\Http\Requests\Admin\ContentTypeRequest;
+use App\Models\ContentType;
 use App\Services\ContentTypeRegistry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class ContentTypeController extends AdminCrudController
 {
@@ -39,21 +38,40 @@ class ContentTypeController extends AdminCrudController
     protected function permissionMap(): array
     {
         return [
-            'view'   => 'manage_content_types',
+            'view' => 'manage_content_types',
             'create' => 'manage_content_types',
-            'edit'   => 'manage_content_types',
+            'edit' => 'manage_content_types',
             'delete' => 'manage_content_types',
         ];
     }
 
-    // ─── Override store to auto-seed permissions ───────────────────────────────
+    public function index(Request $request)
+    {
+        if ($redirect = $this->redirectIfContentTypesTableMissing()) {
+            return $redirect;
+        }
+
+        return parent::index($request);
+    }
+
+    public function create()
+    {
+        if ($redirect = $this->redirectIfContentTypesTableMissing()) {
+            return $redirect;
+        }
+
+        return parent::create();
+    }
 
     public function store(Request $request)
     {
+        if ($redirect = $this->redirectIfContentTypesTableMissing()) {
+            return $redirect;
+        }
+
         $this->authorizePermission('create');
 
-        $formRequest = app(ContentTypeRequest::class);
-        $data = $formRequest->validated();
+        $data = app(ContentTypeRequest::class)->validated();
         $data['is_active'] = $request->boolean('is_active', true);
 
         $contentType = ContentType::create($data);
@@ -66,6 +84,10 @@ class ContentTypeController extends AdminCrudController
 
     public function update(Request $request, string $id)
     {
+        if ($redirect = $this->redirectIfContentTypesTableMissing()) {
+            return $redirect;
+        }
+
         $this->authorizePermission('edit');
 
         $contentType = ContentType::findOrFail($id);
@@ -74,8 +96,7 @@ class ContentTypeController extends AdminCrudController
             return redirect()->back()->with('error', 'System content types cannot be modified.');
         }
 
-        $formRequest = app(ContentTypeRequest::class);
-        $data = $formRequest->validated();
+        $data = app(ContentTypeRequest::class)->validated();
         $data['is_active'] = $request->boolean('is_active', true);
 
         $contentType->update($data);
@@ -87,6 +108,10 @@ class ContentTypeController extends AdminCrudController
 
     public function destroy(Request $request, string $id)
     {
+        if ($redirect = $this->redirectIfContentTypesTableMissing()) {
+            return $redirect;
+        }
+
         $this->authorizePermission('delete');
 
         $contentType = ContentType::findOrFail($id);
@@ -106,10 +131,12 @@ class ContentTypeController extends AdminCrudController
             ->with('success', 'Content type deleted successfully.');
     }
 
-    // ─── Field Builder ─────────────────────────────────────────────────────────
-
     public function fieldBuilder(string $id)
     {
+        if ($redirect = $this->redirectIfContentTypesTableMissing()) {
+            return $redirect;
+        }
+
         $this->authorizePermission('edit');
 
         $contentType = ContentType::findOrFail($id);
@@ -119,17 +146,21 @@ class ContentTypeController extends AdminCrudController
 
     public function saveSchema(Request $request, string $id)
     {
+        if ($redirect = $this->redirectIfContentTypesTableMissing()) {
+            return $redirect;
+        }
+
         $this->authorizePermission('edit');
 
         $contentType = ContentType::findOrFail($id);
 
         $data = $request->validate([
-            'fields_schema'            => ['nullable', 'array'],
-            'fields_schema.*.key'      => ['required', 'string', 'max:60', 'regex:/^[a-z_]+$/'],
-            'fields_schema.*.label'    => ['required', 'string', 'max:100'],
-            'fields_schema.*.type'     => ['required', 'in:text,textarea,select,checkbox,date,media,number,url,email'],
+            'fields_schema' => ['nullable', 'array'],
+            'fields_schema.*.key' => ['required', 'string', 'max:60', 'regex:/^[a-z_]+$/'],
+            'fields_schema.*.label' => ['required', 'string', 'max:100'],
+            'fields_schema.*.type' => ['required', 'in:text,textarea,select,checkbox,date,media,number,url,email'],
             'fields_schema.*.required' => ['nullable', 'boolean'],
-            'fields_schema.*.options'  => ['nullable', 'string'],
+            'fields_schema.*.options' => ['nullable', 'string'],
         ]);
 
         $contentType->update(['fields_schema' => $data['fields_schema'] ?? []]);
@@ -139,6 +170,14 @@ class ContentTypeController extends AdminCrudController
             ->with('success', "Field schema for '{$contentType->name}' saved.");
     }
 
-    // ─── Private ──────────────────────────────────────────────────────────────
+    private function redirectIfContentTypesTableMissing()
+    {
+        if (Schema::hasTable('content_types')) {
+            return null;
+        }
 
+        return redirect()
+            ->route('admin.dashboard')
+            ->with('error', 'Content types are unavailable until the latest database migrations are run.');
+    }
 }

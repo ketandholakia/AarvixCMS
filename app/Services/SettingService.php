@@ -9,6 +9,7 @@ class SettingService
 {
     private const CACHE_KEY = 'cms_settings';
     private const CACHE_TTL = 86400; // 24 hours
+    private const ALLOWED_KEYS = ['site_name', 'site_description', 'social_twitter', 'social_github', 'active_theme'];
 
     /**
      * Get a setting value by key.
@@ -29,6 +30,10 @@ class SettingService
      */
     public function set(string $key, mixed $value, string $group = 'general', string $type = 'string'): void
     {
+        if (! in_array($key, self::ALLOWED_KEYS, true)) {
+            throw new \InvalidArgumentException("Unsupported setting key: {$key}");
+        }
+
         Setting::updateOrCreate(
             ['key' => $key],
             [
@@ -38,7 +43,13 @@ class SettingService
             ]
         );
 
+        $this->clearCache();
+    }
+
+    public function clearCache(): void
+    {
         Cache::forget(self::CACHE_KEY);
+        Setting::clearStaticCache();
     }
 
     /**

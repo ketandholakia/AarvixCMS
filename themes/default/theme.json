@@ -2,5 +2,39 @@
     "name": "Default Theme",
     "description": "The default Tailwind CSS theme for AarvixCMS.",
     "version": "1.0.0",
-    "author": "AarvixCMS"
+    "author": "AarvixCMS",
+    "parent": null,
+    "asset_base_url": null,
+    "assets": {
+        "styles": [
+            "public/style.css"
+        ],
+        "scripts": []
+    },
+    "menu_locations": [
+        {
+            "key": "primary",
+            "label": "Primary Navigation"
+        },
+        {
+            "key": "footer",
+            "label": "Footer Navigation"
+        }
+    ],
+    "sections": [
+        {
+            "key": "sidebar",
+            "label": "Sidebar Widget Area"
+        },
+        {
+            "key": "footer_widgets",
+            "label": "Footer Widgets"
+        }
+    ],
+    "settings_schema": [
+        { "key": "logo_url", "label": "Logo URL", "type": "url" },
+        { "key": "accent_color", "label": "Accent Color", "type": "text" },
+        { "key": "font_family", "label": "Font Family", "type": "text" },
+        { "key": "dark_mode_enabled", "label": "Enable dark mode by default", "type": "boolean" }
+    ]
 }

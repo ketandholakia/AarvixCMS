@@ -161,7 +161,7 @@ class EntryTest extends TestCase
             ],
         ]);
 
-        $this->actingAs($this->getAdmin())
+        $response = $this->actingAs($this->getAdmin())
             ->post(route('admin.entries.store', ['type' => $type->slug]), [
                 'title'         => 'Branding Project',
                 'status'        => 'draft',
@@ -170,6 +170,10 @@ class EntryTest extends TestCase
                     'year'   => '2024',
                 ],
             ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect();
+
 
         $entry = Entry::first();
         $this->assertEquals('Globex Corp', $entry->getCustomField('client'));

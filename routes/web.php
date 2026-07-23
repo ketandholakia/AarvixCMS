@@ -86,11 +86,15 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
         
         // Plugins
         Route::get('plugins', [\App\Http\Controllers\Admin\PluginController::class, 'index'])->name('plugins.index')->middleware('can:manage_plugins');
+        Route::post('plugins/sync', [\App\Http\Controllers\Admin\PluginController::class, 'sync'])->name('plugins.sync')->middleware('can:manage_plugins');
         Route::post('plugins/{id}/toggle', [\App\Http\Controllers\Admin\PluginController::class, 'toggle'])->name('plugins.toggle')->middleware('can:manage_plugins');
         
         // Themes
         Route::get('themes', [\App\Http\Controllers\Admin\ThemeController::class, 'index'])->name('themes.index')->middleware('can:manage_themes');
         Route::post('themes/activate', [\App\Http\Controllers\Admin\ThemeController::class, 'activate'])->name('themes.activate')->middleware('can:manage_themes');
+        Route::post('themes/preview', [\App\Http\Controllers\Admin\ThemeController::class, 'preview'])->name('themes.preview')->middleware('can:manage_themes');
+        Route::post('themes/preview/clear', [\App\Http\Controllers\Admin\ThemeController::class, 'clearPreview'])->name('themes.preview.clear')->middleware('can:manage_themes');
+        Route::put('themes/settings', [\App\Http\Controllers\Admin\ThemeController::class, 'updateSettings'])->name('themes.settings.update')->middleware('can:manage_themes');
 
         // Content Types
         Route::get('content-types/{content_type}/field-builder', [\App\Http\Controllers\Admin\ContentTypeController::class, 'fieldBuilder'])->name('content-types.field-builder');

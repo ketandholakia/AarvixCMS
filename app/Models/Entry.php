@@ -14,7 +14,7 @@ use Database\Factories\EntryFactory;
 
 class Entry extends Model
 {
-    use HasFactory, SoftDeletes, HasRevisions;
+    use HasFactory, SoftDeletes, HasSlug, HasRevisions;
 
     protected static function newFactory(): EntryFactory
     {

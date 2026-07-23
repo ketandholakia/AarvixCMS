@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Jobs\SendWebhookJob;
 use App\Models\Webhook;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Bus;
 
 class WebhookService
 {
@@ -34,31 +34,6 @@ class WebhookService
      */
     protected function sendPayload(Webhook $webhook, string $event, array $payload)
     {
-        $body = [
-            'event' => $event,
-            'timestamp' => now()->toIso8601String(),
-            'data' => $payload,
-        ];
-
-        $request = Http::timeout(10)->asJson();
-
-        // Optional HMAC signature
-        if (!empty($webhook->secret)) {
-            $signature = hash_hmac('sha256', json_encode($body), $webhook->secret);
-            $request->withHeaders(['X-AarvixCMS-Signature' => $signature]);
-        }
-
-        // Ideally this should be queued. We'll use a queued closure in Laravel 11.
-        dispatch(function () use ($request, $webhook, $body) {
-            try {
-                $response = $request->post($webhook->url, $body);
-                
-                if ($response->failed()) {
-                    Log::warning("Webhook failed [{$webhook->id}]: HTTP {$response->status()} - {$response->body()}");
-                }
-            } catch (\Exception $e) {
-                Log::error("Webhook error [{$webhook->id}]: {$e->getMessage()}");
-            }
-        });
+        Bus::dispatch(new SendWebhookJob($webhook->id, $event, $payload));
     }
 }

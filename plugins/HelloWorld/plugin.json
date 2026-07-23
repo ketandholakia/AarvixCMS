@@ -1,6 +1,7 @@
 {
     "name": "Hello World Plugin",
     "namespace": "HelloWorld",
+    "provider": "Plugins\\HelloWorld\\Providers\\HelloWorldServiceProvider",
     "description": "A proof-of-concept plugin to test the V5 architecture.",
     "version": "1.0.0"
 }

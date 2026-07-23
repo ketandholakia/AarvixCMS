@@ -8,6 +8,15 @@ use App\Models\Page;
 
 class FrontendController extends Controller
 {
+    private function resolveThemeView(string $view, ?string $fallback = null): string
+    {
+        if (view()->exists("theme::{$view}")) {
+            return "theme::{$view}";
+        }
+
+        return $fallback ?? $view;
+    }
+
     public function index(Request $request, $category_slug = null, $tag_slug = null)
     {
         $query = Post::with(['author', 'category'])
@@ -36,7 +45,7 @@ class FrontendController extends Controller
 
         $posts = $query->latest('published_at')->latest()->paginate(10);
 
-        return view('frontend.index', compact('posts', 'activeCategory', 'activeTag'));
+        return view($this->resolveThemeView('frontend.index'), compact('posts', 'activeCategory', 'activeTag'));
     }
 
     public function showPost($slug)
@@ -60,7 +69,7 @@ class FrontendController extends Controller
                 ->get();
         }
 
-        return view('frontend.post', compact('post', 'relatedPosts'));
+        return view($this->resolveThemeView('frontend.post'), compact('post', 'relatedPosts'));
     }
 
     public function showPage($slug)
@@ -72,10 +81,7 @@ class FrontendController extends Controller
 
         $template = $page->template ?: 'default';
         // if a specific template exists like frontend.pages.full-width, use it. Otherwise fallback.
-        $view = "frontend.page";
-        if (view()->exists("frontend.pages.{$template}")) {
-            $view = "frontend.pages.{$template}";
-        }
+        $view = $this->resolveThemeView("frontend.pages.{$template}", 'frontend.page');
 
         return view($view, compact('page'));
     }

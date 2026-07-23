@@ -8,6 +8,9 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\ContentTypeRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class ContentTypeTest extends TestCase
@@ -50,6 +53,52 @@ class ContentTypeTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Portfolio');
+    }
+
+    public function test_admin_role_can_view_content_types_even_if_role_permissions_are_stale(): void
+    {
+        $this->seed(\Database\Seeders\PermissionSeeder::class);
+
+        $adminRole = Role::firstOrCreate(['name' => 'Admin']);
+        $adminRole->permissions()->sync([]);
+
+        $admin = User::factory()->create(['is_active' => true]);
+        $admin->roles()->attach($adminRole);
+
+        $this->makeContentType();
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.content-types.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Portfolio');
+    }
+
+    public function test_index_redirects_to_dashboard_when_content_types_table_is_missing(): void
+    {
+        Schema::dropIfExists('content_types');
+
+        $response = $this->actingAs($this->getAdmin())
+            ->get(route('admin.content-types.index'));
+
+        $response->assertRedirect(route('admin.dashboard'));
+        $response->assertSessionHas('error', 'Content types are unavailable until the latest database migrations are run.');
+    }
+
+    public function test_registry_discards_invalid_cached_payloads(): void
+    {
+        $type = $this->makeContentType();
+
+        Cache::put(
+            'content_type_registry',
+            unserialize('O:15:"MissingRegistry":0:{}'),
+            3600
+        );
+
+        $result = app(ContentTypeRegistry::class)->all();
+
+        $this->assertInstanceOf(Collection::class, $result);
+        $this->assertSame($type->slug, $result->first()->slug);
     }
 
     // ─── Create / Store ────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Facades\Cache;
 
 class MenuItem extends Model
 {
@@ -19,6 +20,17 @@ class MenuItem extends Model
         'sort_order',
         'target'
     ];
+
+    protected static function booted(): void
+    {
+        static::saved(function (MenuItem $item) {
+            $item->flushMenuCaches();
+        });
+
+        static::deleted(function (MenuItem $item) {
+            $item->flushMenuCaches();
+        });
+    }
 
     /**
      * The menu this item belongs to.
@@ -74,5 +86,16 @@ class MenuItem extends Model
         }
 
         return '#';
+    }
+
+    protected function flushMenuCaches(): void
+    {
+        $location = $this->menu?->location ?? $this->menu()->value('location');
+
+        if ($location) {
+            Cache::forget("menu:{$location}");
+        }
+
+        Cache::forget('menus:all');
     }
 }

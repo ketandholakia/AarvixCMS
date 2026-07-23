@@ -40,6 +40,8 @@ class CategoryController extends Controller
 
     public function store(\App\Http\Requests\Api\CategoryRequest $request)
     {
+        abort_unless($request->user()?->hasRole('Admin') || $request->user()?->hasRole('Editor'), 403);
+
         $category = Category::create($request->validated());
 
         return new CategoryResource($category);
@@ -47,6 +49,8 @@ class CategoryController extends Controller
 
     public function update(\App\Http\Requests\Api\CategoryRequest $request, Category $category)
     {
+        abort_unless($request->user()?->hasRole('Admin') || $request->user()?->hasRole('Editor'), 403);
+
         $category->update($request->validated());
 
         return new CategoryResource($category);
@@ -54,9 +58,7 @@ class CategoryController extends Controller
 
     public function destroy(Request $request, Category $category)
     {
-        if (!$request->user()->tokenCan('api.write')) {
-            abort(403, 'Missing api.write ability');
-        }
+        abort_unless($request->user()?->hasRole('Admin') || $request->user()?->hasRole('Editor'), 403);
 
         $category->delete();
 

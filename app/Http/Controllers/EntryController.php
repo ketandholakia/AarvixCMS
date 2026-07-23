@@ -8,6 +8,15 @@ use App\Services\ContentTypeRegistry;
 
 class EntryController extends Controller
 {
+    private function resolveThemeView(string $view, ?string $fallback = null): string
+    {
+        if (view()->exists("theme::{$view}")) {
+            return "theme::{$view}";
+        }
+
+        return $fallback ?? $view;
+    }
+
     public function show(string $type_slug, string $slug)
     {
         $contentType = app(ContentTypeRegistry::class)->find($type_slug);
@@ -25,12 +34,7 @@ class EntryController extends Controller
             })
             ->firstOrFail();
 
-        // Theme-overrideable view resolution:
-        // themes/{active}/views/entries/{type_slug}/show.blade.php → fallback default
-        $view = "entries.{$type_slug}.show";
-        if (!view()->exists($view)) {
-            $view = 'entries.default-show';
-        }
+        $view = $this->resolveThemeView("entries.{$type_slug}.show", 'entries.default-show');
 
         return view($view, compact('entry', 'contentType'));
     }

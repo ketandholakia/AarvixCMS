@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PostResource;
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class PostController extends Controller
@@ -48,6 +49,8 @@ class PostController extends Controller
 
     public function store(\App\Http\Requests\Api\PostRequest $request)
     {
+        $this->authorize('create', Post::class);
+
         $data = $request->validated();
         $data['author_id'] = $request->user()->id;
 
@@ -58,6 +61,8 @@ class PostController extends Controller
 
     public function update(\App\Http\Requests\Api\PostRequest $request, Post $post)
     {
+        $this->authorize('update', $post);
+
         $post->update($request->validated());
 
         return new PostResource($post);
@@ -65,9 +70,7 @@ class PostController extends Controller
 
     public function destroy(Request $request, Post $post)
     {
-        if (!$request->user()->tokenCan('api.write')) {
-            abort(403, 'Missing api.write ability');
-        }
+        $this->authorize('delete', $post);
 
         $post->delete();
 

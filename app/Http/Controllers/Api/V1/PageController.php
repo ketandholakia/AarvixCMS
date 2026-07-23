@@ -34,6 +34,8 @@ class PageController extends Controller
 
     public function store(\App\Http\Requests\Api\PageRequest $request)
     {
+        $this->authorize('create', Page::class);
+
         $data = $request->validated();
         $data['author_id'] = $request->user()->id;
 
@@ -44,6 +46,8 @@ class PageController extends Controller
 
     public function update(\App\Http\Requests\Api\PageRequest $request, Page $page)
     {
+        $this->authorize('update', $page);
+
         $page->update($request->validated());
 
         return new PageResource($page);
@@ -51,9 +55,7 @@ class PageController extends Controller
 
     public function destroy(Request $request, Page $page)
     {
-        if (!$request->user()->tokenCan('api.write')) {
-            abort(403, 'Missing api.write ability');
-        }
+        $this->authorize('delete', $page);
 
         $page->delete();
 

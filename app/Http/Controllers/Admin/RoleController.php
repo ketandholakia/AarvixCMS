@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Admin\AdminCrudController;
 use App\Models\Role;
 use App\Models\Permission;
+use App\Services\PermissionService;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Model;
 
@@ -68,10 +69,12 @@ class RoleController extends AdminCrudController
     protected function afterStore(Request $request, Model $model): void
     {
         $model->permissions()->sync($request->input('permissions', []));
+        app(PermissionService::class)->invalidateRoleCache($model);
     }
 
     protected function afterUpdate(Request $request, Model $model): void
     {
         $model->permissions()->sync($request->input('permissions', []));
+        app(PermissionService::class)->invalidateRoleCache($model);
     }
 }

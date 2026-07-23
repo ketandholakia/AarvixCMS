@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 
 class PublishThemeAssets extends Command
 {
@@ -13,49 +14,72 @@ class PublishThemeAssets extends Command
     public function handle()
     {
         $theme = $this->argument('theme');
-        $themesDir = base_path('themes');
-        $publicThemesDir = public_path('themes');
+        $themesDir = realpath(base_path('themes')) ?: base_path('themes');
+        $publicThemesDir = realpath(public_path('themes')) ?: public_path('themes');
+        $failed = false;
 
-        if (!\Illuminate\Support\Facades\File::exists($publicThemesDir)) {
-            \Illuminate\Support\Facades\File::makeDirectory($publicThemesDir);
+        if (!File::isDirectory($publicThemesDir)) {
+            File::ensureDirectoryExists($publicThemesDir);
         }
 
         if ($theme) {
-            $this->publishThemeAssets($theme);
+            $failed = $this->publishThemeAssets($theme, $themesDir, $publicThemesDir) !== self::SUCCESS;
         } else {
-            $directories = \Illuminate\Support\Facades\File::directories($themesDir);
+            $directories = File::directories($themesDir);
             foreach ($directories as $dir) {
-                $this->publishThemeAssets(basename($dir));
+                if ($this->publishThemeAssets(basename($dir), $themesDir, $publicThemesDir) !== self::SUCCESS) {
+                    $failed = true;
+                }
             }
+        }
+
+        if ($failed) {
+            return self::FAILURE;
         }
 
         $this->info('Theme assets published successfully!');
+        return self::SUCCESS;
     }
 
-    protected function publishThemeAssets($theme)
+    protected function publishThemeAssets(string $theme, string $themesDir, string $publicThemesDir): int
     {
-        $sourcePath = base_path("themes/{$theme}/public");
-        $destinationPath = public_path("themes/{$theme}");
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $theme)) {
+            $this->error("Invalid theme name: {$theme}");
+            return self::FAILURE;
+        }
 
-        if (\Illuminate\Support\Facades\File::exists($sourcePath)) {
-            if (\Illuminate\Support\Facades\File::exists($destinationPath)) {
-                // Remove the old directory or symlink
-                if (is_link($destinationPath)) {
-                    app()->make('files')->delete($destinationPath);
-                } else {
-                    \Illuminate\Support\Facades\File::deleteDirectory($destinationPath);
-                }
-            }
+        $sourcePath = $themesDir . DIRECTORY_SEPARATOR . $theme . DIRECTORY_SEPARATOR . 'public';
+        $destinationPath = $publicThemesDir . DIRECTORY_SEPARATOR . $theme;
 
-            // Create a symlink or copy
-            try {
-                app()->make('files')->link($sourcePath, $destinationPath);
-                $this->info("Linked assets for theme: {$theme}");
-            } catch (\Exception $e) {
-                // Fallback to copy if symlink fails
-                \Illuminate\Support\Facades\File::copyDirectory($sourcePath, $destinationPath);
-                $this->info("Copied assets for theme: {$theme}");
+        $resolvedSource = realpath($sourcePath);
+        $resolvedDestinationParent = realpath(dirname($destinationPath)) ?: dirname($destinationPath);
+
+        if (! $resolvedSource || ! str_starts_with($resolvedSource, $themesDir . DIRECTORY_SEPARATOR)) {
+            $this->error("Theme source path is invalid for {$theme}");
+            return self::FAILURE;
+        }
+
+        if (! str_starts_with($resolvedDestinationParent, $publicThemesDir)) {
+            $this->error("Theme destination path is invalid for {$theme}");
+            return self::FAILURE;
+        }
+
+        if (File::exists($destinationPath)) {
+            if (is_link($destinationPath)) {
+                app()->make('files')->delete($destinationPath);
+            } else {
+                File::deleteDirectory($destinationPath);
             }
         }
+
+        try {
+            app()->make('files')->link($resolvedSource, $destinationPath);
+            $this->info("Linked assets for theme: {$theme}");
+        } catch (\Exception $e) {
+            File::copyDirectory($resolvedSource, $destinationPath);
+            $this->info("Copied assets for theme: {$theme}");
+        }
+
+        return self::SUCCESS;
     }
 }

@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Setting;
+use App\Services\SettingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,7 +17,7 @@ class SettingsTest extends TestCase
     {
         $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
         $admin = User::factory()->create(['is_active' => true]);
-        $admin->roles()->attach(Role::where('slug', 'admin')->first());
+        $admin->roles()->attach(Role::where('name', 'Admin')->first());
         return $admin;
     }
 
@@ -50,5 +51,15 @@ class SettingsTest extends TestCase
             'key' => 'social_twitter',
             'value' => 'https://twitter.com/awesomesite',
         ]);
+
+        $this->assertSame('New Awesome Site', app(SettingService::class)->get('site_name'));
+        $this->assertSame('https://twitter.com/awesomesite', Setting::get('social_twitter'));
+    }
+
+    public function test_settings_service_rejects_unsupported_keys(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        app(SettingService::class)->set('unknown_key', 'value');
     }
 }

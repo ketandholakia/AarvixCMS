@@ -50,5 +50,6 @@ class AuthorizationEnforcementTest extends TestCase
         $this->get(route('admin.themes.index'))->assertStatus(403);
         $this->get(route('admin.roles.index'))->assertStatus(403);
         $this->get(route('admin.plugins.index'))->assertStatus(403);
+        $this->post(route('admin.plugins.sync'))->assertStatus(403);
     }
 }

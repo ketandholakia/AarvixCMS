@@ -18,11 +18,16 @@ class PluginController extends Controller
 
     public function index()
     {
-        // Rescan directory and sync DB on every page load
-        $this->pluginManager->scanAndSync();
-
         $plugins = Plugin::all();
         return view('admin.plugins.index', compact('plugins'));
+    }
+
+    public function sync(Request $request)
+    {
+        $this->pluginManager->scanAndSync();
+
+        return redirect()->route('admin.plugins.index')
+            ->with('success', 'Plugins synced successfully.');
     }
 
     public function toggle(Request $request, $id)

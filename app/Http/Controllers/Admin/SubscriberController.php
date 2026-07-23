@@ -55,8 +55,6 @@ class SubscriberController extends AdminCrudController
      */
     public function export()
     {
-        $subscribers = Subscriber::all();
-        
         $headers = [
             "Content-type" => "text/csv",
             "Content-Disposition" => "attachment; filename=subscribers_" . date('Y-m-d') . ".csv",
@@ -64,14 +62,14 @@ class SubscriberController extends AdminCrudController
             "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
             "Expires" => "0"
         ];
-        
+
         $columns = ['ID', 'Email', 'First Name', 'Last Name', 'Status', 'Source', 'Date'];
 
-        $callback = function() use($subscribers, $columns) {
+        $callback = function() use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
 
-            foreach ($subscribers as $subscriber) {
+            foreach (Subscriber::orderBy('id')->cursor() as $subscriber) {
                 fputcsv($file, [
                     $subscriber->id,
                     $subscriber->email,

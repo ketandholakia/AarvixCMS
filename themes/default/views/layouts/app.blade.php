@@ -6,8 +6,9 @@
     <title>@yield('title', 'AarvixCMS') - {{ config('app.name', 'Laravel') }}</title>
     @yield('meta')
 
-    <!-- Tailwind v4 via Vite -->
+    <!-- Core app bundle -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @themeStyles
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,6 +17,7 @@
 
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @themeScripts
 
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -27,7 +29,9 @@
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased transition-colors duration-300 min-h-screen flex flex-col" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true', mobileMenuOpen: false }" x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val)); if(darkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark')" :class="{ 'dark': darkMode }">
+    @include('partials.theme-preview-banner')
 
+    <div class="{{ !empty($themePreviewActive) ? 'pt-16' : '' }}">
     <!-- Navbar -->
     <nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -125,6 +129,7 @@
             </div>
         </div>
     </footer>
+    </div>
 
 </body>
 </html>

@@ -71,6 +71,6 @@
     @endif
     
     <!-- Newsletter Subscription -->
-    @include('partials.newsletter')
+    @themePart('newsletter')
 </section>
 @endsection

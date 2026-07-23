@@ -21,6 +21,10 @@ trait HasPermissions
      */
     public function hasPermission(string $permissionName): bool
     {
+        if ($this->hasRole('Admin')) {
+            return true;
+        }
+
         // Use the PermissionService to retrieve cached permissions
         $permissions = app(PermissionService::class)->getUserPermissions($this);
 

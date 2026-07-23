@@ -45,7 +45,9 @@ class AiWriterTest extends TestCase
         ]);
 
         $response->assertOk();
-        $response->assertJsonStructure(['status', 'request_id', 'provider', 'model', 'suggestion', 'response']);
+        $response->assertJsonStructure(['status', 'request_id', 'provider', 'model', 'suggestion', 'preview', 'response']);
+        $response->assertJsonPath('preview.mode', 'replace');
+        $response->assertJsonPath('preview.blocks.0.type', 'paragraph');
         $response->assertSee('Rewritten draft', false);
     }
 
@@ -68,6 +70,7 @@ class AiWriterTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('status', 'succeeded');
         $response->assertJsonPath('provider', 'fake');
+        $response->assertJsonPath('preview.blocks.0.type', 'list');
     }
 
     public function test_admin_can_generate_ai_writer_preview_for_selected_text_only(): void
@@ -92,6 +95,8 @@ class AiWriterTest extends TestCase
         ]);
 
         $response->assertOk();
+        $response->assertJsonPath('preview.mode', 'insert');
+        $response->assertJsonPath('preview.actions.0', 'insert');
         $response->assertSee('Selected sentence only.', false);
         $response->assertDontSee('Whole document text.', false);
     }

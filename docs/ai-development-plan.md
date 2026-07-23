@@ -279,8 +279,8 @@ The schema should be introduced only as each phase requires it.
 - [x] Add one reusable AI action panel to the Editor.js Blade component.
 - [x] Support selected-block and whole-document operations.
 - [x] Serialize Editor.js input into a safe intermediate document representation.
-- Ask the provider for structured block-level output and validate it before preview.
-- Render a diff/preview with `Replace`, `Insert`, and `Cancel`; never autosave.
+- [x] Ask the provider for structured block-level output and validate it before preview.
+- [x] Render a diff/preview with `Replace`, `Insert`, and `Cancel`; never autosave.
 - [x] Reuse the panel in Post, Page, and Entry forms.
 - Apply SEO output to existing meta fields; add missing social metadata only through a
   separate schema change after UI ownership is clear.

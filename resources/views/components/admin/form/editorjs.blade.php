@@ -4,6 +4,7 @@
     'aiContext' => $aiContext,
     'aiRecordId' => $aiRecordId,
     'aiContentTypeSlug' => $aiContentTypeSlug,
+    'fieldName' => $name,
 ]))">
     @if($label)
         <label for="{{ $name }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -52,6 +53,7 @@
     document.addEventListener('alpine:init', () => {
         Alpine.data('editorJsComponent', (name, initialData, aiConfig) => ({
             editor: null,
+            documentData: null,
             aiConfig,
             init() {
                 let parsedData = {};
@@ -69,6 +71,7 @@
                     };
                 }
 
+                this.documentData = parsedData;
                 this.editor = new EditorJS({
                     holder: this.$refs.editor.id,
                     data: parsedData,
@@ -89,17 +92,37 @@
                     },
                     onChange: (api, event) => {
                         api.saver.save().then((outputData) => {
+                            this.documentData = outputData;
                             this.$refs.textarea.value = JSON.stringify(outputData);
                         });
                     }
                 });
+
+                window.AarvixEditorJs = window.AarvixEditorJs || {};
+                window.AarvixEditorJs[name] = this;
                 
                 // Also update on form submit just to be sure
                 this.$refs.textarea.closest('form').addEventListener('submit', (e) => {
                     this.editor.save().then((outputData) => {
+                        this.documentData = outputData;
                         this.$refs.textarea.value = JSON.stringify(outputData);
                     });
                 });
+            },
+            applyPreview(blocks, mode) {
+                const nextBlocks = mode === 'insert'
+                    ? [...(this.documentData?.blocks || []), ...blocks]
+                    : blocks;
+
+                const nextData = {
+                    ...(this.documentData || {}),
+                    blocks: nextBlocks,
+                };
+
+                this.documentData = nextData;
+                this.$refs.textarea.value = JSON.stringify(nextData);
+
+                return this.editor.render(nextData);
             }
         }));
     });

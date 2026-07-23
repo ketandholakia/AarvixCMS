@@ -50,11 +50,23 @@
         <div class="flex items-center justify-between gap-3">
             <div>
                 <div class="text-sm font-semibold text-gray-900 dark:text-white">Preview</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">Review the suggestion before applying it.</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400" x-text="preview.summary || 'Review the suggestion before applying it.'"></div>
             </div>
             <button type="button" @click="copyPreview" class="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">Copy</button>
         </div>
-        <pre class="mt-3 whitespace-pre-wrap rounded-xl bg-gray-50 p-4 text-sm text-gray-700 dark:bg-gray-900 dark:text-gray-200" x-text="preview"></pre>
+        <div class="mt-3 space-y-3">
+            <template x-for="(block, index) in (preview.blocks || [])" :key="index">
+                <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
+                    <div class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400" x-text="block.type"></div>
+                    <div class="mt-2 whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200" x-text="block.data?.text || block.data?.code || block.data?.caption || ''"></div>
+                </div>
+            </template>
+        </div>
+        <div class="mt-4 flex flex-wrap gap-2">
+            <button type="button" @click="applyPreview('replace')" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Replace</button>
+            <button type="button" @click="applyPreview('insert')" class="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700" x-show="preview.actions?.includes('insert')" style="display:none;">Insert</button>
+            <button type="button" @click="cancelPreview" class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-900">Cancel</button>
+        </div>
     </div>
 </div>
 
@@ -68,7 +80,7 @@ document.addEventListener('alpine:init', () => {
         tone: '',
         loading: false,
         error: '',
-        preview: '',
+        preview: null,
         config,
         async generate() {
             if (! this.config.enabled) {
@@ -78,7 +90,7 @@ document.addEventListener('alpine:init', () => {
 
             this.loading = true;
             this.error = '';
-            this.preview = '';
+            this.preview = null;
 
             try {
                 const selection = window.getSelection ? String(window.getSelection()) : '';
@@ -115,7 +127,13 @@ document.addEventListener('alpine:init', () => {
                     throw new Error(payload.message || 'AI writer request failed.');
                 }
 
-                this.preview = payload.suggestion || '';
+                this.preview = payload.preview || null;
+                if (this.preview && (! this.preview.blocks || ! this.preview.blocks.length) && payload.suggestion) {
+                    this.preview.blocks = [{
+                        type: 'paragraph',
+                        data: { text: payload.suggestion },
+                    }];
+                }
             } catch (error) {
                 this.error = error.message || 'AI writer request failed.';
             } finally {
@@ -123,11 +141,34 @@ document.addEventListener('alpine:init', () => {
             }
         },
         copyPreview() {
-            if (! this.preview) {
+            if (! this.preview?.plain_text) {
                 return;
             }
 
-            navigator.clipboard?.writeText(this.preview);
+            navigator.clipboard?.writeText(this.preview.plain_text);
+        },
+        applyPreview(mode) {
+            if (! this.preview?.blocks?.length) {
+                return;
+            }
+
+            const editor = window.AarvixEditorJs?.[this.config.fieldName];
+
+            if (! editor || typeof editor.applyPreview !== 'function') {
+                this.error = 'Editor instance is not ready yet.';
+                return;
+            }
+
+            editor.applyPreview(this.preview.blocks, mode || this.preview.mode || 'replace')
+                .then(() => {
+                    this.preview = null;
+                })
+                .catch((error) => {
+                    this.error = error?.message || 'Unable to apply preview.';
+                });
+        },
+        cancelPreview() {
+            this.preview = null;
         },
     }));
 });

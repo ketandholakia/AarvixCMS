@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\AI\DTOs\AiRequestData;
 use App\AI\Services\AiManager;
 use App\AI\Support\WriterDocument;
+use App\AI\Support\WriterPreview;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AiWriterRequest;
 use App\Models\Entry;
@@ -47,12 +48,15 @@ class AiWriterController extends Controller
             feature: 'writer',
         ));
 
+        $preview = WriterPreview::fromResponse($result->response, $data['operation'], $writerDocument, $data['scope'] ?? 'document');
+
         return response()->json([
             'status' => $result->status->value,
             'request_id' => $result->requestId,
             'provider' => $result->provider,
             'model' => $result->model,
-            'suggestion' => $this->suggestionFromResult($result->response, $data['operation'], $writerDocument['plain_text']),
+            'suggestion' => $preview['plain_text'],
+            'preview' => $preview,
             'response' => $result->response,
         ]);
     }
@@ -114,26 +118,4 @@ class AiWriterController extends Controller
     }
 
 
-    protected function suggestionFromResult(mixed $response, string $operation, string $content): string
-    {
-        if (is_string($response) && trim($response) !== '') {
-            return trim($response);
-        }
-
-        if (is_array($response)) {
-            foreach (['suggestion', 'content', 'text', 'output'] as $key) {
-                if (isset($response[$key]) && is_string($response[$key]) && trim($response[$key]) !== '') {
-                    return trim($response[$key]);
-                }
-            }
-        }
-
-        return match ($operation) {
-            'shorten' => Str::limit($content, 240),
-            'expand' => $content . "\n\nExpanded version coming from the selected provider.",
-            'summarize' => 'Summary: ' . Str::limit($content, 180),
-            'grammar' => $content,
-            default => 'Suggested rewrite: ' . Str::limit($content, 240),
-        };
-    }
 }

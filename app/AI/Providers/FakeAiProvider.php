@@ -30,11 +30,18 @@ class FakeAiProvider implements AiProvider
         $operation = $request->input['operation'] ?? 'rewrite';
         $content = trim((string) ($request->input['content'] ?? ''));
         $tone = trim((string) ($request->input['tone'] ?? ''));
+        $selection = trim((string) ($request->input['selection'] ?? ''));
+        $suggestion = $this->buildSuggestion($operation, $content, $tone);
+        $mode = $selection !== '' ? 'insert' : 'replace';
 
         return $this->buildSuccessResult('generate', $request, [
-            'suggestion' => $this->buildSuggestion($operation, $content, $tone),
+            'mode' => $mode,
+            'summary' => $this->buildSummary($operation, $tone),
+            'plain_text' => $suggestion,
+            'suggestion' => $suggestion,
             'operation' => $operation,
             'content_length' => mb_strlen($content),
+            'blocks' => $this->buildBlocks($operation, $suggestion, $selection),
         ]);
     }
 
@@ -115,5 +122,43 @@ class FakeAiProvider implements AiProvider
         $toneSuffix = $tone !== '' ? " Tone: {$tone}." : '';
 
         return $prefix . ($content !== '' ? Str::limit($content, 280) : 'No content provided.') . $toneSuffix;
+    }
+
+    protected function buildSummary(string $operation, string $tone): string
+    {
+        $label = match ($operation) {
+            'shorten' => 'Shorten',
+            'expand' => 'Expand',
+            'summarize' => 'Summarize',
+            'grammar' => 'Grammar',
+            default => 'Rewrite',
+        };
+
+        return $tone !== ''
+            ? "{$label} preview in {$tone} tone"
+            : "{$label} preview";
+    }
+
+    protected function buildBlocks(string $operation, string $suggestion, string $selection): array
+    {
+        if ($operation === 'summarize') {
+            return [[
+                'type' => 'list',
+                'data' => [
+                    'style' => 'unordered',
+                    'items' => array_values(array_filter([
+                        Str::limit($suggestion, 90),
+                        $selection !== '' ? 'Based on selected text.' : 'Based on the whole document.',
+                    ])),
+                ],
+            ]];
+        }
+
+        return [[
+            'type' => 'paragraph',
+            'data' => [
+                'text' => $suggestion,
+            ],
+        ]];
     }
 }

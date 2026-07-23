@@ -39,6 +39,10 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
         Route::resource('ai-prompts', \App\Http\Controllers\Admin\AiPromptController::class)->middleware('admin:manage_ai_prompts');
         Route::get('ai-prompts/{ai_prompt}/versions/{version}/compare', [\App\Http\Controllers\Admin\AiPromptController::class, 'compare'])->name('ai-prompts.compare')->middleware('admin:manage_ai_prompts');
         Route::post('ai-prompts/{ai_prompt}/versions/{version}/rollback', [\App\Http\Controllers\Admin\AiPromptController::class, 'rollback'])->name('ai-prompts.rollback')->middleware('admin:manage_ai_prompts');
+        Route::get('ai/tool-calls', [\App\Http\Controllers\Admin\AiToolCallController::class, 'index'])->name('ai-tool-calls.index')->middleware('admin:view_ai_usage');
+        Route::get('ai/tool-calls/{ai_tool_call}', [\App\Http\Controllers\Admin\AiToolCallController::class, 'show'])->name('ai-tool-calls.show')->middleware('admin:view_ai_usage');
+        Route::post('ai/tool-calls/{ai_tool_call}/approve', [\App\Http\Controllers\Admin\AiToolCallController::class, 'approve'])->name('ai-tool-calls.approve')->middleware('admin:manage_ai_workflows');
+        Route::post('ai/tool-calls/{ai_tool_call}/reject', [\App\Http\Controllers\Admin\AiToolCallController::class, 'reject'])->name('ai-tool-calls.reject')->middleware('admin:manage_ai_workflows');
         Route::post('ai/writer/generate', [\App\Http\Controllers\Admin\AiWriterController::class, 'generate'])->name('ai.writer.generate')->middleware('admin:use_ai_writer');
         
         Route::resource('forms', \App\Http\Controllers\Admin\FormController::class);

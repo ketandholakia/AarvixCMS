@@ -492,6 +492,7 @@ Each step declares whether it drafts, proposes, or applies a change.
 - [x] Implement `media.search` as a read-only tool for the media library.
 - [x] Implement `content.draft` for review-gated draft article creation.
 - [x] Implement `ai.report` for tool-call reporting and CSV export.
+- [x] Add an admin tool-call screen for browsing, approving, and rejecting review-required calls.
 
 Each tool declares:
 

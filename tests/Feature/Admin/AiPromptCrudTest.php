@@ -45,6 +45,15 @@ class AiPromptCrudTest extends TestCase
         $this->assertSame(1, $prompt->active_version_number);
     }
 
+    public function test_admin_can_view_prompt_create_form(): void
+    {
+        $response = $this->actingAs($this->admin())->get(route('admin.ai-prompts.create'));
+
+        $response->assertOk();
+        $response->assertSee('Create Prompt', false);
+        $response->assertSee('Supports strict {{variable}} placeholders.', false);
+    }
+
     public function test_admin_can_create_new_prompt_versions_and_rollback(): void
     {
         $prompt = AiPrompt::create([

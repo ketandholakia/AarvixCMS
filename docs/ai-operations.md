@@ -1,5 +1,26 @@
 # AI Operations
 
+## Environment Variables
+
+The AI layer is configured through these environment variables:
+
+- `AI_ENABLED`
+- `AI_DEFAULT_PROVIDER`
+- `AI_FALLBACK_PROVIDER`
+- `AI_QUEUE_HIGH`
+- `AI_QUEUE_MEDIUM`
+- `AI_QUEUE_LOW`
+- `AI_REQUESTS_PER_MINUTE`
+- `AI_DAILY_TOKEN_CAP`
+- `AI_DAILY_COST_CAP`
+- `AI_MONTHLY_COST_CAP`
+- `AI_LOG_PROMPTS`
+- `AI_LOG_RESPONSES`
+- `AI_LOG_RETENTION_DAYS`
+- `AI_IMAGE_RETENTION_DAYS`
+
+Defaults are defined in [config/ai.php](../config/ai.php).
+
 ## Queue Names
 
 The AI layer uses the configured queue names from `config/ai.php`:

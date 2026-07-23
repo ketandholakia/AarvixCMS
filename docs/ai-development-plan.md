@@ -668,7 +668,7 @@ logging without exposing a production Writer UI.
 ### Ordered backlog
 
 1. [x] Write ADRs for provider SDK, tenancy scope, and vector-store investigation.
-2. Create `config/ai.php` and document environment variables.
+2. [x] Create `config/ai.php` and document environment variables.
 3. Add core contracts, DTOs, enums, typed exceptions, and service provider.
 4. Implement fake provider and one real text-provider adapter.
 5. Implement `AiManager::generate()` and `AiManager::json()`.

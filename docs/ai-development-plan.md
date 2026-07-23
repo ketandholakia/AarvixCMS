@@ -483,6 +483,11 @@ Each step declares whether it drafts, proposes, or applies a change.
 
 #### Tool framework first
 
+##### 6.1 Foundation
+
+- [x] Create `ai_tools` and `ai_tool_calls` tables, models, and a permission-aware registry service.
+- [x] Seed the first read-only and review-required tool definitions.
+
 Each tool declares:
 
 - stable name and version

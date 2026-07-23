@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             SettingSeeder::class,
             AiPromptSeeder::class,
+            AiToolSeeder::class,
         ]);
     }
 }

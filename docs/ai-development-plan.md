@@ -426,7 +426,7 @@ future tenant filter is added only when tenant ownership exists.
 - [x] Streaming answers with cancel and retry.
 - [x] Website/content search, summarization, and policy explanation.
 - [x] Conversation rename, archive, and delete.
-- Explicit mode selection: knowledge answer or writing help.
+- [x] Explicit mode selection: knowledge answer or writing help.
 - Citations that open only sources the user may access.
 
 Chat is read-only in this phase. Requests such as "find my article" may return links,

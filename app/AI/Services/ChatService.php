@@ -26,12 +26,20 @@ class ChatService
      */
     public function createConversation(AiScope $scope, array $attributes = []): AiConversation
     {
+        $modelSettings = is_array($attributes['model_settings'] ?? null) ? $attributes['model_settings'] : [];
+        $defaultMode = $this->normalizeMode($attributes['mode'] ?? data_get($modelSettings, 'mode', 'knowledge'));
+
+        unset($attributes['mode']);
+        unset($attributes['model_settings']);
+
         return AiConversation::query()->create(array_merge([
             'conversation_uuid' => (string) Str::uuid(),
             'user_id' => $scope->userId,
             'scope' => $scope->toArray(),
             'status' => 'active',
-            'model_settings' => [],
+            'model_settings' => array_merge($modelSettings, [
+                'mode' => $defaultMode,
+            ]),
         ], $attributes));
     }
 
@@ -60,11 +68,13 @@ class ChatService
      */
     public function createRun(AiConversation $conversation, string $question, array $options = [], ?AiChatRun $retryOf = null): AiChatRun
     {
+        $conversationMode = $this->conversationMode($conversation);
+
         return AiChatRun::query()->create([
             'conversation_id' => $conversation->id,
             'retry_of_id' => $retryOf?->id,
             'request_uuid' => (string) Str::uuid(),
-            'mode' => $this->normalizeMode($options['mode'] ?? 'knowledge'),
+            'mode' => $this->normalizeMode($options['mode'] ?? $conversationMode),
             'status' => 'pending',
             'question' => $question,
             'options' => $options,
@@ -101,6 +111,8 @@ class ChatService
             feature: 'chat',
             metadata: is_array($conversation->scope['metadata'] ?? null) ? $conversation->scope['metadata'] : [],
         );
+        $mode = $this->normalizeMode($run->mode);
+        $usesRetrieval = $this->usesRetrieval($mode);
 
         $run->forceFill([
             'status' => 'streaming',
@@ -114,25 +126,30 @@ class ChatService
             'message_order' => ((int) $conversation->messages()->max('message_order')) + 1,
         ]);
 
-        $retrieval = $this->retrievalService->retrieve(
-            $scope,
-            $run->question,
-            (int) ($run->options['limit'] ?? 5),
-            is_array($run->options['retrieval'] ?? null) ? $run->options['retrieval'] : []
-        );
+        $retrieval = $usesRetrieval
+            ? $this->retrievalService->retrieve(
+                $scope,
+                $run->question,
+                (int) ($run->options['limit'] ?? 5),
+                is_array($run->options['retrieval'] ?? null) ? $run->options['retrieval'] : []
+            )
+            : [
+                'context' => '',
+                'citations' => [],
+            ];
 
         $run->forceFill([
             'context' => $retrieval,
         ])->save();
 
-        $prompt = $this->buildPrompt($run->question, $retrieval);
+        $prompt = $this->buildPrompt($run->question, $retrieval, $mode);
         $request = new AiRequestData(
             input: [
                 'prompt' => $prompt,
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => 'Answer only using the provided context. Cite source titles when helpful.',
+                        'content' => $this->buildSystemPrompt($mode),
                     ],
                     [
                         'role' => 'user',
@@ -209,6 +226,21 @@ class ChatService
         $conversation = $run->conversation()->firstOrFail();
 
         return $this->createRun($conversation, $run->question, $run->options ?? [], $run);
+    }
+
+    public function setConversationMode(AiConversation $conversation, string $mode, ?User $actor = null): AiConversation
+    {
+        $this->authorizeConversationManagement($conversation, $actor);
+
+        $mode = $this->normalizeMode($mode);
+        $settings = is_array($conversation->model_settings ?? null) ? $conversation->model_settings : [];
+        $settings['mode'] = $mode;
+
+        $conversation->forceFill([
+            'model_settings' => $settings,
+        ])->save();
+
+        return $conversation;
     }
 
     public function renameConversation(AiConversation $conversation, string $title, ?User $actor = null): AiConversation
@@ -303,8 +335,16 @@ class ChatService
     /**
      * @param array<string, mixed> $retrieval
      */
-    protected function buildPrompt(string $question, array $retrieval): string
+    protected function buildPrompt(string $question, array $retrieval, string $mode = 'knowledge'): string
     {
+        if ($mode === 'writing') {
+            return trim(implode("\n\n", array_values(array_filter([
+                'Writing help request: ' . $question,
+                'Help the user draft, revise, or refine copy directly.',
+                'Do not invent citations or claim access to CMS sources unless the user provides them.',
+            ]))));
+        }
+
         $context = (string) ($retrieval['context'] ?? '');
         $citations = array_map(
             static fn (array $citation): string => sprintf(
@@ -322,11 +362,30 @@ class ChatService
         ]))));
     }
 
+    protected function buildSystemPrompt(string $mode): string
+    {
+        return $mode === 'writing'
+            ? 'Help the user draft or revise writing. Do not cite CMS sources unless they are explicitly provided.'
+            : 'Answer only using the provided context. Cite source titles when helpful.';
+    }
+
     protected function normalizeMode(mixed $mode): string
     {
         $mode = is_string($mode) ? strtolower(trim($mode)) : 'knowledge';
 
         return in_array($mode, self::SUPPORTED_MODES, true) ? $mode : 'knowledge';
+    }
+
+    protected function conversationMode(AiConversation $conversation): string
+    {
+        $settings = is_array($conversation->model_settings ?? null) ? $conversation->model_settings : [];
+
+        return $this->normalizeMode(data_get($settings, 'mode', 'knowledge'));
+    }
+
+    protected function usesRetrieval(string $mode): bool
+    {
+        return $mode !== 'writing';
     }
 
     protected function scopeForConversation(AiConversation $conversation): AiScope

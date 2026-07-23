@@ -178,6 +178,35 @@ class ChatServiceTest extends TestCase
         $this->assertSame('knowledge', $run->mode);
     }
 
+    public function test_chat_service_uses_writing_mode_for_conversation_drafts(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+        $user->roles()->attach(Role::where('name', 'Admin')->firstOrFail());
+
+        $conversation = $this->app->make(ChatService::class)->createConversation(
+            new AiScope(userId: $user->id, site: 'default', feature: 'chat'),
+            ['mode' => 'writing']
+        );
+
+        $service = $this->app->make(ChatService::class);
+        $stream = $service->streamConversation($conversation, 'Draft a launch announcement.');
+
+        $buffer = '';
+        foreach ($stream as $chunk) {
+            $buffer .= $chunk;
+        }
+
+        $run = AiChatRun::query()->where('conversation_id', $conversation->id)->firstOrFail();
+
+        $this->assertSame('writing', $run->mode);
+        $this->assertSame('', (string) data_get($run->context, 'context'));
+        $this->assertSame([], data_get($run->context, 'citations'));
+        $this->assertStringContainsString('Writing help request: Draft a launch announcement.', $buffer);
+        $this->assertStringContainsString('Help the user draft, revise, or refine copy directly.', $buffer);
+        $this->assertStringNotContainsString('Context:', $buffer);
+        $this->assertStringNotContainsString('Citations:', $buffer);
+    }
+
     public function test_chat_service_streams_answers_and_supports_cancel_and_retry(): void
     {
         $admin = User::factory()->create(['is_active' => true]);

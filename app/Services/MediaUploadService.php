@@ -113,6 +113,16 @@ class MediaUploadService
         return $media->fresh();
     }
 
+    public function deleteMedia(Media $media): void
+    {
+        Storage::disk($media->disk)->delete([
+            $media->path,
+            dirname($media->path) . '/thumbs/thumb-' . $media->filename,
+        ]);
+
+        $media->delete();
+    }
+
     public function createAiImageAsset(Media $media, array $attributes): AiImageAsset
     {
         return $media->aiImageAsset()->create([
@@ -124,6 +134,9 @@ class MediaUploadService
             'prompt_hash' => $attributes['prompt_hash'],
             'resolution' => $attributes['resolution'] ?? null,
             'seed' => $attributes['seed'] ?? null,
+            'moderation_status' => $attributes['moderation_status'] ?? 'approved',
+            'moderation_reviewed_at' => $attributes['moderation_reviewed_at'] ?? now(),
+            'retention_expires_at' => $attributes['retention_expires_at'] ?? null,
             'estimated_cost' => $attributes['estimated_cost'] ?? 0,
             'metadata' => $attributes['metadata'] ?? null,
         ]);

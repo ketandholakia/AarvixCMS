@@ -34,6 +34,7 @@ class AiImageRequest extends FormRequest
             ],
             'replace_media_id' => ['nullable', 'integer', 'exists:media,id'],
             'confirm_replace' => ['nullable', 'boolean'],
+            'public_generation' => ['nullable', 'boolean'],
             'resolution' => ['nullable', 'string', 'max:20', 'regex:/^\d+x\d+$/'],
             'seed' => ['nullable', 'integer', 'min:0'],
         ];

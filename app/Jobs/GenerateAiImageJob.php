@@ -6,6 +6,7 @@ use App\AI\DTOs\AiRequestData;
 use App\AI\Services\AiManager;
 use App\Models\Media;
 use App\Services\AiImageCapabilityService;
+use App\Services\AiImagePolicyService;
 use App\Services\MediaUploadService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,14 +29,16 @@ class GenerateAiImageJob implements ShouldQueue
         public ?int $replaceMediaId = null,
         public ?string $resolution = null,
         public ?int $seed = null,
+        public bool $publicGeneration = false,
         public ?int $userId = null,
         public ?string $provider = null,
         public ?string $model = null,
     ) {
     }
 
-    public function handle(AiManager $aiManager, MediaUploadService $mediaUploadService, AiImageCapabilityService $capabilities): void
+    public function handle(AiManager $aiManager, MediaUploadService $mediaUploadService, AiImageCapabilityService $capabilities, AiImagePolicyService $policy): void
     {
+        $policy->assertPublicGenerationAllowed($this->publicGeneration);
         $capabilities->assertSupported([
             'operation' => $this->operation,
             'source_media_id' => $this->sourceMediaId,
@@ -76,6 +79,9 @@ class GenerateAiImageJob implements ShouldQueue
         $caption = $this->normalizeText($payload['caption'] ?? '');
 
         $media = $this->persistMedia($mediaUploadService, $contents, $originalName, $altText, $caption);
+        $moderationStatus = $policy->moderationStatus($this->publicGeneration);
+        $moderationReviewedAt = $policy->moderationReviewedAt($this->publicGeneration);
+        $retentionExpiresAt = $policy->retentionExpiresAt();
 
         $mediaUploadService->createAiImageAsset($media, [
             'source_media_id' => $this->sourceMediaId ?? $this->replaceMediaId,
@@ -85,6 +91,9 @@ class GenerateAiImageJob implements ShouldQueue
             'prompt_hash' => hash('sha256', $this->prompt),
             'resolution' => $this->resolution,
             'seed' => $this->seed,
+            'moderation_status' => $moderationStatus,
+            'moderation_reviewed_at' => $moderationReviewedAt,
+            'retention_expires_at' => $retentionExpiresAt,
             'estimated_cost' => $result->usage?->estimatedCost ?? '0.00000000',
             'metadata' => [
                 'provider_request_id' => $result->providerRequestId,
@@ -92,6 +101,9 @@ class GenerateAiImageJob implements ShouldQueue
                 'operation' => $this->operation,
                 'prompt' => Str::limit($this->prompt, 500),
                 'replacement' => $this->replaceMediaId !== null,
+                'public_generation' => $this->publicGeneration,
+                'moderation_status' => $moderationStatus,
+                'retention_expires_at' => $retentionExpiresAt?->toDateTimeString(),
             ],
         ]);
     }

@@ -9,7 +9,9 @@ use App\Models\Media;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -112,6 +114,11 @@ class AiImageTest extends TestCase
         $this->assertSame(hash('sha256', 'Sunrise over a futuristic city'), $asset->prompt_hash);
         $this->assertSame('1024x1024', $asset->resolution);
         $this->assertSame(12345, $asset->seed);
+        $this->assertSame('approved', $asset->moderation_status);
+        $this->assertNotNull($asset->moderation_reviewed_at);
+        $this->assertNotNull($asset->retention_expires_at);
+        $this->assertTrue($asset->retention_expires_at->greaterThan(now()));
+        $this->assertFalse((bool) ($asset->metadata['public_generation'] ?? true));
         $this->assertNotEmpty($asset->metadata['provider_request_id'] ?? null);
         $this->assertNotEmpty($asset->metadata['request_id'] ?? null);
 
@@ -171,6 +178,64 @@ class AiImageTest extends TestCase
         Storage::disk('public')->assertMissing('uploads/thumbs/thumb-existing.webp');
         Storage::disk('public')->assertExists($media->path . '/' . $media->filename);
         Storage::disk('public')->assertExists($media->path . '/thumbs/thumb-' . $media->filename);
+    }
+
+    public function test_public_ai_image_generation_is_rejected_when_disabled(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.image.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.driver', FakeAiProvider::class);
+        config()->set('ai.providers.fake.image.public_generation_enabled', false);
+
+        $response = $this->actingAs($this->admin())->postJson(route('admin.ai.images.generate'), [
+            'prompt' => 'Generate a public image',
+            'operation' => 'generate',
+            'public_generation' => true,
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('message', 'Public AI image generation is not enabled.');
+    }
+
+    public function test_ai_image_prune_command_deletes_expired_generated_assets(): void
+    {
+        Storage::fake('public');
+
+        config()->set('ai.enabled', true);
+        config()->set('ai.image.enabled', true);
+
+        $media = Media::create([
+            'disk' => 'public',
+            'path' => 'uploads/generated/expired.webp',
+            'filename' => 'expired.webp',
+            'mime_type' => 'image/webp',
+            'size' => 1024,
+            'alt_text' => 'Expired image',
+        ]);
+
+        Storage::disk('public')->put('uploads/generated/expired.webp', 'expired-image');
+        Storage::disk('public')->put('uploads/generated/thumbs/thumb-expired.webp', 'expired-thumb');
+
+        $asset = AiImageAsset::create([
+            'media_id' => $media->id,
+            'provider' => 'fake',
+            'model' => 'fake-image',
+            'operation' => 'generate',
+            'prompt_hash' => hash('sha256', 'expired prompt'),
+            'moderation_status' => 'approved',
+            'moderation_reviewed_at' => now()->subDays(5),
+            'retention_expires_at' => now()->subDay(),
+            'estimated_cost' => '0.00000000',
+        ]);
+
+        $exitCode = Artisan::call('ai:prune-images');
+
+        $this->assertSame(0, $exitCode);
+        $this->assertDatabaseMissing('ai_image_assets', ['id' => $asset->id]);
+        $this->assertDatabaseMissing('media', ['id' => $media->id]);
+        Storage::disk('public')->assertMissing('uploads/generated/expired.webp');
+        Storage::disk('public')->assertMissing('uploads/generated/thumbs/thumb-expired.webp');
     }
 
     public function test_admin_cannot_request_unsupported_image_edit_operations(): void

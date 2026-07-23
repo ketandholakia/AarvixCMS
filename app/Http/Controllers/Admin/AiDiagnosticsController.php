@@ -31,6 +31,8 @@ class AiDiagnosticsController extends Controller
                 'writer_enabled' => $settings->get('ai.writer.enabled', true),
                 'chat_enabled' => $settings->get('ai.chat.enabled', true),
                 'image_enabled' => $settings->get('ai.image.enabled', true),
+                'image_public_generation_enabled' => $settings->get('ai.image.public_generation_enabled', data_get($config, 'providers.fake.image.public_generation_enabled', false)),
+                'image_retention_days' => $settings->get('ai.image.retention_days', data_get($config, 'providers.fake.image.retention_days', 30)),
             ],
         ]);
     }

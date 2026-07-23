@@ -22,6 +22,9 @@ return [
                 AiCapability::Json->value,
             ],
             'image' => [
+                'public_generation_enabled' => false,
+                'moderation_required' => true,
+                'retention_days' => (int) env('AI_IMAGE_RETENTION_DAYS', 30),
                 'supports_edit' => true,
                 'supports_mask' => true,
                 'supports_seed' => true,

@@ -17,6 +17,9 @@ class AiImageAsset extends Model
         'prompt_hash',
         'resolution',
         'seed',
+        'moderation_status',
+        'moderation_reviewed_at',
+        'retention_expires_at',
         'estimated_cost',
         'metadata',
     ];
@@ -25,6 +28,8 @@ class AiImageAsset extends Model
         'metadata' => 'array',
         'estimated_cost' => 'decimal:8',
         'seed' => 'integer',
+        'moderation_reviewed_at' => 'datetime',
+        'retention_expires_at' => 'datetime',
     ];
 
     public function media(): BelongsTo

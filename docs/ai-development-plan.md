@@ -330,7 +330,7 @@ appropriate Laravel streaming response; queued requests use polling by request U
 - Keep original and derived asset relationships.
 - Require explicit confirmation before replacing an existing media asset.
 - [x] Add provider capability checks for edit, mask, seed, and resolution options.
-- Define moderation and retention behavior before enabling public-facing generation.
+- [x] Define moderation and retention behavior before enabling public-facing generation.
 
 #### Acceptance criteria
 

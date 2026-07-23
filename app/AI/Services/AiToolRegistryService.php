@@ -6,12 +6,14 @@ use App\AI\DTOs\AiScope;
 use App\AI\DTOs\AiToolDefinition;
 use App\AI\Exceptions\AiToolAuthorizationException;
 use App\AI\Exceptions\AiToolExecutionException;
-use App\Models\Media;
 use App\Models\AiTool;
 use App\Models\AiToolCall;
+use App\Models\Media;
+use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -175,7 +177,7 @@ class AiToolRegistryService
 
     public function approveCall(AiToolCall $call, ?User $approver = null): array
     {
-        $call->loadMissing('tool');
+        $call->loadMissing('tool', 'actor');
         $tool = $call->tool;
 
         if ($call->approval_state !== 'pending' || $call->status !== 'awaiting_approval') {
@@ -196,9 +198,10 @@ class AiToolRegistryService
         unset($payload['context']);
 
         $source = $this->resolveSourceModel($call->source_type, $call->source_id);
+        $executionActor = $call->actor ?? $approver;
 
         try {
-            $result = $this->runToolExecutor($tool, $payload, $approver, $context, $source);
+            $result = $this->runToolExecutor($tool, $payload, $executionActor, $context, $source);
 
             $call->forceFill([
                 'status' => 'succeeded',
@@ -248,6 +251,8 @@ class AiToolRegistryService
             'content.search' => $this->executeContentSearch($tool, $input, $actor, $context, $source),
             'content.summary' => $this->executeContentSummary($tool, $input, $actor, $context, $source),
             'media.search' => $this->executeMediaSearch($tool, $input, $actor, $context, $source),
+            'content.draft' => $this->executeDraftArticle($tool, $input, $actor, $context, $source),
+            'ai.report' => $this->executeToolCallReport($tool, $input, $actor, $context, $source),
             'seo.propose' => $this->executeSeoProposal($tool, $input, $actor, $context, $source),
             default => throw new AiToolExecutionException("AI tool [{$tool->key}] does not have an executor yet."),
         };
@@ -326,44 +331,12 @@ class AiToolRegistryService
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
-    protected function executeSeoProposal(AiTool $tool, array $input, ?User $actor, array $context, ?Model $source): array
-    {
-        $source ??= $this->resolveSourceModelFromInput($input);
-
-        $title = trim((string) ($input['title'] ?? $source?->title ?? $source?->name ?? ''));
-        $content = trim(implode(' ', array_values(array_filter([
-            is_string($input['content'] ?? null) ? $input['content'] : null,
-            is_string($source?->excerpt ?? null) ? $source->excerpt : null,
-            $source instanceof Model ? $this->combinedSourceText($source) : null,
-        ]))));
-
-        return [
-            'source_type' => $source?->getMorphClass() ?? ($context['source_type'] ?? null),
-            'source_id' => $source?->getKey() ?? ($context['source_id'] ?? null),
-            'meta_title' => $this->truncateText($title !== '' ? $title : 'Untitled', 60),
-            'meta_description' => $this->truncateText($content !== '' ? $this->summarizePlainText($content) : 'Draft SEO metadata for review.', 155),
-            'slug' => is_string($input['slug'] ?? null) ? trim($input['slug']) : null,
-            'keywords' => array_values(array_filter(array_map(
-                static fn ($keyword): string => trim((string) $keyword),
-                (array) ($input['keywords'] ?? [])
-            ))),
-            'warnings' => [
-                'Review before applying this proposal to live content.',
-            ],
-        ];
-    }
-
-    /**
-     * @param array<string, mixed> $input
-     * @param array<string, mixed> $context
-     * @return array<string, mixed>
-     */
     protected function executeMediaSearch(AiTool $tool, array $input, ?User $actor, array $context, ?Model $source): array
     {
         $query = trim((string) ($input['query'] ?? ''));
         $limit = max(1, min(25, (int) ($input['limit'] ?? 10)));
         $mimeType = is_string($input['mime_type'] ?? null) ? trim($input['mime_type']) : '';
-        $onlyImages = filter_var($input['images_only'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $imagesOnly = filter_var($input['images_only'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $queryBuilder = Media::query()->latest('id');
 
@@ -380,7 +353,7 @@ class AiToolRegistryService
             $queryBuilder->where('mime_type', 'like', $mimeType . '%');
         }
 
-        if ($onlyImages) {
+        if ($imagesOnly) {
             $queryBuilder->where('mime_type', 'like', 'image/%');
         }
 
@@ -410,21 +383,185 @@ class AiToolRegistryService
     }
 
     /**
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    protected function executeDraftArticle(AiTool $tool, array $input, ?User $actor, array $context, ?Model $source): array
+    {
+        $title = trim((string) ($input['title'] ?? ''));
+
+        if ($title === '') {
+            throw new AiToolExecutionException('content.draft requires a title.');
+        }
+
+        $draft = Post::query()->create([
+            'author_id' => $actor?->id,
+            'category_id' => isset($input['category_id']) ? (int) $input['category_id'] : null,
+            'title' => $title,
+            'slug' => is_string($input['slug'] ?? null) ? trim($input['slug']) : null,
+            'excerpt' => is_string($input['excerpt'] ?? null) ? trim($input['excerpt']) : null,
+            'body' => is_string($input['body'] ?? null) ? trim($input['body']) : null,
+            'status' => 'draft',
+            'meta_title' => is_string($input['meta_title'] ?? null) ? trim($input['meta_title']) : null,
+            'meta_description' => is_string($input['meta_description'] ?? null) ? trim($input['meta_description']) : null,
+            'published_at' => null,
+        ]);
+
+        return [
+            'source_type' => Post::class,
+            'source_id' => $draft->id,
+            'title' => $draft->title,
+            'slug' => $draft->slug,
+            'status' => $draft->status,
+            'author_id' => $draft->author_id,
+            'edit_url' => url('/admin/posts/' . $draft->id . '/edit'),
+            'public_url' => url('/blog/' . $draft->slug),
+            'warnings' => [
+                'Review the draft before publishing.',
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    protected function executeToolCallReport(AiTool $tool, array $input, ?User $actor, array $context, ?Model $source): array
+    {
+        $query = AiToolCall::query()->with('tool')->latest('id');
+
+        $toolKey = is_string($input['tool_key'] ?? null) ? trim($input['tool_key']) : '';
+        $status = is_string($input['status'] ?? null) ? trim($input['status']) : '';
+        $approvalState = is_string($input['approval_state'] ?? null) ? trim($input['approval_state']) : '';
+        $format = strtolower(is_string($input['format'] ?? null) ? trim($input['format']) : 'json');
+        $limit = max(1, min(100, (int) ($input['limit'] ?? 25)));
+
+        if ($toolKey !== '') {
+            $query->whereHas('tool', static fn ($builder) => $builder->where('key', $toolKey));
+        }
+
+        if ($status !== '') {
+            $query->where('status', $status);
+        }
+
+        if ($approvalState !== '') {
+            $query->where('approval_state', $approvalState);
+        }
+
+        if (isset($input['started_after']) && $input['started_after'] !== '') {
+            $startedAfter = Carbon::parse((string) $input['started_after']);
+            $query->where('started_at', '>=', $startedAfter);
+        }
+
+        if (isset($input['started_before']) && $input['started_before'] !== '') {
+            $startedBefore = Carbon::parse((string) $input['started_before']);
+            $query->where('started_at', '<=', $startedBefore);
+        }
+
+        $calls = $query->limit($limit)->get();
+        $summary = [
+            'total_calls' => (int) AiToolCall::query()->count(),
+            'matched_calls' => $calls->count(),
+            'succeeded' => (int) $calls->where('status', 'succeeded')->count(),
+            'failed' => (int) $calls->where('status', 'failed')->count(),
+            'awaiting_approval' => (int) $calls->where('status', 'awaiting_approval')->count(),
+            'approved' => (int) $calls->where('approval_state', 'approved')->count(),
+            'rejected' => (int) $calls->where('approval_state', 'rejected')->count(),
+            'by_tool' => $calls->groupBy(static fn (AiToolCall $call): string => (string) ($call->tool->key ?? 'unknown'))->map(static fn ($group): int => $group->count())->all(),
+        ];
+
+        $rows = $calls->map(static function (AiToolCall $call): array {
+            return [
+                'call_uuid' => $call->call_uuid,
+                'tool_key' => $call->tool->key ?? null,
+                'status' => $call->status,
+                'approval_state' => $call->approval_state,
+                'actor_user_id' => $call->actor_user_id,
+                'source_type' => $call->source_type,
+                'source_id' => $call->source_id,
+                'request_uuid' => $call->request_uuid,
+                'started_at' => optional($call->started_at)->toISOString(),
+                'completed_at' => optional($call->completed_at)->toISOString(),
+            ];
+        })->values()->all();
+
+        $csv = $this->toolCallRowsToCsv($rows);
+
+        if ($format === 'csv') {
+            return [
+                'format' => 'csv',
+                'filename' => 'ai-tool-calls-' . now()->format('Y-m-d-His') . '.csv',
+                'content_type' => 'text/csv',
+                'summary' => $summary,
+                'csv' => $csv,
+                'rows' => $rows,
+            ];
+        }
+
+        return [
+            'format' => 'json',
+            'summary' => $summary,
+            'rows' => $rows,
+            'csv' => $csv,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    protected function executeSeoProposal(AiTool $tool, array $input, ?User $actor, array $context, ?Model $source): array
+    {
+        $source ??= $this->resolveSourceModelFromInput($input);
+
+        $title = trim((string) ($input['title'] ?? $source?->title ?? $source?->name ?? ''));
+        $content = trim(implode(' ', array_values(array_filter([
+            is_string($input['content'] ?? null) ? $input['content'] : null,
+            is_string($source?->excerpt ?? null) ? $source->excerpt : null,
+            $source instanceof Model ? $this->combinedSourceText($source) : null,
+        ]))));
+
+        return [
+            'source_type' => $source?->getMorphClass() ?? ($context['source_type'] ?? null),
+            'source_id' => $source?->getKey() ?? ($context['source_id'] ?? null),
+            'meta_title' => $this->truncateText($title !== '' ? $title : 'Untitled', 60),
+            'meta_description' => $this->truncateText($content !== '' ? $this->summarizePlainText($content) : 'Draft SEO metadata for review.', 155),
+            'slug' => is_string($input['slug'] ?? null) ? trim($input['slug']) : null,
+            'keywords' => array_values(array_filter(array_map(
+                static fn ($keyword): string => trim((string) $keyword),
+                (array) ($input['keywords'] ?? [])
+            ))),
+            'warnings' => [
+                'Review before applying this proposal to live content.',
+            ],
+        ];
+    }
+
+    /**
      * @param array<string, mixed> $result
      * @return array<string, mixed>
      */
     protected function summarizeResult(array $result): array
     {
         return [
+            'format' => $result['format'] ?? null,
             'answer' => $result['answer'] ?? null,
             'summary' => $result['summary'] ?? null,
             'meta_title' => $result['meta_title'] ?? null,
             'meta_description' => $result['meta_description'] ?? null,
             'context' => $result['context'] ?? null,
             'count' => isset($result['count']) ? (int) $result['count'] : null,
+            'total_calls' => isset($result['summary']['total_calls']) ? (int) $result['summary']['total_calls'] : null,
+            'matched_calls' => isset($result['summary']['matched_calls']) ? (int) $result['summary']['matched_calls'] : null,
             'citation_count' => is_array($result['citations'] ?? null) ? count($result['citations']) : 0,
             'chunk_count' => isset($result['chunk_count']) ? (int) $result['chunk_count'] : null,
+            'filename' => $result['filename'] ?? null,
+            'content_type' => $result['content_type'] ?? null,
             'items' => is_array($result['items'] ?? null) ? $this->summarizeMediaItems($result['items']) : [],
+            'rows' => is_array($result['rows'] ?? null) ? array_values($result['rows']) : [],
             'citations' => is_array($result['citations'] ?? null)
                 ? array_map(static fn (array $citation): array => Arr::only($citation, [
                     'source_type',
@@ -540,7 +677,44 @@ class AiToolRegistryService
             return $text;
         }
 
-        return rtrim(mb_substr($text, 0, max(0, $limit - 1))) . '…';
+        return rtrim(mb_substr($text, 0, max(0, $limit - 1))) . '...';
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     */
+    protected function toolCallRowsToCsv(array $rows): string
+    {
+        $handle = fopen('php://temp', 'r+');
+
+        if ($handle === false) {
+            return '';
+        }
+
+        $headers = [
+            'call_uuid',
+            'tool_key',
+            'status',
+            'approval_state',
+            'actor_user_id',
+            'source_type',
+            'source_id',
+            'request_uuid',
+            'started_at',
+            'completed_at',
+        ];
+
+        fputcsv($handle, $headers);
+
+        foreach ($rows as $row) {
+            fputcsv($handle, array_map(static fn (string $header): string => (string) ($row[$header] ?? ''), $headers));
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return is_string($csv) ? $csv : '';
     }
 
     /**

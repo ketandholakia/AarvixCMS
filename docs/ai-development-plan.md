@@ -490,6 +490,8 @@ Each step declares whether it drafts, proposes, or applies a change.
 - [x] Implement the first executable tool: authorized content search with audit logging.
 - [x] Implement `content.summary` and an approval flow for review-required tools such as `seo.propose`.
 - [x] Implement `media.search` as a read-only tool for the media library.
+- [x] Implement `content.draft` for review-gated draft article creation.
+- [x] Implement `ai.report` for tool-call reporting and CSV export.
 
 Each tool declares:
 

@@ -182,4 +182,56 @@ class SyncContentEmbeddingsJobTest extends TestCase
         $this->assertSame('succeeded', $updatedJob->status);
         $this->assertGreaterThanOrEqual($initialJob->attempts + 1, $updatedJob->attempts);
     }
+
+    public function test_embedding_jobs_resume_missing_chunks_without_duplication(): void
+    {
+        $post = Post::withoutEvents(function () {
+            return Post::factory()->create([
+                'title' => 'Chunked index',
+                'excerpt' => 'Chunked summary',
+                'body' => json_encode([
+                    'blocks' => [
+                        ['type' => 'paragraph', 'data' => ['text' => str_repeat('Alpha beta gamma delta epsilon zeta eta theta iota kappa. ', 40)]],
+                    ],
+                ]),
+                'status' => 'published',
+            ]);
+        });
+
+        $job = new SyncContentEmbeddingsJob(Post::class, $post->id, 'request-chunked-1');
+
+        app()->call([$job, 'handle']);
+
+        $embeddingCount = ContentEmbedding::query()->where('source_type', Post::class)->where('source_id', $post->id)->count();
+        $this->assertGreaterThan(1, $embeddingCount);
+
+        $removedChunk = ContentEmbedding::query()
+            ->where('source_type', Post::class)
+            ->where('source_id', $post->id)
+            ->orderByDesc('chunk_index')
+            ->firstOrFail();
+
+        $removedChunkIndex = $removedChunk->chunk_index;
+        $removedChunk->delete();
+
+        $this->assertDatabaseMissing('content_embeddings', [
+            'source_type' => Post::class,
+            'source_id' => $post->id,
+            'chunk_index' => $removedChunkIndex,
+        ]);
+
+        app()->call([$job, 'handle']);
+
+        $this->assertDatabaseCount('content_embeddings', $embeddingCount);
+        $this->assertDatabaseHas('content_embeddings', [
+            'source_type' => Post::class,
+            'source_id' => $post->id,
+            'chunk_index' => $removedChunkIndex,
+        ]);
+
+        $embeddingJob = AiEmbeddingJob::query()->firstOrFail();
+        $this->assertSame('succeeded', $embeddingJob->status);
+        $this->assertSame($embeddingCount, count($embeddingJob->payload['completed_chunk_indices'] ?? []));
+        $this->assertSame($embeddingCount, (int) ($embeddingJob->payload['chunk_count'] ?? 0));
+    }
 }

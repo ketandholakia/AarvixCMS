@@ -8,5 +8,8 @@ interface ContentEmbeddingSource
 {
     public function supports(Model $source): bool;
 
-    public function summarize(Model $source, int $chunkIndex = 0): array;
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function summaries(Model $source): array;
 }

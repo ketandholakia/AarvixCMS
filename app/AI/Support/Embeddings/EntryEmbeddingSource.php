@@ -19,8 +19,8 @@ class EntryEmbeddingSource implements ContentEmbeddingSource
         return $source instanceof Entry;
     }
 
-    public function summarize(Model $source, int $chunkIndex = 0): array
+    public function summaries(Model $source): array
     {
-        return $this->service->summarize($source, $chunkIndex);
+        return $this->service->summaries($source);
     }
 }

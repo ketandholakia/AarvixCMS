@@ -383,7 +383,7 @@ Post/Page/Entry/File
 - Dispatch indexing after committed content changes.
 - [x] Delete vectors after source deletion and hide them immediately on unpublish.
 - [x] Reindex when content, visibility, chunker version, or embedding model changes.
-- Make jobs idempotent and resumable.
+- [x] Make jobs idempotent and resumable.
 
 #### 3.3 Retrieval pipeline
 

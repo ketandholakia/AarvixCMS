@@ -381,7 +381,7 @@ Post/Page/Entry/File
 - Create source adapters for Post, Page, and Entry first.
 - Add PDF and Word only after upload security and extraction quality tests exist.
 - Dispatch indexing after committed content changes.
-- Delete vectors after source deletion and hide them immediately on unpublish.
+- [x] Delete vectors after source deletion and hide them immediately on unpublish.
 - Reindex when content, visibility, chunker version, or embedding model changes.
 - Make jobs idempotent and resumable.
 

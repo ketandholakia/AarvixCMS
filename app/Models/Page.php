@@ -47,6 +47,16 @@ class Page extends Model
     {
         static::saved(function ($page) {
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/' . $page->slug)));
+
+            if ((string) $page->status !== 'published') {
+                ContentEmbedding::query()
+                    ->where('source_type', $page::class)
+                    ->where('source_id', $page->id)
+                    ->update([
+                        'visibility' => 'private',
+                    ]);
+            }
+
             app(\App\Services\WebhookService::class)->dispatch('page.updated', $page->toArray());
 
             SyncContentEmbeddingsJob::dispatch($page::class, $page->id)

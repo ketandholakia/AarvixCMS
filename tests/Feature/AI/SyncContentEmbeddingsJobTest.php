@@ -101,4 +101,38 @@ class SyncContentEmbeddingsJobTest extends TestCase
 
         $this->assertDatabaseCount('content_embeddings', 0);
     }
+
+    public function test_unpublishing_content_hides_existing_embeddings_immediately(): void
+    {
+        $post = Post::withoutEvents(function () {
+            return Post::factory()->create([
+                'title' => 'Visibility check',
+                'excerpt' => 'Visibility summary',
+                'body' => json_encode([
+                    'blocks' => [
+                        ['type' => 'paragraph', 'data' => ['text' => 'Visibility body text.']],
+                    ],
+                ]),
+                'status' => 'published',
+            ]);
+        });
+
+        app()->call([new SyncContentEmbeddingsJob(Post::class, $post->id, 'request-visibility-1'), 'handle']);
+
+        $this->assertDatabaseHas('content_embeddings', [
+            'source_type' => Post::class,
+            'source_id' => $post->id,
+            'visibility' => 'public',
+        ]);
+
+        Bus::fake();
+
+        $post->forceFill(['status' => 'draft'])->save();
+
+        $this->assertDatabaseHas('content_embeddings', [
+            'source_type' => Post::class,
+            'source_id' => $post->id,
+            'visibility' => 'private',
+        ]);
+    }
 }

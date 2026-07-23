@@ -51,6 +51,15 @@ class Post extends Model
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/blog/' . $post->slug)));
             // Also clear the listing pages (home, category, tag) which may reference this post
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/')));
+
+            if ((string) $post->status !== 'published') {
+                ContentEmbedding::query()
+                    ->where('source_type', $post::class)
+                    ->where('source_id', $post->id)
+                    ->update([
+                        'visibility' => 'private',
+                    ]);
+            }
             
             app(\App\Services\WebhookService::class)->dispatch('post.updated', $post->toArray());
 

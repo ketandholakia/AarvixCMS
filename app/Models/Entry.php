@@ -59,6 +59,15 @@ class Entry extends Model
             $prefix = $entry->contentType?->slug ?? 'entry';
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url("/{$prefix}/{$entry->slug}")));
 
+            if ((string) $entry->status !== 'published') {
+                ContentEmbedding::query()
+                    ->where('source_type', $entry::class)
+                    ->where('source_id', $entry->id)
+                    ->update([
+                        'visibility' => 'private',
+                    ]);
+            }
+
             SyncContentEmbeddingsJob::dispatch($entry::class, $entry->id)
                 ->onQueue(config('ai.queue.low', 'ai-low'))
                 ->afterCommit();

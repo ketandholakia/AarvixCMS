@@ -76,6 +76,31 @@
                             {{ $media->filename }}
                         </p>
                         <p class="text-xs text-gray-400 dark:text-gray-500">{{ $media->human_size }}</p>
+                        @if($media->aiImageAsset)
+                            <div class="mt-2 space-y-1">
+                                <div class="flex flex-wrap gap-1.5">
+                                    <span class="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
+                                        AI image
+                                    </span>
+                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                        {{ $media->aiImageAsset->operation }}
+                                    </span>
+                                    <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                                        {{ $media->aiImageAsset->moderation_status }}
+                                    </span>
+                                </div>
+                                @if(! empty($media->aiImageAsset->tags))
+                                    <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate" title="{{ implode(', ', $media->aiImageAsset->tags) }}">
+                                        Tags: {{ implode(', ', $media->aiImageAsset->tags) }}
+                                    </p>
+                                @endif
+                                @if(! empty($media->aiImageAsset->ocr_text))
+                                    <p class="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-2" title="{{ $media->aiImageAsset->ocr_text }}">
+                                        OCR: {{ $media->aiImageAsset->ocr_text }}
+                                    </p>
+                                @endif
+                            </div>
+                        @endif
                     </div>
 
                     {{-- Delete overlay --}}

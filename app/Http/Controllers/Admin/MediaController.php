@@ -11,7 +11,7 @@ class MediaController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Media::latest();
+        $query = Media::with('aiImageAsset')->latest();
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {

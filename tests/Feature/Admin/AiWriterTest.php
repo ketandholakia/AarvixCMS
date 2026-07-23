@@ -9,6 +9,7 @@ use App\Models\Post;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ThrowingAiProvider;
 use Tests\TestCase;
 
 class AiWriterTest extends TestCase
@@ -100,6 +101,33 @@ class AiWriterTest extends TestCase
         $response->assertJsonPath('preview.actions.0', 'insert');
         $response->assertSee('Selected sentence only.', false);
         $response->assertDontSee('Whole document text.', false);
+    }
+
+    public function test_ai_writer_returns_a_recoverable_json_error_when_the_provider_fails(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'throwing');
+        config()->set('ai.providers.throwing.driver', ThrowingAiProvider::class);
+
+        $post = Post::factory()->create(['author_id' => $this->admin()->id]);
+
+        $response = $this->actingAs($this->admin())->postJson(route('admin.ai.writer.generate'), [
+            'context' => 'post',
+            'record_id' => $post->id,
+            'operation' => 'rewrite',
+            'document' => json_encode([
+                'blocks' => [
+                    ['type' => 'paragraph', 'data' => ['text' => 'Original draft text.']],
+                ],
+            ]),
+        ]);
+
+        $response->assertStatus(503);
+        $response->assertJsonPath('status', 'failed');
+        $response->assertJsonPath('message', 'AI writer could not generate a preview. Your content was not changed.');
+        $response->assertJsonPath('error.class', 'AiProviderException');
+        $response->assertHeader('content-type', 'application/json');
+        $response->assertDontSee('<html', false);
     }
 
     public function test_author_cannot_generate_ai_writer_preview_for_someone_elses_post(): void

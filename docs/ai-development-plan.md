@@ -354,6 +354,8 @@ Benchmark using a representative corpus and WAMP deployment:
 - A dedicated vector database or search service.
 - PostgreSQL with `pgvector` as an explicit platform expansion.
 
+- [x] Add a benchmark harness with a deterministic in-memory vector-store baseline and CLI reporting for index/search throughput.
+
 Measure indexing throughput, top-k latency, filtering support, backup/restore,
 operational burden, and cost. The selected store must support metadata filtering
 before nearest-neighbor ranking.

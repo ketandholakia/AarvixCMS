@@ -3,6 +3,7 @@
 use App\AI\Enums\AiCapability;
 use App\AI\Providers\FakeAiProvider;
 use App\AI\Providers\OpenAiProvider;
+use App\AI\Support\VectorStores\InMemoryVectorStore;
 
 return [
     'enabled' => env('AI_ENABLED', false),
@@ -90,5 +91,10 @@ return [
         'log_prompts' => env('AI_LOG_PROMPTS', false),
         'log_responses' => env('AI_LOG_RESPONSES', false),
         'retention_days' => (int) env('AI_LOG_RETENTION_DAYS', 30),
+    ],
+
+    'vector_store' => [
+        'driver' => env('AI_VECTOR_STORE_DRIVER', InMemoryVectorStore::class),
+        'collection' => env('AI_VECTOR_STORE_COLLECTION', 'content_embeddings'),
     ],
 ];

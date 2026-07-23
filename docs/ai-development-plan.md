@@ -525,6 +525,7 @@ model policy, budgets, and maximum steps.
 - [x] Add an `ai:agent-run` console command for launching a JSON step plan.
 - [x] Add runtime admin toggles for the initial agent profiles.
 - [x] Add runtime per-agent model and budget overrides in admin settings.
+- [x] Persist the resolved agent policy snapshot on each agent run.
 
 #### Acceptance criteria
 

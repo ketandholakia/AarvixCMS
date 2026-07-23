@@ -83,6 +83,11 @@ class AiAgentExecutionTest extends TestCase
         $this->assertSame(1, $run->steps_completed);
         $this->assertCount(1, $run->steps);
         $this->assertSame('succeeded', $run->steps->first()->status);
+        $this->assertSame('writer', $run->policy_snapshot['primary_model']);
+        $this->assertSame('chat', $run->policy_snapshot['fallback_model']);
+        $this->assertSame(0.4, $run->policy_snapshot['temperature']);
+        $this->assertSame(500, $run->budget_snapshot['max_tokens']);
+        $this->assertSame('1.00', $run->budget_snapshot['max_cost']);
     }
 
     public function test_agent_halts_when_step_requires_approval(): void

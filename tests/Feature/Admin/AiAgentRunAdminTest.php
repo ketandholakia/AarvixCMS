@@ -70,5 +70,9 @@ class AiAgentRunAdminTest extends TestCase
         $response->assertSee('Reporting Agent');
         $response->assertSee('Plan');
         $response->assertSee('Steps');
+        $response->assertSee('Resolved Policy');
+        $response->assertSee('Resolved Budget');
+        $response->assertSee('writer');
+        $response->assertSee('1.00');
     }
 }

@@ -88,6 +88,16 @@
             </div>
 
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Resolved Policy</h3>
+                <pre class="mt-4 overflow-x-auto rounded-xl bg-gray-950 p-4 text-xs text-gray-100">{{ json_encode($run->policy_snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Resolved Budget</h3>
+                <pre class="mt-4 overflow-x-auto rounded-xl bg-gray-950 p-4 text-xs text-gray-100">{{ json_encode($run->budget_snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Error</h3>
                 @if($run->error_class || $run->error_message)
                     <dl class="mt-4 space-y-3 text-sm">

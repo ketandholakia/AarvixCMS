@@ -195,6 +195,8 @@ class AiAgentExecutionService
             'source_id' => $sourceId && $sourceId > 0 ? $sourceId : null,
             'request_uuid' => is_string($context['request_uuid'] ?? null) ? $context['request_uuid'] : null,
             'prompt_key' => $agent->promptKey,
+            'policy_snapshot' => $this->policySnapshot($agent),
+            'budget_snapshot' => $this->budgetSnapshot($agent),
             'context' => $context ?: null,
             'plan' => array_map(static fn (AiAgentStep $step): array => $step->toArray(), $steps),
             'steps_planned' => count($steps),
@@ -337,6 +339,32 @@ class AiAgentExecutionService
     protected function asDecimalString(string $value): string
     {
         return number_format((float) $value, 8, '.', '');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function policySnapshot(AiAgentDefinition $agent): array
+    {
+        return array_filter([
+            'enabled' => $agent->isEnabled,
+            'primary_model' => $agent->modelPolicy['primary'] ?? null,
+            'fallback_model' => $agent->modelPolicy['fallback'] ?? null,
+            'temperature' => $agent->modelPolicy['temperature'] ?? null,
+            'max_steps' => $agent->maxSteps,
+            'max_seconds' => $agent->maxSeconds,
+        ], static fn (mixed $value): bool => $value !== null);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function budgetSnapshot(AiAgentDefinition $agent): array
+    {
+        return array_filter([
+            'max_tokens' => $agent->budgets['max_tokens'] ?? null,
+            'max_cost' => $agent->budgets['max_cost'] ?? null,
+        ], static fn (mixed $value): bool => $value !== null);
     }
 
     protected function decimalGreaterThan(string $left, string $right): bool

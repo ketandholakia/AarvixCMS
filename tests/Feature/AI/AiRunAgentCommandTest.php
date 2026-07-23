@@ -50,5 +50,7 @@ class AiRunAgentCommandTest extends TestCase
         $this->assertSame('succeeded', $run->status);
         $this->assertNotEmpty($run->run_uuid);
         $this->assertSame($admin->id, $run->actor_user_id);
+        $this->assertSame('chat', $run->policy_snapshot['primary_model']);
+        $this->assertSame(2000, $run->budget_snapshot['max_tokens']);
     }
 }

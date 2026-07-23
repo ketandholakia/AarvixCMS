@@ -14,6 +14,7 @@ use App\Models\Post;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RuntimeException;
 use Tests\TestCase;
 
 class ChatServiceTest extends TestCase
@@ -119,6 +120,46 @@ class ChatServiceTest extends TestCase
 
         $search = $service->searchContent($conversation, 'second question');
         $this->assertIsArray($search['citations']);
+    }
+
+    public function test_chat_service_allows_owner_and_admin_to_manage_conversations(): void
+    {
+        $owner = User::factory()->create(['is_active' => true]);
+        $admin = User::factory()->create(['is_active' => true]);
+        $admin->roles()->attach(Role::where('name', 'Admin')->firstOrFail());
+        $other = User::factory()->create(['is_active' => true]);
+
+        $service = $this->app->make(ChatService::class);
+
+        $renamedConversation = $service->createConversation(
+            new AiScope(userId: $owner->id, site: 'default', feature: 'chat'),
+            ['title' => 'Original title']
+        );
+        $service->renameConversation($renamedConversation, 'Renamed conversation', $owner);
+        $this->assertSame('Renamed conversation', $renamedConversation->fresh()->title);
+
+        $archivedConversation = $service->createConversation(
+            new AiScope(userId: $owner->id, site: 'default', feature: 'chat'),
+            ['title' => 'Archive me']
+        );
+        $service->archiveConversation($archivedConversation, $admin);
+        $this->assertSame('archived', $archivedConversation->fresh()->status);
+
+        $deletedConversation = $service->createConversation(
+            new AiScope(userId: $owner->id, site: 'default', feature: 'chat'),
+            ['title' => 'Delete me']
+        );
+        $service->deleteConversation($deletedConversation, $owner);
+        $this->assertSoftDeleted($deletedConversation);
+
+        $unauthorizedConversation = $service->createConversation(
+            new AiScope(userId: $owner->id, site: 'default', feature: 'chat'),
+            ['title' => 'Private']
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('You are not allowed to manage this conversation.');
+        $service->renameConversation($unauthorizedConversation, 'Nope', $other);
     }
 
     public function test_chat_service_normalizes_unknown_modes_to_knowledge(): void

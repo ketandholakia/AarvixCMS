@@ -7,6 +7,7 @@ use App\AI\DTOs\AiScope;
 use App\Models\AiChatRun;
 use App\Models\AiConversation;
 use App\Models\AiMessage;
+use App\Models\User;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -210,6 +211,41 @@ class ChatService
         return $this->createRun($conversation, $run->question, $run->options ?? [], $run);
     }
 
+    public function renameConversation(AiConversation $conversation, string $title, ?User $actor = null): AiConversation
+    {
+        $this->authorizeConversationManagement($conversation, $actor);
+
+        $title = trim($title);
+
+        if ($title === '') {
+            throw new RuntimeException('Conversation title cannot be empty.');
+        }
+
+        $conversation->forceFill([
+            'title' => $title,
+        ])->save();
+
+        return $conversation;
+    }
+
+    public function archiveConversation(AiConversation $conversation, ?User $actor = null): AiConversation
+    {
+        $this->authorizeConversationManagement($conversation, $actor);
+
+        $conversation->forceFill([
+            'status' => 'archived',
+        ])->save();
+
+        return $conversation;
+    }
+
+    public function deleteConversation(AiConversation $conversation, ?User $actor = null): void
+    {
+        $this->authorizeConversationManagement($conversation, $actor);
+
+        $conversation->delete();
+    }
+
     /**
      * @param array<string, mixed> $options
      * @return array<string, mixed>
@@ -301,5 +337,16 @@ class ChatService
             feature: 'chat',
             metadata: is_array($conversation->scope['metadata'] ?? null) ? $conversation->scope['metadata'] : [],
         );
+    }
+
+    protected function authorizeConversationManagement(AiConversation $conversation, ?User $actor = null): void
+    {
+        if ($actor === null) {
+            throw new RuntimeException('Conversation management requires an actor.');
+        }
+
+        if ((int) $conversation->user_id !== (int) $actor->id && ! $actor->hasRole('Admin')) {
+            throw new RuntimeException('You are not allowed to manage this conversation.');
+        }
     }
 }

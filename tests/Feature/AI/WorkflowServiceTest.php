@@ -51,6 +51,9 @@ class WorkflowServiceTest extends TestCase
         $run = AiWorkflowRun::query()
             ->where('source_type', Post::class)
             ->where('source_id', $post->id)
+            ->whereHas('workflow', static function ($query): void {
+                $query->where('key', 'content.publish.seo-review');
+            })
             ->firstOrFail();
 
         $this->assertSame('succeeded', $run->status);
@@ -61,15 +64,30 @@ class WorkflowServiceTest extends TestCase
         $this->assertSame('Editor', data_get($run->review_task, 'assignee_role'));
         $this->assertSame(['meta_title', 'meta_description'], $run->payload['missing_fields']);
 
+        $socialRun = AiWorkflowRun::query()
+            ->where('source_type', Post::class)
+            ->where('source_id', $post->id)
+            ->whereHas('workflow', static function ($query): void {
+                $query->where('key', 'content.publish.social-drafts');
+            })
+            ->firstOrFail();
+
+        $this->assertSame('succeeded', $socialRun->status);
+        $this->assertSame('Social post variants preview', data_get($socialRun->result, 'summary'));
+        $this->assertSame('x', data_get($socialRun->result, 'social_variants.0.channel'));
+        $this->assertSame('open', data_get($socialRun->review_task, 'status'));
+        $this->assertSame('Editor', data_get($socialRun->review_task, 'assignee_role'));
+        $this->assertCount(3, data_get($socialRun->review_task, 'details.variants'));
+
         $this->app->make(\App\Services\WorkflowService::class)->handlePublishedContent($post);
 
-        $this->assertSame(1, AiWorkflowRun::query()
+        $this->assertSame(2, AiWorkflowRun::query()
             ->where('source_type', Post::class)
             ->where('source_id', $post->id)
             ->count());
     }
 
-    public function test_publishing_content_with_existing_seo_skips_the_workflow(): void
+    public function test_publishing_content_with_existing_seo_still_creates_social_drafts(): void
     {
         Queue::fake();
 
@@ -87,10 +105,24 @@ class WorkflowServiceTest extends TestCase
 
         $run = $this->app->make(\App\Services\WorkflowService::class)->handlePublishedContent($page);
 
-        $this->assertNull($run);
-        $this->assertDatabaseMissing('ai_workflow_runs', [
-            'source_type' => Page::class,
-            'source_id' => $page->id,
-        ]);
+        $this->assertNotNull($run);
+        $this->assertSame(1, AiWorkflowRun::query()
+            ->where('source_type', Page::class)
+            ->where('source_id', $page->id)
+            ->count());
+        $this->assertTrue(AiWorkflowRun::query()
+            ->where('source_type', Page::class)
+            ->where('source_id', $page->id)
+            ->whereHas('workflow', static function ($query): void {
+                $query->where('key', 'content.publish.social-drafts');
+            })
+            ->exists());
+        $this->assertFalse(AiWorkflowRun::query()
+            ->where('source_type', Page::class)
+            ->where('source_id', $page->id)
+            ->whereHas('workflow', static function ($query): void {
+                $query->where('key', 'content.publish.seo-review');
+            })
+            ->exists());
     }
 }

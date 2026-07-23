@@ -49,6 +49,11 @@ class FakeAiProvider implements AiProvider
             $response['summary'] = 'SEO metadata preview';
             $response['plain_text'] = $response['seo']['meta_title'] ?? $suggestion;
             $response['suggestion'] = $response['plain_text'];
+        } elseif ($operation === 'social') {
+            $response['social_variants'] = $this->buildSocialVariants($title, $content);
+            $response['summary'] = 'Social post variants preview';
+            $response['plain_text'] = $response['social_variants'][0]['text'] ?? $suggestion;
+            $response['suggestion'] = $response['plain_text'];
         }
 
         return $this->buildSuccessResult('generate', $request, $response);
@@ -242,5 +247,30 @@ class FakeAiProvider implements AiProvider
         }
 
         return $warnings;
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    protected function buildSocialVariants(string $title, string $content): array
+    {
+        $source = trim($title !== '' ? $title : $content);
+        $source = $source !== '' ? $source : 'Untitled content';
+        $shortSource = Str::limit($source, 70, '');
+
+        return [
+            [
+                'channel' => 'x',
+                'text' => Str::limit("New: {$shortSource} - read the latest update.", 280, ''),
+            ],
+            [
+                'channel' => 'linkedin',
+                'text' => Str::limit("We published {$shortSource}. Highlights and takeaways are now available.", 300, ''),
+            ],
+            [
+                'channel' => 'facebook',
+                'text' => Str::limit("Fresh on the site: {$shortSource}. Check out the full post.", 280, ''),
+            ],
+        ];
     }
 }

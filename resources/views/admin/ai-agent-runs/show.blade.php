@@ -129,6 +129,8 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tool</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Approval</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Input</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Result</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Call</th>
                     </tr>
                 </thead>
@@ -142,6 +144,16 @@
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ ucfirst(str_replace('_', ' ', $step->status)) }}</td>
                             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ $step->approval_state ? ucfirst(str_replace('_', ' ', $step->approval_state)) : 'n/a' }}</td>
+                            <td class="px-6 py-4">
+                                <pre class="max-w-lg overflow-x-auto rounded-lg bg-gray-950 p-3 text-[11px] leading-5 text-gray-100">{{ json_encode($step->input_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                            </td>
+                            <td class="px-6 py-4">
+                                @if($step->result_payload)
+                                    <pre class="max-w-lg overflow-x-auto rounded-lg bg-gray-950 p-3 text-[11px] leading-5 text-gray-100">{{ json_encode($step->result_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                @else
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">n/a</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                                 @if($step->toolCall)
                                     <a href="{{ route('admin.ai-tool-calls.show', $step->toolCall) }}" class="text-indigo-600 hover:underline dark:text-indigo-400">View tool call</a>

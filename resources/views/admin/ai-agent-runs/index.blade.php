@@ -10,9 +10,14 @@
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Agent Runs</h2>
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Inspect persisted agent launches, step counts, halts, and failures.</p>
             </div>
-            <a href="{{ route('admin.ai.diagnostics') }}" class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">
-                AI diagnostics
-            </a>
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ route('admin.ai-agent-runs.index', array_merge($filters, ['format' => 'csv'])) }}" class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">
+                    Export CSV
+                </a>
+                <a href="{{ route('admin.ai.diagnostics') }}" class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">
+                    AI diagnostics
+                </a>
+            </div>
         </div>
 
         <form method="GET" action="{{ route('admin.ai-agent-runs.index') }}" class="mt-6 grid gap-3 md:grid-cols-3">

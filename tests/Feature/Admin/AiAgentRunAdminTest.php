@@ -64,6 +64,7 @@ class AiAgentRunAdminTest extends TestCase
         $response->assertSee('AI Agent Runs');
         $response->assertSee('Reporting Agent');
         $response->assertSee($result['run_uuid']);
+        $response->assertSee('Export CSV');
 
         $response = $this->actingAs($admin)->get(route('admin.ai-agent-runs.show', ['ai_agent_run' => $result['run_uuid']]));
         $response->assertOk();
@@ -74,5 +75,48 @@ class AiAgentRunAdminTest extends TestCase
         $response->assertSee('Resolved Budget');
         $response->assertSee('writer');
         $response->assertSee('1.00');
+        $response->assertSee('Input');
+        $response->assertSee('Result');
+        $response->assertSee('limit');
+    }
+
+    public function test_admin_can_export_agent_runs_as_csv(): void
+    {
+        $admin = User::factory()->create(['is_active' => true]);
+        $admin->roles()->attach(Role::where('name', 'Admin')->firstOrFail());
+
+        $agent = new AiAgentDefinition(
+            key: 'reporting',
+            version: 1,
+            name: 'Reporting Agent',
+            promptKey: 'ai.agents.documentation.v1',
+            tools: ['ai.report'],
+            permissions: ['view_ai_usage'],
+            budgets: ['max_tokens' => 500, 'max_cost' => '1.00'],
+            maxSteps: 2,
+            maxSeconds: 30,
+            isEnabled: true,
+        );
+
+        app(AiAgentExecutionService::class)->execute(
+            $agent,
+            [
+                new AiAgentStep(
+                    toolKey: 'ai.report',
+                    input: ['limit' => 1, 'format' => 'json'],
+                    estimatedTokens: 100,
+                    estimatedCost: '0.01000000',
+                ),
+            ],
+            $admin,
+            ['site' => 'main'],
+        );
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-agent-runs.index', ['format' => 'csv']));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $response->assertSee('run_uuid');
+        $response->assertSee('Reporting Agent');
     }
 }

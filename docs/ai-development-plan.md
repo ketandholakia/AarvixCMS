@@ -526,6 +526,7 @@ model policy, budgets, and maximum steps.
 - [x] Add runtime admin toggles for the initial agent profiles.
 - [x] Add runtime per-agent model and budget overrides in admin settings.
 - [x] Persist the resolved agent policy snapshot on each agent run.
+- [x] Add agent run CSV export and step input/result visibility in the admin UI.
 
 #### Acceptance criteria
 

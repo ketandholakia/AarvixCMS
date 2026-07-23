@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSlug;
 use App\Traits\HasRevisions;
+use App\Jobs\SyncContentEmbeddingsJob;
+use App\Models\ContentEmbedding;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -46,11 +48,20 @@ class Page extends Model
         static::saved(function ($page) {
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/' . $page->slug)));
             app(\App\Services\WebhookService::class)->dispatch('page.updated', $page->toArray());
+
+            SyncContentEmbeddingsJob::dispatch($page::class, $page->id)
+                ->onQueue(config('ai.queue.low', 'ai-low'))
+                ->afterCommit();
         });
 
         static::deleted(function ($page) {
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/' . $page->slug)));
             app(\App\Services\WebhookService::class)->dispatch('page.deleted', ['id' => $page->id, 'slug' => $page->slug]);
+
+            ContentEmbedding::query()
+                ->where('source_type', $page::class)
+                ->where('source_id', $page->id)
+                ->delete();
         });
     }
 

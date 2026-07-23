@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSlug;
 use App\Traits\HasRevisions;
+use App\Jobs\SyncContentEmbeddingsJob;
+use App\Models\ContentEmbedding;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -56,11 +58,20 @@ class Entry extends Model
         static::saved(function (Entry $entry) {
             $prefix = $entry->contentType?->slug ?? 'entry';
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url("/{$prefix}/{$entry->slug}")));
+
+            SyncContentEmbeddingsJob::dispatch($entry::class, $entry->id)
+                ->onQueue(config('ai.queue.low', 'ai-low'))
+                ->afterCommit();
         });
 
         static::deleted(function (Entry $entry) {
             $prefix = $entry->contentType?->slug ?? 'entry';
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url("/{$prefix}/{$entry->slug}")));
+
+            ContentEmbedding::query()
+                ->where('source_type', $entry::class)
+                ->where('source_id', $entry->id)
+                ->delete();
         });
     }
 

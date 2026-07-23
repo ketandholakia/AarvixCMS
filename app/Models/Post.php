@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSlug;
 use App\Traits\HasRevisions;
+use App\Jobs\SyncContentEmbeddingsJob;
+use App\Models\ContentEmbedding;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -51,6 +53,10 @@ class Post extends Model
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/')));
             
             app(\App\Services\WebhookService::class)->dispatch('post.updated', $post->toArray());
+
+            SyncContentEmbeddingsJob::dispatch($post::class, $post->id)
+                ->onQueue(config('ai.queue.low', 'ai-low'))
+                ->afterCommit();
         });
 
         static::deleted(function ($post) {
@@ -58,6 +64,11 @@ class Post extends Model
             \Illuminate\Support\Facades\Cache::forget('page_cache_' . md5(url('/')));
             
             app(\App\Services\WebhookService::class)->dispatch('post.deleted', ['id' => $post->id, 'slug' => $post->slug]);
+
+            ContentEmbedding::query()
+                ->where('source_type', $post::class)
+                ->where('source_id', $post->id)
+                ->delete();
         });
     }
 

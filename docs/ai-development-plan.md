@@ -362,6 +362,8 @@ before nearest-neighbor ranking.
 
 - [x] Create content embedding and embedding-job tables, models, and source
   summarizer for Post, Page, and Entry.
+- [x] Add source adapters, queued sync job, and model hooks for Post, Page, and
+  Entry embeddings.
 
 ```text
 Post/Page/Entry/File

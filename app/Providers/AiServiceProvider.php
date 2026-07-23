@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\AI\Contracts\AiProvider;
 use App\AI\Services\AiManager;
+use App\AI\Services\ContentEmbeddingService;
+use App\AI\Services\ContentEmbeddingSourceResolver;
 use App\AI\Services\AiPolicyService;
 use App\AI\Services\PromptService;
 use App\AI\Services\UsageService;
@@ -31,5 +33,7 @@ class AiServiceProvider extends ServiceProvider
         $this->app->singleton(PromptService::class);
         $this->app->singleton(AiPolicyService::class);
         $this->app->singleton(UsageService::class);
+        $this->app->singleton(ContentEmbeddingService::class);
+        $this->app->singleton(ContentEmbeddingSourceResolver::class);
     }
 }

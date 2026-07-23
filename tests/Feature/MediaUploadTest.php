@@ -62,6 +62,10 @@ class MediaUploadTest extends TestCase
             'provider' => 'fake-image',
             'model' => 'vision-image-1',
             'operation' => 'generate',
+            'alt_text' => 'Generated image',
+            'caption' => 'Generated image caption',
+            'tags' => ['ai', 'generated'],
+            'ocr_text' => 'Visible text',
             'prompt_hash' => hash('sha256', 'prompt body'),
             'resolution' => '1024x1024',
             'seed' => 12345,
@@ -76,6 +80,10 @@ class MediaUploadTest extends TestCase
         $this->assertSame('fake-image', $asset->provider);
         $this->assertSame('vision-image-1', $asset->model);
         $this->assertSame('generate', $asset->operation);
+        $this->assertSame('Generated image', $asset->alt_text);
+        $this->assertSame('Generated image caption', $asset->caption);
+        $this->assertSame(['ai', 'generated'], $asset->tags);
+        $this->assertSame('Visible text', $asset->ocr_text);
         $this->assertSame('1024x1024', $asset->resolution);
         $this->assertSame(12345, $asset->seed);
         $this->assertSame('editorial', $asset->metadata['style']);

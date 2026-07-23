@@ -14,6 +14,10 @@ class AiImageAsset extends Model
         'provider',
         'model',
         'operation',
+        'alt_text',
+        'caption',
+        'tags',
+        'ocr_text',
         'prompt_hash',
         'resolution',
         'seed',
@@ -26,6 +30,7 @@ class AiImageAsset extends Model
 
     protected $casts = [
         'metadata' => 'array',
+        'tags' => 'array',
         'estimated_cost' => 'decimal:8',
         'seed' => 'integer',
         'moderation_reviewed_at' => 'datetime',

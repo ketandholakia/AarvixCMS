@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\AI\DTOs\AiRequestData;
 use App\AI\Services\AiManager;
 use App\Models\Media;
+use App\Services\AiImageEnrichmentService;
 use App\Services\AiImageCapabilityService;
 use App\Services\AiImagePolicyService;
 use App\Services\MediaUploadService;
@@ -36,7 +37,7 @@ class GenerateAiImageJob implements ShouldQueue
     ) {
     }
 
-    public function handle(AiManager $aiManager, MediaUploadService $mediaUploadService, AiImageCapabilityService $capabilities, AiImagePolicyService $policy): void
+    public function handle(AiManager $aiManager, MediaUploadService $mediaUploadService, AiImageCapabilityService $capabilities, AiImagePolicyService $policy, AiImageEnrichmentService $enrichment): void
     {
         $policy->assertPublicGenerationAllowed($this->publicGeneration);
         $capabilities->assertSupported([
@@ -75,8 +76,10 @@ class GenerateAiImageJob implements ShouldQueue
         $payload = $result->response;
         $contents = $this->extractImageContents($payload);
         $originalName = (string) ($payload['filename'] ?? 'ai-image.png');
-        $altText = $this->normalizeText($payload['alt'] ?? $this->prompt);
-        $caption = $this->normalizeText($payload['caption'] ?? '');
+        $altText = $enrichment->altText($payload, $this->prompt);
+        $caption = $enrichment->caption($payload);
+        $tags = $enrichment->tags($payload);
+        $ocrText = $enrichment->ocrText($payload);
 
         $media = $this->persistMedia($mediaUploadService, $contents, $originalName, $altText, $caption);
         $moderationStatus = $policy->moderationStatus($this->publicGeneration);
@@ -91,6 +94,10 @@ class GenerateAiImageJob implements ShouldQueue
             'prompt_hash' => hash('sha256', $this->prompt),
             'resolution' => $this->resolution,
             'seed' => $this->seed,
+            'alt_text' => $altText,
+            'caption' => $caption,
+            'tags' => $tags,
+            'ocr_text' => $ocrText,
             'moderation_status' => $moderationStatus,
             'moderation_reviewed_at' => $moderationReviewedAt,
             'retention_expires_at' => $retentionExpiresAt,
@@ -104,6 +111,8 @@ class GenerateAiImageJob implements ShouldQueue
                 'public_generation' => $this->publicGeneration,
                 'moderation_status' => $moderationStatus,
                 'retention_expires_at' => $retentionExpiresAt?->toDateTimeString(),
+                'tags' => $tags,
+                'ocr_text' => $ocrText,
             ],
         ]);
     }
@@ -173,10 +182,5 @@ class GenerateAiImageJob implements ShouldQueue
         }
 
         return $downloaded;
-    }
-
-    protected function normalizeText(mixed $value): string
-    {
-        return is_string($value) ? trim(strip_tags($value)) : '';
     }
 }

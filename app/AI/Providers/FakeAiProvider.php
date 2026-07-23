@@ -84,6 +84,8 @@ class FakeAiProvider implements AiProvider
             'filename' => 'fake-ai-image.gif',
             'alt' => 'Generated AI image',
             'caption' => 'Generated AI image preview',
+            'tags' => ['ai', 'generated', 'preview'],
+            'ocr_text' => 'Sample OCR text from generated image.',
         ]);
     }
 

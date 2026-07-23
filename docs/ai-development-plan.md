@@ -318,7 +318,7 @@ appropriate Laravel streaming response; queued requests use polling by request U
 
 - Generate and edit images.
 - Remove background, upscale, and resize when supported.
-- Generate captions, alt text, tags, and OCR text.
+- [x] Generate captions, alt text, tags, and OCR text.
 - Store generated files through `MediaUploadService`.
 - Link provider, model, prompt hash, cost, seed, resolution, and operation metadata to
   the media record through `ai_image_assets`.

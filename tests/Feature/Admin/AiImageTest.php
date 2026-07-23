@@ -119,6 +119,8 @@ class AiImageTest extends TestCase
         $this->assertNotNull($asset->retention_expires_at);
         $this->assertTrue($asset->retention_expires_at->greaterThan(now()));
         $this->assertFalse((bool) ($asset->metadata['public_generation'] ?? true));
+        $this->assertSame(['ai', 'generated', 'preview'], $asset->tags);
+        $this->assertSame('Sample OCR text from generated image.', $asset->ocr_text);
         $this->assertNotEmpty($asset->metadata['provider_request_id'] ?? null);
         $this->assertNotEmpty($asset->metadata['request_id'] ?? null);
 
@@ -173,6 +175,8 @@ class AiImageTest extends TestCase
         $this->assertSame('edit', $asset->operation);
         $this->assertSame('fake', $asset->provider);
         $this->assertSame('fake-image', $asset->model);
+        $this->assertSame(['ai', 'generated', 'preview'], $asset->tags);
+        $this->assertSame('Sample OCR text from generated image.', $asset->ocr_text);
 
         Storage::disk('public')->assertMissing('uploads/existing.webp');
         Storage::disk('public')->assertMissing('uploads/thumbs/thumb-existing.webp');

@@ -54,6 +54,16 @@ class FakeAiProvider implements AiProvider
             $response['summary'] = 'Social post variants preview';
             $response['plain_text'] = $response['social_variants'][0]['text'] ?? $suggestion;
             $response['suggestion'] = $response['plain_text'];
+        } elseif ($operation === 'translate') {
+            $locales = array_values(array_filter(array_map(
+                static fn ($locale): string => strtolower(trim((string) $locale)),
+                is_array($request->input['locales'] ?? null) ? $request->input['locales'] : []
+            )));
+            $translationLocales = $locales !== [] ? $locales : ['hi', 'gu'];
+            $response['translations'] = $this->buildTranslationDrafts($title, $content, $translationLocales);
+            $response['summary'] = 'Translation drafts preview';
+            $response['plain_text'] = $response['translations'][$translationLocales[0]]['title'] ?? $suggestion;
+            $response['suggestion'] = $response['plain_text'];
         }
 
         return $this->buildSuccessResult('generate', $request, $response);
@@ -272,5 +282,30 @@ class FakeAiProvider implements AiProvider
                 'text' => Str::limit("Fresh on the site: {$shortSource}. Check out the full post.", 280, ''),
             ],
         ];
+    }
+
+    /**
+     * @param array<int, string> $locales
+     * @return array<string, array<string, string>>
+     */
+    protected function buildTranslationDrafts(string $title, string $content, array $locales): array
+    {
+        $source = trim($title !== '' ? $title : $content);
+        $source = $source !== '' ? $source : 'Untitled content';
+        $locales = $locales !== [] ? $locales : ['hi', 'gu'];
+        $translations = [];
+
+        foreach ($locales as $locale) {
+            $label = strtoupper($locale);
+            $translations[$locale] = [
+                'title' => "{$source} ({$label} draft)",
+                'excerpt' => Str::limit("{$source} translated for {$label}.", 160, ''),
+                'body' => "Translated {$label} draft for {$source}.",
+                'meta_title' => Str::limit("{$source} {$label}", 255, ''),
+                'meta_description' => Str::limit("Translated {$label} version of {$source}.", 255, ''),
+            ];
+        }
+
+        return $translations;
     }
 }

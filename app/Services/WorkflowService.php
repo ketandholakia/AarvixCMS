@@ -46,6 +46,75 @@ class WorkflowService
         return null;
     }
 
+    public function handleTranslationRequest(Model $source, string $contentText, array $locales = [], ?User $actor = null): ?AiWorkflowRun
+    {
+        $contentText = trim($contentText);
+
+        if ($contentText === '') {
+            return null;
+        }
+
+        $locales = $this->translationLocales($locales);
+
+        if ($locales === []) {
+            return null;
+        }
+
+        $workflow = $this->translationWorkflow($actor?->id);
+        $idempotencyKey = $this->translationIdempotencyKey($workflow, $source, $contentText, $locales);
+
+        $existing = AiWorkflowRun::query()->where('idempotency_key', $idempotencyKey)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        $summary = $this->contentEmbeddingService->summarize($source);
+        $run = $this->createWorkflowRun($workflow, $source, $actor, $summary, [
+            'content_text' => $contentText,
+            'locales' => $locales,
+        ]);
+
+        try {
+            $result = $this->aiManager->generate(new AiRequestData(
+                input: [
+                    'operation' => 'translate',
+                    'title' => (string) ($source->title ?? ''),
+                    'content' => $contentText,
+                    'locales' => $locales,
+                    'prompt' => 'Translate the selected CMS content into the requested locales. Return localized drafts only.',
+                ],
+                options: [
+                    'source_type' => $source::class,
+                    'source_id' => $source->getKey(),
+                    'locales' => $locales,
+                ],
+                provider: config('ai.default_provider', 'fake'),
+                model: data_get(config('ai.models.writer'), 'model', 'fake-writer'),
+                promptKey: 'workflow.request.translate',
+                feature: 'writer',
+            ));
+
+            $translations = is_array($result->response['translations'] ?? null) ? $result->response['translations'] : [];
+            $run->forceFill([
+                'status' => 'succeeded',
+                'result' => $result->response,
+                'review_task' => $this->buildTranslationReviewTask($source, $translations, $locales),
+                'completed_at' => now(),
+            ])->save();
+        } catch (Throwable $e) {
+            $run->forceFill([
+                'status' => 'failed',
+                'error_class' => $e::class,
+                'error_message' => $e->getMessage(),
+                'failed_at' => now(),
+            ])->save();
+
+            report($e);
+        }
+
+        return $run->fresh();
+    }
+
     protected function publishSeoWorkflow(?int $ownerUserId = null): AiWorkflow
     {
         return AiWorkflow::query()->firstOrCreate(
@@ -84,6 +153,28 @@ class WorkflowService
                 ],
                 'steps' => [
                     ['key' => 'generate_social_variants', 'type' => 'ai.generate', 'status' => 'pending'],
+                    ['key' => 'create_editor_review_task', 'type' => 'task.create', 'status' => 'pending'],
+                ],
+                'owner_user_id' => $ownerUserId,
+            ]
+        );
+    }
+
+    protected function translationWorkflow(?int $ownerUserId = null): AiWorkflow
+    {
+        return AiWorkflow::query()->firstOrCreate(
+            ['key' => 'content.request.translation-drafts'],
+            [
+                'workflow_uuid' => (string) Str::uuid(),
+                'name' => 'Request translation drafts',
+                'trigger' => 'content.translation_requested',
+                'version' => 1,
+                'status' => 'enabled',
+                'conditions' => [
+                    'requires_localized_output' => true,
+                ],
+                'steps' => [
+                    ['key' => 'generate_translation_draft', 'type' => 'ai.generate', 'status' => 'pending'],
                     ['key' => 'create_editor_review_task', 'type' => 'task.create', 'status' => 'pending'],
                 ],
                 'owner_user_id' => $ownerUserId,
@@ -226,6 +317,18 @@ class WorkflowService
         ]);
     }
 
+    protected function translationIdempotencyKey(AiWorkflow $workflow, Model $source, string $contentText, array $locales): string
+    {
+        return hash('sha256', implode('|', [
+            $workflow->key,
+            $workflow->version,
+            $source::class,
+            (string) $source->getKey(),
+            hash('sha256', $contentText),
+            implode(',', $locales),
+        ]));
+    }
+
     protected function idempotencyKey(AiWorkflow $workflow, Model $source): string
     {
         return hash('sha256', implode('|', [
@@ -277,6 +380,24 @@ class WorkflowService
     }
 
     /**
+     * @param array<string, array<string, mixed>> $translations
+     * @param array<int, string> $locales
+     * @return array<string, mixed>
+     */
+    protected function buildTranslationReviewTask(Model $source, array $translations, array $locales): array
+    {
+        return [
+            'status' => 'open',
+            'assignee_role' => 'Editor',
+            'title' => 'Review translation drafts for ' . trim((string) ($source->title ?? class_basename($source))),
+            'details' => [
+                'locales' => $locales,
+                'translations' => $translations,
+            ],
+        ];
+    }
+
+    /**
      * @return array<int, string>
      */
     protected function missingSeoFields(Model $source): array
@@ -300,5 +421,25 @@ class WorkflowService
     protected function socialChannels(): array
     {
         return ['x', 'linkedin', 'facebook'];
+    }
+
+    /**
+     * @param array<int, string> $locales
+     * @return array<int, string>
+     */
+    protected function translationLocales(array $locales = []): array
+    {
+        $supported = ['hi', 'gu'];
+
+        $locales = array_values(array_filter(array_map(
+            static fn ($locale): string => strtolower(trim((string) $locale)),
+            $locales
+        )));
+
+        if ($locales === []) {
+            $locales = $supported;
+        }
+
+        return array_values(array_unique(array_values(array_intersect($locales, $supported))));
     }
 }

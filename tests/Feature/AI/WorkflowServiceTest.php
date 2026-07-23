@@ -125,4 +125,54 @@ class WorkflowServiceTest extends TestCase
             })
             ->exists());
     }
+
+    public function test_translation_request_creates_locale_specific_drafts(): void
+    {
+        Queue::fake();
+
+        $post = Post::factory()->create([
+            'title' => 'Launch article',
+            'excerpt' => 'Launch summary',
+            'body' => json_encode([
+                'blocks' => [
+                    ['type' => 'paragraph', 'data' => ['text' => 'Launch article body text.']],
+                ],
+            ]),
+            'meta_title' => 'Launch article',
+            'meta_description' => 'Launch article description',
+            'status' => 'published',
+        ]);
+
+        $service = $this->app->make(\App\Services\WorkflowService::class);
+        $run = $service->handleTranslationRequest(
+            $post,
+            'Translate this article for international readers.',
+            ['hi', 'gu', 'fr']
+        );
+
+        $this->assertNotNull($run);
+        $this->assertSame('content.request.translation-drafts', $run->workflow->key);
+        $this->assertSame(['hi', 'gu'], $run->payload['locales']);
+        $this->assertSame('Translation drafts preview', data_get($run->result, 'summary'));
+        $this->assertSame('Launch article (HI draft)', data_get($run->result, 'translations.hi.title'));
+        $this->assertSame('Launch article (GU draft)', data_get($run->result, 'translations.gu.title'));
+        $this->assertSame(['hi', 'gu'], data_get($run->review_task, 'details.locales'));
+        $this->assertSame('open', data_get($run->review_task, 'status'));
+        $this->assertSame('Editor', data_get($run->review_task, 'assignee_role'));
+
+        $repeat = $service->handleTranslationRequest(
+            $post,
+            'Translate this article for international readers.',
+            ['gu', 'hi', 'fr']
+        );
+
+        $this->assertSame($run->id, $repeat->id);
+        $this->assertSame(1, AiWorkflowRun::query()
+            ->where('source_type', Post::class)
+            ->where('source_id', $post->id)
+            ->whereHas('workflow', static function ($query): void {
+                $query->where('key', 'content.request.translation-drafts');
+            })
+            ->count());
+    }
 }

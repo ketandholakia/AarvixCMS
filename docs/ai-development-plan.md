@@ -453,7 +453,7 @@ framework and approval flow ship.
 
 - [x] On publish: generate missing SEO suggestions and create an editor review task.
 - [x] On publish: draft social post variants.
-- On request: translate selected content into configured locales.
+- [x] On request: translate selected content into configured locales.
 - Scheduled: refresh stale generated metadata.
 
 Do not enable a single workflow that automatically writes every generated output.

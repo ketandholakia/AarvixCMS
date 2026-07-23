@@ -28,14 +28,15 @@ class WorkflowService
 
         $summary = $this->contentEmbeddingService->summarize($source);
         $contentText = trim((string) ($summary['content_text'] ?? ''));
+        $fingerprint = $this->workflowFingerprint($source, $summary);
 
         $runs = [];
 
         if ($this->needsSeoReview($source)) {
-            $runs[] = $this->runSeoWorkflow($source, $actor, $summary, $contentText);
+            $runs[] = $this->runSeoWorkflow($source, $actor, $summary, $contentText, $fingerprint);
         }
 
-        $runs[] = $this->runSocialWorkflow($source, $actor, $summary, $contentText);
+        $runs[] = $this->runSocialWorkflow($source, $actor, $summary, $contentText, $fingerprint);
 
         foreach ($runs as $run) {
             if ($run instanceof AiWorkflowRun) {
@@ -44,6 +45,22 @@ class WorkflowService
         }
 
         return null;
+    }
+
+    public function refreshGeneratedMetadata(Model $source, ?User $actor = null): array
+    {
+        if ((string) ($source->status ?? '') !== 'published') {
+            return [];
+        }
+
+        $summary = $this->contentEmbeddingService->summarize($source);
+        $contentText = trim((string) ($summary['content_text'] ?? ''));
+        $fingerprint = $this->workflowFingerprint($source, $summary);
+
+        return array_values(array_filter([
+            $this->runSeoWorkflow($source, $actor, $summary, $contentText, $fingerprint),
+            $this->runSocialWorkflow($source, $actor, $summary, $contentText, $fingerprint),
+        ]));
     }
 
     public function handleTranslationRequest(Model $source, string $contentText, array $locales = [], ?User $actor = null): ?AiWorkflowRun
@@ -185,17 +202,17 @@ class WorkflowService
     /**
      * @param array<string, mixed> $summary
      */
-    protected function runSeoWorkflow(Model $source, ?User $actor, array $summary, string $contentText): AiWorkflowRun
+    protected function runSeoWorkflow(Model $source, ?User $actor, array $summary, string $contentText, string $fingerprint): AiWorkflowRun
     {
         $workflow = $this->publishSeoWorkflow($actor?->id);
-        $idempotencyKey = $this->idempotencyKey($workflow, $source);
+        $idempotencyKey = $this->workflowRunIdempotencyKey($workflow, $source, $fingerprint);
 
         $existing = AiWorkflowRun::query()->where('idempotency_key', $idempotencyKey)->first();
         if ($existing) {
             return $existing;
         }
 
-        $run = $this->createWorkflowRun($workflow, $source, $actor, $summary, [
+        $run = $this->createWorkflowRun($workflow, $source, $actor, $summary, $fingerprint, [
             'missing_fields' => $this->missingSeoFields($source),
         ]);
 
@@ -242,17 +259,17 @@ class WorkflowService
     /**
      * @param array<string, mixed> $summary
      */
-    protected function runSocialWorkflow(Model $source, ?User $actor, array $summary, string $contentText): AiWorkflowRun
+    protected function runSocialWorkflow(Model $source, ?User $actor, array $summary, string $contentText, string $fingerprint): AiWorkflowRun
     {
         $workflow = $this->publishSocialWorkflow($actor?->id);
-        $idempotencyKey = $this->idempotencyKey($workflow, $source);
+        $idempotencyKey = $this->workflowRunIdempotencyKey($workflow, $source, $fingerprint);
 
         $existing = AiWorkflowRun::query()->where('idempotency_key', $idempotencyKey)->first();
         if ($existing) {
             return $existing;
         }
 
-        $run = $this->createWorkflowRun($workflow, $source, $actor, $summary, [
+        $run = $this->createWorkflowRun($workflow, $source, $actor, $summary, $fingerprint, [
             'channels' => $this->socialChannels(),
         ]);
 
@@ -299,12 +316,12 @@ class WorkflowService
     /**
      * @param array<string, mixed> $payload
      */
-    protected function createWorkflowRun(AiWorkflow $workflow, Model $source, ?User $actor, array $summary, array $payload = []): AiWorkflowRun
+    protected function createWorkflowRun(AiWorkflow $workflow, Model $source, ?User $actor, array $summary, string $fingerprint, array $payload = []): AiWorkflowRun
     {
         return AiWorkflowRun::query()->create([
             'workflow_id' => $workflow->id,
             'run_uuid' => (string) Str::uuid(),
-            'idempotency_key' => $this->idempotencyKey($workflow, $source),
+            'idempotency_key' => $this->workflowRunIdempotencyKey($workflow, $source, $fingerprint),
             'trigger' => $workflow->trigger,
             'source_type' => $source::class,
             'source_id' => $source->getKey(),
@@ -313,8 +330,22 @@ class WorkflowService
             'started_at' => now(),
             'payload' => array_merge([
                 'source_snapshot' => $summary,
+                'workflow_fingerprint' => $fingerprint,
+                'source_updated_at' => optional($source->updated_at)->toISOString(),
             ], $payload),
         ]);
+    }
+
+    protected function workflowFingerprint(Model $source, array $summary): string
+    {
+        return hash('sha256', implode('|', [
+            $source::class,
+            (string) $source->getKey(),
+            (string) optional($source->updated_at)->toISOString(),
+            (string) ($source->meta_title ?? ''),
+            (string) ($source->meta_description ?? ''),
+            (string) ($summary['content_text'] ?? ''),
+        ]));
     }
 
     protected function translationIdempotencyKey(AiWorkflow $workflow, Model $source, string $contentText, array $locales): string
@@ -329,13 +360,14 @@ class WorkflowService
         ]));
     }
 
-    protected function idempotencyKey(AiWorkflow $workflow, Model $source): string
+    protected function workflowRunIdempotencyKey(AiWorkflow $workflow, Model $source, string $fingerprint): string
     {
         return hash('sha256', implode('|', [
             $workflow->key,
             $workflow->version,
             $source::class,
             (string) $source->getKey(),
+            $fingerprint,
         ]));
     }
 
@@ -413,6 +445,34 @@ class WorkflowService
         }
 
         return $missing;
+    }
+
+    public function isGeneratedMetadataStale(Model $source): bool
+    {
+        if ((string) ($source->status ?? '') !== 'published') {
+            return false;
+        }
+
+        $summary = $this->contentEmbeddingService->summarize($source);
+        $fingerprint = $this->workflowFingerprint($source, $summary);
+
+        foreach (['content.publish.seo-review', 'content.publish.social-drafts'] as $workflowKey) {
+            $latest = AiWorkflowRun::query()
+                ->whereHas('workflow', static function ($query) use ($workflowKey): void {
+                    $query->where('key', $workflowKey);
+                })
+                ->where('source_type', $source::class)
+                ->where('source_id', $source->getKey())
+                ->where('status', 'succeeded')
+                ->latest('completed_at')
+                ->first();
+
+            if (! $latest || (string) data_get($latest->payload, 'workflow_fingerprint') !== $fingerprint) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -672,7 +672,7 @@ logging without exposing a production Writer UI.
 3. [x] Add core contracts, DTOs, enums, typed exceptions, and service provider.
 4. [x] Implement fake provider and one real text-provider adapter.
 5. [x] Implement `AiManager::generate()` and `AiManager::json()`.
-6. Add prompt and prompt-version migrations, models, renderer, and seed prompts.
+6. [x] Add prompt and prompt-version migrations, models, renderer, and seed prompts.
 7. Add request and daily-usage migrations, models, logger, and cost calculator.
 8. Add permission seeds and authorization middleware.
 9. Add limits, timeout, retry classification, and global kill switch.

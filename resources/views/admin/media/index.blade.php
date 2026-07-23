@@ -109,6 +109,10 @@
                            class="p-1.5 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors" title="View">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                         </a>
+                        <a href="{{ route('admin.media.show', $media) }}"
+                           class="p-1.5 bg-indigo-500/80 text-white rounded-lg hover:bg-indigo-600 transition-colors" title="Details">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        </a>
                         <form action="{{ route('admin.media.destroy', $media->id) }}" method="POST"
                               onsubmit="return confirm('Delete this file permanently?');">
                             @csrf

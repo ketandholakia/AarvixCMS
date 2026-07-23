@@ -14,8 +14,8 @@ class PageCacheMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Only cache GET requests for unauthenticated users
-        if (!$request->isMethod('GET') || auth()->check()) {
+        // Never cache admin pages or any authenticated/session-specific content.
+        if (! $request->isMethod('GET') || $request->is('admin/*') || auth()->check()) {
             return $next($request);
         }
 

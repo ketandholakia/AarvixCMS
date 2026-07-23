@@ -58,4 +58,43 @@ class MediaLibraryTest extends TestCase
         $response->assertSee('ai, generated');
         $response->assertSee('Visible text from the generated image.');
     }
+
+    public function test_admin_can_open_a_media_detail_page_with_ai_provenance(): void
+    {
+        $media = Media::create([
+            'disk' => 'public',
+            'path' => 'uploads/generated-detail.webp',
+            'filename' => 'generated-detail.webp',
+            'mime_type' => 'image/webp',
+            'size' => 2048,
+            'alt_text' => 'Detail image',
+            'caption' => 'Detail caption',
+        ]);
+
+        AiImageAsset::create([
+            'media_id' => $media->id,
+            'provider' => 'fake',
+            'model' => 'fake-image',
+            'operation' => 'edit',
+            'alt_text' => 'Detail image',
+            'caption' => 'Detail caption',
+            'tags' => ['detail', 'ai'],
+            'ocr_text' => 'Detail OCR text.',
+            'prompt_hash' => hash('sha256', 'detail prompt'),
+            'moderation_status' => 'pending',
+            'estimated_cost' => '0.00000000',
+        ]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.media.show', $media));
+
+        $response->assertStatus(200);
+        $response->assertSee('Media Details');
+        $response->assertSee('AI Provenance');
+        $response->assertSee('fake-image');
+        $response->assertSee('edit');
+        $response->assertSee('pending');
+        $response->assertSee('detail, ai');
+        $response->assertSee('Detail OCR text.');
+        $response->assertSee(hash('sha256', 'detail prompt'));
+    }
 }

@@ -44,7 +44,7 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
         Route::resource('forms', \App\Http\Controllers\Admin\FormController::class);
         Route::resource('form_submissions', \App\Http\Controllers\Admin\FormSubmissionController::class)->only(['index', 'show', 'destroy']);
 
-        Route::resource('media', \App\Http\Controllers\Admin\MediaController::class)->only(['index', 'store', 'destroy'])->middleware('can:manage_media');
+        Route::resource('media', \App\Http\Controllers\Admin\MediaController::class)->only(['index', 'store', 'show', 'destroy'])->middleware('can:manage_media');
         
         // Users is split per-verb for privilege escalation risk
         Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index')->middleware('can:view_users');

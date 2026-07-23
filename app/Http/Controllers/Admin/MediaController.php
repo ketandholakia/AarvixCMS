@@ -30,6 +30,13 @@ class MediaController extends Controller
         return view('admin.media.index', compact('records'));
     }
 
+    public function show(string $id)
+    {
+        $media = Media::with('aiImageAsset')->findOrFail($id);
+
+        return view('admin.media.show', compact('media'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([

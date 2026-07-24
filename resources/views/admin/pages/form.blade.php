@@ -56,7 +56,7 @@
                             name="{{ $prefix }}title{{ $suffix }}" 
                             label="Page Title ({{ strtoupper($loc) }})" 
                             :value="$trans->title" 
-                            :required="$loc === 'en' ? 'true' : 'false'" 
+                            :required="$loc === 'en'" 
                             class="text-lg font-medium"
                         />
 

@@ -41,6 +41,12 @@ class PageCrudTest extends TestCase
         $response->assertSee('name="body"', false);
         $response->assertSee('Generate Preview');
         $response->assertSee('AI Writer');
+
+        $html = $response->getContent();
+
+        $this->assertMatchesRegularExpression('/name="title"[^>]*required/s', $html);
+        $this->assertDoesNotMatchRegularExpression('/name="translations\[hi\]\[title\]"[^>]*required/s', $html);
+        $this->assertDoesNotMatchRegularExpression('/name="translations\[gu\]\[title\]"[^>]*required/s', $html);
     }
 
     public function test_admin_can_store_page(): void

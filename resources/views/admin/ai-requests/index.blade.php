@@ -23,10 +23,31 @@
             </div>
         </div>
 
-        <form method="GET" action="{{ route('admin.ai-requests.index') }}" class="mt-6 grid gap-3 md:grid-cols-4">
-            <input type="text" name="feature" value="{{ $filters['feature'] }}" placeholder="Feature" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
-            <input type="text" name="status" value="{{ $filters['status'] }}" placeholder="Status" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
-            <input type="text" name="provider" value="{{ $filters['provider'] }}" placeholder="Provider" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
+        <form method="GET" action="{{ route('admin.ai-requests.index') }}" class="mt-6 grid gap-3 md:grid-cols-5">
+            <select name="feature" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
+                <option value="">All features</option>
+                @foreach($filterOptions['features'] as $feature)
+                    <option value="{{ $feature }}" {{ $filters['feature'] === $feature ? 'selected' : '' }}>{{ $feature }}</option>
+                @endforeach
+            </select>
+            <select name="status" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
+                <option value="">All statuses</option>
+                @foreach($filterOptions['statuses'] as $status)
+                    <option value="{{ $status }}" {{ $filters['status'] === $status ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
+                @endforeach
+            </select>
+            <select name="provider" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
+                <option value="">All providers</option>
+                @foreach($filterOptions['providers'] as $provider)
+                    <option value="{{ $provider }}" {{ $filters['provider'] === $provider ? 'selected' : '' }}>{{ $provider }}</option>
+                @endforeach
+            </select>
+            <select name="model" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
+                <option value="">All models</option>
+                @foreach($filterOptions['models'] as $model)
+                    <option value="{{ $model }}" {{ $filters['model'] === $model ? 'selected' : '' }}>{{ $model }}</option>
+                @endforeach
+            </select>
             <input type="date" name="from" value="{{ $filters['from'] }}" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
             <input type="date" name="to" value="{{ $filters['to'] }}" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
             <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Filter</button>

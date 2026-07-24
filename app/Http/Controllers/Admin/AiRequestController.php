@@ -14,14 +14,17 @@ class AiRequestController extends Controller
     {
         $query = $this->buildQuery($request);
         $summary = $this->buildSummary(clone $query);
+        $filterOptions = $this->buildFilterOptions();
 
         return view('admin.ai-requests.index', [
             'requests' => $query->paginate(20)->withQueryString(),
             'summary' => $summary,
+            'filterOptions' => $filterOptions,
             'filters' => [
                 'feature' => $request->string('feature')->toString(),
                 'status' => $request->string('status')->toString(),
                 'provider' => $request->string('provider')->toString(),
+                'model' => $request->string('model')->toString(),
                 'from' => $request->string('from')->toString(),
                 'to' => $request->string('to')->toString(),
             ],
@@ -113,8 +116,45 @@ class AiRequestController extends Controller
             ->when($request->filled('feature'), fn ($query) => $query->where('feature', (string) $request->string('feature')))
             ->when($request->filled('status'), fn ($query) => $query->where('status', (string) $request->string('status')))
             ->when($request->filled('provider'), fn ($query) => $query->where('provider', (string) $request->string('provider')))
+            ->when($request->filled('model'), fn ($query) => $query->where('model', (string) $request->string('model')))
             ->when($request->filled('from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date('from')->toDateString()))
             ->when($request->filled('to'), fn ($query) => $query->whereDate('created_at', '<=', $request->date('to')->toDateString()))
             ->latest('id');
+    }
+
+    protected function buildFilterOptions(): array
+    {
+        $baseQuery = AiRequest::query()->where('created_at', '>=', now()->subDays(90));
+
+        return [
+            'features' => (clone $baseQuery)
+                ->select('feature')
+                ->distinct()
+                ->orderBy('feature')
+                ->pluck('feature')
+                ->values()
+                ->all(),
+            'statuses' => (clone $baseQuery)
+                ->select('status')
+                ->distinct()
+                ->orderBy('status')
+                ->pluck('status')
+                ->values()
+                ->all(),
+            'providers' => (clone $baseQuery)
+                ->select('provider')
+                ->distinct()
+                ->orderBy('provider')
+                ->pluck('provider')
+                ->values()
+                ->all(),
+            'models' => (clone $baseQuery)
+                ->select('model')
+                ->distinct()
+                ->orderBy('model')
+                ->pluck('model')
+                ->values()
+                ->all(),
+        ];
     }
 }

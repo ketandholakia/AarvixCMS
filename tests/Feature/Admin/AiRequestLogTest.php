@@ -183,4 +183,69 @@ class AiRequestLogTest extends TestCase
         $csv->assertSee('req-recent', false);
         $csv->assertDontSee('req-old', false);
     }
+
+    public function test_admin_can_filter_ai_requests_by_feature_provider_and_model(): void
+    {
+        $admin = $this->admin();
+
+        AiRequest::create([
+            'request_uuid' => 'req-writer',
+            'user_id' => $admin->id,
+            'feature' => 'writer',
+            'status' => 'succeeded',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+            'prompt_key' => 'writer.rewrite',
+            'scope' => [],
+            'request_metadata' => [],
+            'response_metadata' => [],
+            'request_payload' => [],
+            'response_payload' => [],
+            'prompt_tokens' => 10,
+            'completion_tokens' => 5,
+            'total_tokens' => 15,
+            'estimated_cost' => '0.00015000',
+            'latency_ms' => 100,
+            'started_at' => now()->subMinutes(15),
+            'completed_at' => now()->subMinutes(14),
+        ]);
+
+        AiRequest::create([
+            'request_uuid' => 'req-chat',
+            'user_id' => $admin->id,
+            'feature' => 'chat',
+            'status' => 'failed',
+            'provider' => 'openai',
+            'model' => 'gpt-4o-mini',
+            'prompt_key' => 'chat.search',
+            'scope' => [],
+            'request_metadata' => [],
+            'response_metadata' => [],
+            'request_payload' => [],
+            'response_payload' => [],
+            'prompt_tokens' => 18,
+            'completion_tokens' => 9,
+            'total_tokens' => 27,
+            'estimated_cost' => '0.00027000',
+            'latency_ms' => 220,
+            'started_at' => now()->subMinutes(10),
+            'completed_at' => now()->subMinutes(9),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-requests.index', [
+            'feature' => 'chat',
+            'status' => 'failed',
+            'provider' => 'openai',
+            'model' => 'gpt-4o-mini',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('All features', false);
+        $response->assertSee('All statuses', false);
+        $response->assertSee('All providers', false);
+        $response->assertSee('All models', false);
+        $response->assertSee('gpt-4o-mini', false);
+        $response->assertSeeText('req-chat');
+        $response->assertDontSeeText('req-writer');
+    }
 }

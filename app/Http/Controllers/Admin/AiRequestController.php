@@ -20,6 +20,8 @@ class AiRequestController extends Controller
                 'feature' => $request->string('feature')->toString(),
                 'status' => $request->string('status')->toString(),
                 'provider' => $request->string('provider')->toString(),
+                'from' => $request->string('from')->toString(),
+                'to' => $request->string('to')->toString(),
             ],
         ]);
     }
@@ -96,6 +98,8 @@ class AiRequestController extends Controller
             ->when($request->filled('feature'), fn ($query) => $query->where('feature', (string) $request->string('feature')))
             ->when($request->filled('status'), fn ($query) => $query->where('status', (string) $request->string('status')))
             ->when($request->filled('provider'), fn ($query) => $query->where('provider', (string) $request->string('provider')))
+            ->when($request->filled('from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date('from')->toDateString()))
+            ->when($request->filled('to'), fn ($query) => $query->whereDate('created_at', '<=', $request->date('to')->toDateString()))
             ->latest('id');
     }
 }

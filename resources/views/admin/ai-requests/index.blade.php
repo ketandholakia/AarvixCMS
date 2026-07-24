@@ -11,7 +11,7 @@
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Filter and inspect AI request activity across prompts, writer actions, chat, tools, and automation.</p>
             </div>
             <div class="flex flex-wrap gap-3">
-                <a href="{{ route('admin.ai-requests.export', request()->only(['feature', 'status', 'provider'])) }}" class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">
+                <a href="{{ route('admin.ai-requests.export', request()->only(['feature', 'status', 'provider', 'from', 'to'])) }}" class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">
                     Export CSV
                 </a>
                 <a href="{{ route('admin.ai.diagnostics') }}" class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">
@@ -27,6 +27,8 @@
             <input type="text" name="feature" value="{{ $filters['feature'] }}" placeholder="Feature" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
             <input type="text" name="status" value="{{ $filters['status'] }}" placeholder="Status" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
             <input type="text" name="provider" value="{{ $filters['provider'] }}" placeholder="Provider" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
+            <input type="date" name="from" value="{{ $filters['from'] }}" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
+            <input type="date" name="to" value="{{ $filters['to'] }}" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
             <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Filter</button>
         </form>
     </div>

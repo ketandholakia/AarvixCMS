@@ -101,4 +101,81 @@ class AiRequestLogTest extends TestCase
         $response->assertSee('req-123', false);
         $response->assertSee('writer.rewrite', false);
     }
+
+    public function test_admin_can_filter_ai_requests_by_date_range(): void
+    {
+        $admin = $this->admin();
+
+        AiRequest::create([
+            'request_uuid' => 'req-old',
+            'user_id' => $admin->id,
+            'feature' => 'writer',
+            'status' => 'succeeded',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+            'prompt_key' => 'writer.rewrite',
+            'scope' => [],
+            'request_metadata' => [],
+            'response_metadata' => [],
+            'request_payload' => [],
+            'response_payload' => [],
+            'prompt_tokens' => 4,
+            'completion_tokens' => 2,
+            'total_tokens' => 6,
+            'estimated_cost' => '0.00006000',
+            'latency_ms' => 90,
+            'started_at' => now()->subDays(3),
+            'completed_at' => now()->subDays(3),
+        ]);
+
+        AiRequest::create([
+            'request_uuid' => 'req-recent',
+            'user_id' => $admin->id,
+            'feature' => 'chat',
+            'status' => 'succeeded',
+            'provider' => 'openai',
+            'model' => 'gpt-4o-mini',
+            'prompt_key' => 'chat.search',
+            'scope' => [],
+            'request_metadata' => [],
+            'response_metadata' => [],
+            'request_payload' => [],
+            'response_payload' => [],
+            'prompt_tokens' => 18,
+            'completion_tokens' => 9,
+            'total_tokens' => 27,
+            'estimated_cost' => '0.00027000',
+            'latency_ms' => 210,
+            'started_at' => now()->subDay(),
+            'completed_at' => now()->subDay(),
+        ]);
+
+        AiRequest::query()->where('request_uuid', 'req-old')->update([
+            'created_at' => now()->subDays(3),
+            'updated_at' => now()->subDays(3),
+        ]);
+
+        AiRequest::query()->where('request_uuid', 'req-recent')->update([
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-requests.index', [
+            'from' => now()->subDays(2)->toDateString(),
+            'to' => now()->toDateString(),
+        ]));
+
+        $response->assertOk();
+        $response->assertSeeText('req-recent');
+        $response->assertDontSeeText('req-old');
+
+        $csv = $this->actingAs($admin)->get(route('admin.ai-requests.export', [
+            'from' => now()->subDays(2)->toDateString(),
+            'to' => now()->toDateString(),
+        ]));
+
+        $csv->assertOk();
+        $csv->assertSee('req-recent', false);
+        $csv->assertDontSee('req-old', false);
+    }
 }

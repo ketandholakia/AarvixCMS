@@ -105,6 +105,112 @@ class AiPromptCrudTest extends TestCase
         $response->assertSee('The variables json field must be a valid JSON string.', false);
     }
 
+    public function test_admin_cannot_create_prompt_with_duplicate_key(): void
+    {
+        $admin = $this->admin();
+
+        $existing = AiPrompt::create([
+            'prompt_key' => 'writer.rewrite',
+            'category' => 'writer',
+            'title' => 'Rewrite',
+            'description' => 'Existing prompt',
+            'active_version_number' => 1,
+            'output_schema' => [],
+            'is_enabled' => true,
+        ]);
+
+        $existing->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Return a polished rewrite.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.ai-prompts.create'))
+            ->post(route('admin.ai-prompts.store'), [
+                'prompt_key' => 'writer.rewrite',
+                'category' => 'writer',
+                'title' => 'Rewrite Copy',
+                'description' => 'Duplicate prompt key',
+                'system_template' => 'Return a sharper rewrite.',
+                'user_template' => '',
+                'variables_json' => '{}',
+                'output_schema_json' => '{}',
+                'change_summary' => 'Duplicate attempt',
+                'is_enabled' => 1,
+            ]);
+
+        $response->assertRedirect(route('admin.ai-prompts.create'));
+        $response->assertSessionHasErrors(['prompt_key']);
+        $this->assertSame(1, AiPrompt::query()->where('prompt_key', 'writer.rewrite')->count());
+    }
+
+    public function test_admin_cannot_update_prompt_to_duplicate_key(): void
+    {
+        $admin = $this->admin();
+
+        $primary = AiPrompt::create([
+            'prompt_key' => 'writer.rewrite',
+            'category' => 'writer',
+            'title' => 'Rewrite',
+            'description' => 'Primary prompt',
+            'active_version_number' => 1,
+            'output_schema' => [],
+            'is_enabled' => true,
+        ]);
+
+        $primary->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Return a polished rewrite.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $secondary = AiPrompt::create([
+            'prompt_key' => 'writer.shorten',
+            'category' => 'writer',
+            'title' => 'Shorten',
+            'description' => 'Secondary prompt',
+            'active_version_number' => 1,
+            'output_schema' => [],
+            'is_enabled' => true,
+        ]);
+
+        $secondary->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Return a concise rewrite.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.ai-prompts.edit', $secondary))
+            ->put(route('admin.ai-prompts.update', $secondary), [
+                'prompt_key' => 'writer.rewrite',
+                'category' => 'writer',
+                'title' => 'Shorten',
+                'description' => 'Attempt duplicate key',
+                'system_template' => 'Return a more concise rewrite.',
+                'user_template' => '',
+                'variables_json' => '{}',
+                'output_schema_json' => '{}',
+                'change_summary' => 'Duplicate attempt',
+                'is_enabled' => 1,
+            ]);
+
+        $response->assertRedirect(route('admin.ai-prompts.edit', $secondary));
+        $response->assertSessionHasErrors(['prompt_key']);
+        $this->assertSame(1, AiPrompt::query()->where('prompt_key', 'writer.rewrite')->count());
+        $this->assertSame(1, AiPrompt::query()->where('prompt_key', 'writer.shorten')->count());
+    }
+
     public function test_admin_can_view_prompt_edit_form_version_summary(): void
     {
         $admin = $this->admin();

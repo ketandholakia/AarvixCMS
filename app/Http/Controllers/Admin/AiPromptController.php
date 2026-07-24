@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 class AiPromptController extends Controller
 {
@@ -326,7 +327,13 @@ class AiPromptController extends Controller
     protected function validatePrompt(Request $request, ?AiPrompt $prompt = null): array
     {
         return $request->validate([
-            'prompt_key' => ['required', 'string', 'max:120', 'regex:/^[a-zA-Z0-9._-]+$/'],
+            'prompt_key' => [
+                'required',
+                'string',
+                'max:120',
+                'regex:/^[a-zA-Z0-9._-]+$/',
+                Rule::unique('ai_prompts', 'prompt_key')->ignore($prompt?->id),
+            ],
             'category' => ['required', 'string', 'max:120'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],

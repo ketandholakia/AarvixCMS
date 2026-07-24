@@ -171,4 +171,49 @@ class AiPromptCrudTest extends TestCase
         $prompt->refresh();
         $this->assertSame(1, $prompt->active_version_number);
     }
+
+    public function test_admin_can_view_prompt_history_summary(): void
+    {
+        $admin = $this->admin();
+
+        $prompt = AiPrompt::create([
+            'prompt_key' => 'writer.rewrite',
+            'category' => 'writer',
+            'title' => 'Rewrite',
+            'description' => 'Rewrite helper',
+            'active_version_number' => 2,
+            'output_schema' => [],
+            'is_enabled' => true,
+        ]);
+
+        $prompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Return a polished rewrite.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $prompt->versions()->create([
+            'version_number' => 2,
+            'system_template' => 'Return a sharper rewrite.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Second version',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-prompts.show', $prompt));
+
+        $response->assertOk();
+        $response->assertSee('Prompt History');
+        $response->assertSee('Active version');
+        $response->assertSee('Total versions');
+        $response->assertSee('Latest version created');
+        $response->assertSee('Enabled');
+        $response->assertSeeText('Active version 2');
+        $response->assertSee('Second version');
+        $response->assertSee('Initial version');
+    }
 }

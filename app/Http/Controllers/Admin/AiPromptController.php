@@ -76,8 +76,16 @@ class AiPromptController extends Controller
             $query->orderByDesc('version_number');
         }]);
 
+        $latestVersion = $ai_prompt->versions->first();
+
         return view('admin.ai-prompts.show', [
             'prompt' => $ai_prompt,
+            'summary' => [
+                'active_version' => $ai_prompt->active_version_number,
+                'total_versions' => $ai_prompt->versions->count(),
+                'state' => $ai_prompt->is_enabled ? 'Enabled' : 'Disabled',
+                'latest_version_at' => $latestVersion?->created_at,
+            ],
         ]);
     }
 

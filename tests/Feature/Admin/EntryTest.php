@@ -3,7 +3,9 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\ContentType;
+use App\Models\AiRequest;
 use App\Models\Entry;
+use App\Models\Revision;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Category;
@@ -112,6 +114,45 @@ class EntryTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_create_an_entry_with_ai_request_uuid_and_track_revision(): void
+    {
+        $type = $this->makeContentType();
+        $admin = $this->getAdmin();
+        $aiRequest = AiRequest::create([
+            'request_uuid' => 'entry-ai-request-1',
+            'feature' => 'writer',
+            'status' => 'succeeded',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+        ]);
+
+        $body = json_encode([
+            'blocks' => [
+                ['type' => 'paragraph', 'data' => ['text' => 'AI-assisted entry body.']],
+            ],
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->post(route('admin.entries.store', ['type' => $type->slug]), [
+                'title' => 'AI Entry',
+                'slug' => 'ai-entry',
+                'body' => $body,
+                'status' => 'draft',
+                'ai_request_uuid' => $aiRequest->request_uuid,
+            ]);
+
+        $response->assertRedirect(route('admin.entries.index', ['type' => $type->slug]));
+
+        $entry = Entry::where('slug', 'ai-entry')->firstOrFail();
+        $revision = Revision::where('revisionable_type', Entry::class)
+            ->where('revisionable_id', $entry->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame($aiRequest->id, $revision->ai_request_id);
+        $this->assertSame($aiRequest->request_uuid, $revision->aiRequest?->request_uuid);
+    }
+
     public function test_entry_requires_a_title(): void
     {
         $type = $this->makeContentType();
@@ -203,6 +244,45 @@ class EntryTest extends TestCase
 
         $response->assertRedirect(route('admin.entries.index', ['type' => $type->slug]));
         $this->assertDatabaseHas('entries', ['id' => $entry->id, 'title' => 'Updated Title', 'status' => 'published']);
+    }
+
+    public function test_admin_can_update_an_entry_with_ai_request_uuid_and_track_revision(): void
+    {
+        $type = $this->makeContentType();
+        $entry = $this->makeEntry($type, ['title' => 'Old Title', 'slug' => 'old-slug']);
+        $admin = $this->getAdmin();
+        $aiRequest = AiRequest::create([
+            'request_uuid' => 'entry-ai-request-2',
+            'feature' => 'writer',
+            'status' => 'succeeded',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+        ]);
+
+        $body = json_encode([
+            'blocks' => [
+                ['type' => 'paragraph', 'data' => ['text' => 'Updated AI-assisted entry body.']],
+            ],
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->put(route('admin.entries.update', ['type' => $type->slug, 'entry' => $entry->id]), [
+                'title' => 'Updated Title',
+                'slug' => 'old-slug',
+                'body' => $body,
+                'status' => 'published',
+                'ai_request_uuid' => $aiRequest->request_uuid,
+            ]);
+
+        $response->assertRedirect(route('admin.entries.index', ['type' => $type->slug]));
+
+        $revision = Revision::where('revisionable_type', Entry::class)
+            ->where('revisionable_id', $entry->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame($aiRequest->id, $revision->ai_request_id);
+        $this->assertSame($aiRequest->request_uuid, $revision->aiRequest?->request_uuid);
     }
 
     // ─── Delete ────────────────────────────────────────────────────────────────

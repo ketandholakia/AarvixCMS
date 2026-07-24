@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Entry;
+use App\Models\AiRequest;
 use App\Models\ContentType;
 use App\Models\Category;
 use App\Models\Tag;
@@ -11,6 +12,7 @@ use App\Services\ContentTypeRegistry;
 use App\Services\ActivityService;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Model;
 
 class EntryController extends Controller
 {
@@ -89,12 +91,16 @@ class EntryController extends Controller
     {
         $contentType = $this->resolveContentType($request);
         $this->authorizePermission('create');
+        $contextRequest = $request;
 
         $data = $this->validateEntry($request, $contentType);
         $data['content_type_id'] = $contentType->id;
         $data['author_id'] = auth()->id();
 
-        $entry = Entry::create($data);
+        $entry = new Entry();
+        $entry->fill($data);
+        $this->applyRevisionContext($contextRequest, $entry);
+        $entry->save();
 
         // Sync tags
         if ($request->has('tags')) {
@@ -123,11 +129,14 @@ class EntryController extends Controller
     {
         $contentType = $this->resolveContentType($request);
         $this->authorizePermission('edit');
+        $contextRequest = $request;
 
         $entry = Entry::where('content_type_id', $contentType->id)->findOrFail($id);
         $data = $this->validateEntry($request, $contentType, $entry);
 
-        $entry->update($data);
+        $entry->fill($data);
+        $this->applyRevisionContext($contextRequest, $entry);
+        $entry->save();
 
         if ($request->has('tags')) {
             $entry->tags()->sync($request->input('tags', []));
@@ -201,5 +210,33 @@ class EntryController extends Controller
         }
 
         return $request->validate($rules);
+    }
+
+    protected function applyRevisionContext(Request $request, Model $model): void
+    {
+        if (! method_exists($model, 'withRevisionContext')) {
+            return;
+        }
+
+        $aiRequestId = $this->resolveAiRequestId($request);
+
+        if ($aiRequestId !== null) {
+            $model->withRevisionContext($aiRequestId);
+        }
+    }
+
+    protected function resolveAiRequestId(Request $request): ?int
+    {
+        $requestUuid = $request->input('ai_request_uuid');
+
+        if (! is_string($requestUuid) || trim($requestUuid) === '') {
+            return null;
+        }
+
+        $aiRequestId = AiRequest::query()
+            ->where('request_uuid', trim($requestUuid))
+            ->value('id');
+
+        return is_int($aiRequestId) && $aiRequestId > 0 ? $aiRequestId : null;
     }
 }

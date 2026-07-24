@@ -39,6 +39,10 @@ class PageCrudTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Page Body (EN)');
         $response->assertSee('name="body"', false);
+        $response->assertSee('editorjs_body', false);
+        $response->assertSee('@editorjs/marker', false);
+        $response->assertSee('@editorjs/underline', false);
+        $response->assertSee("inlineToolbar: ['link', 'marker', 'bold', 'italic', 'underline']", false);
         $response->assertSee('Generate Preview');
         $response->assertSee('AI Writer');
 

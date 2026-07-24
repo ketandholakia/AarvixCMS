@@ -1,11 +1,11 @@
 @props(['name', 'label' => '', 'value' => '', 'required' => false, 'help' => '', 'aiContext' => null, 'aiRecordId' => null, 'aiContentTypeSlug' => null])
 
-<div class="space-y-3" x-data="editorJsComponent('{{ $name }}', @js(old($name, $value)), @js([
-    'aiContext' => $aiContext,
-    'aiRecordId' => $aiRecordId,
-    'aiContentTypeSlug' => $aiContentTypeSlug,
-    'fieldName' => $name,
-]))">
+<div
+    class="space-y-3"
+    data-editorjs-root
+    data-editorjs-name="{{ $name }}"
+    data-editorjs-initial='@json(old($name, $value))'
+>
     @if($label)
         <label for="{{ $name }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
             {{ $label }} @if($required)<span class="text-red-500">*</span>@endif
@@ -20,14 +20,19 @@
         ])
     @endif
     
-    <!-- Hidden textarea that the form actually submits -->
-    <textarea name="{{ $name }}" id="{{ $name }}" x-ref="textarea" class="hidden">{{ old($name, $value) }}</textarea>
+    <!-- Fallback textarea remains usable if Editor.js fails to boot -->
+    <textarea
+        name="{{ $name }}"
+        id="{{ $name }}"
+        rows="16"
+        class="block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm transition-colors focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+    >{{ old($name, $value) }}</textarea>
     
     <!-- Editor.js Container -->
     <div 
         id="editorjs_{{ Str::slug($name, '_') }}" 
-        class="block w-full rounded-xl border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 prose prose-indigo dark:prose-invert max-w-none p-4 min-h-[400px]"
-        x-ref="editor"
+        class="hidden w-full rounded-xl border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 prose prose-indigo dark:prose-invert max-w-none p-4 min-h-[400px]"
+        data-editorjs-holder
     ></div>
     
     @error($name)
@@ -48,21 +53,36 @@
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
 
 <script>
     (() => {
-        const registerEditorJsComponent = () => {
-            if (window.__editorJsComponentRegistered) {
+        const initEditorJsRoots = () => {
+            const roots = document.querySelectorAll('[data-editorjs-root]');
+
+            if (! roots.length || typeof window.EditorJS === 'undefined') {
                 return;
             }
 
-            window.__editorJsComponentRegistered = true;
+            window.AarvixEditorJs = window.AarvixEditorJs || {};
 
-            Alpine.data('editorJsComponent', (name, initialData, aiConfig) => ({
-            editor: null,
-            documentData: null,
-            aiConfig,
-            init() {
+            roots.forEach((root) => {
+                if (root.dataset.editorjsInitialized === 'true') {
+                    return;
+                }
+
+                root.dataset.editorjsInitialized = 'true';
+
+                const name = root.dataset.editorjsName || '';
+                const textarea = root.querySelector('textarea');
+                const holder = root.querySelector('[data-editorjs-holder]');
+                const initialData = textarea?.value || root.dataset.editorjsInitial || '';
+
+                if (! textarea || ! holder || ! name) {
+                    return;
+                }
+
                 const emptyDocument = {
                     blocks: [
                         {
@@ -93,108 +113,218 @@
                     parsedData = emptyDocument;
                 }
 
-                this.documentData = parsedData;
-                this.editor = new EditorJS({
-                    holder: this.$refs.editor.id,
-                    data: parsedData,
-                    tools: {
-                        header: Header,
-                        list: List,
-                        image: {
-                            class: ImageTool,
-                            config: {
-                                endpoints: {
-                                    byFile: '/admin/media', // Uses MediaController@store
-                                }
-                            }
+                const tools = {
+                    header: window.Header ? {
+                        class: window.Header,
+                        inlineToolbar: ['link', 'marker', 'bold', 'italic'],
+                        config: {
+                            levels: [2, 3, 4],
+                            defaultLevel: 2,
                         },
-                        quote: Quote,
-                        delimiter: Delimiter,
-                        code: CodeTool,
-                    },
-                    onChange: (api, event) => {
-                        api.saver.save().then((outputData) => {
-                            this.documentData = outputData;
-                            this.$refs.textarea.value = JSON.stringify(outputData);
-                        });
+                    } : undefined,
+                    list: window.EditorjsList || window.List ? {
+                        class: window.EditorjsList || window.List,
+                        inlineToolbar: true,
+                    } : undefined,
+                    image: window.ImageTool ? {
+                        class: window.ImageTool,
+                        config: {
+                            endpoints: {
+                                byFile: '{{ route('admin.upload.image') }}',
+                            }
+                        }
+                    } : undefined,
+                    quote: window.Quote ? {
+                        class: window.Quote,
+                        inlineToolbar: ['link', 'marker', 'bold', 'italic'],
+                        config: {
+                            quotePlaceholder: 'Add a quote',
+                            captionPlaceholder: 'Quote source',
+                        },
+                    } : undefined,
+                    delimiter: window.Delimiter ? {
+                        class: window.Delimiter,
+                    } : undefined,
+                    code: window.CodeTool ? {
+                        class: window.CodeTool,
+                    } : undefined,
+                    marker: window.Marker ? {
+                        class: window.Marker,
+                    } : undefined,
+                    underline: window.Underline ? {
+                        class: window.Underline,
+                    } : undefined,
+                };
+
+                Object.keys(tools).forEach((toolName) => {
+                    if (! tools[toolName]) {
+                        delete tools[toolName];
                     }
                 });
 
-                window.AarvixEditorJs = window.AarvixEditorJs || {};
-                window.AarvixEditorJs[name] = this;
-                
-                // Serialize the editor before the form actually posts.
-                this.$refs.textarea.closest('form').addEventListener('submit', (e) => {
-                    if (this._submitting) {
+                let documentData = parsedData;
+                let submitting = false;
+
+                const editor = new EditorJS({
+                    holder: holder.id,
+                    data: parsedData,
+                    autofocus: false,
+                    defaultBlock: 'paragraph',
+                    inlineToolbar: ['link', 'marker', 'bold', 'italic', 'underline'],
+                    placeholder: 'Write the page content here. Use "/" or the + button to add blocks.',
+                    tools,
+                    onChange: (api) => {
+                        api.saver.save().then((outputData) => {
+                            documentData = outputData;
+                            textarea.value = JSON.stringify(outputData);
+                        });
+                    },
+                    onReady: () => {
+                        holder.dataset.editorReady = 'true';
+                        holder.classList.remove('hidden');
+                        textarea.classList.add('hidden');
+                    },
+                });
+
+                editor.isReady.catch((error) => {
+                    console.error('Editor.js failed to initialize', error);
+                    holder.classList.add('hidden');
+                    textarea.classList.remove('hidden');
+                });
+
+                window.AarvixEditorJs[name] = {
+                    applyPreview(blocks, mode) {
+                        const snapshot = JSON.parse(JSON.stringify(documentData || {}));
+                        const nextBlocks = mode === 'insert'
+                            ? [...(documentData?.blocks || []), ...blocks]
+                            : blocks;
+
+                        const nextData = {
+                            ...(documentData || {}),
+                            blocks: nextBlocks,
+                        };
+
+                        documentData = nextData;
+                        textarea.value = JSON.stringify(nextData);
+
+                        return editor.render(nextData).catch((error) => {
+                            documentData = snapshot;
+                            textarea.value = JSON.stringify(snapshot);
+
+                            return editor.render(snapshot).then(() => {
+                                throw error;
+                            });
+                        });
+                    }
+                };
+
+                textarea.closest('form')?.addEventListener('submit', (e) => {
+                    if (submitting) {
                         return;
                     }
 
                     e.preventDefault();
-                    this._submitting = true;
+                    submitting = true;
 
-                    this.editor.save()
+                    editor.save()
                         .then((outputData) => {
-                            this.documentData = outputData;
-                            this.$refs.textarea.value = JSON.stringify(outputData);
+                            documentData = outputData;
+                            textarea.value = JSON.stringify(outputData);
                             e.target.submit();
                         })
                         .catch((error) => {
-                            this._submitting = false;
+                            submitting = false;
                             throw error;
                         });
                 });
-            },
-            applyPreview(blocks, mode) {
-                const snapshot = JSON.parse(JSON.stringify(this.documentData || {}));
-                const nextBlocks = mode === 'insert'
-                    ? [...(this.documentData?.blocks || []), ...blocks]
-                    : blocks;
-
-                const nextData = {
-                    ...(this.documentData || {}),
-                    blocks: nextBlocks,
-                };
-
-                this.documentData = nextData;
-                this.$refs.textarea.value = JSON.stringify(nextData);
-
-                return this.editor.render(nextData).catch((error) => {
-                    this.documentData = snapshot;
-                    this.$refs.textarea.value = JSON.stringify(snapshot);
-                    return this.editor.render(snapshot).then(() => {
-                        throw error;
-                    });
-                });
-            }
-            }));
-
-            if (window.Alpine && typeof window.Alpine.initTree === 'function') {
-                window.Alpine.initTree(document.body);
-            }
+            });
         };
 
-        if (window.Alpine) {
-            registerEditorJsComponent();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initEditorJsRoots, { once: true });
         } else {
-            document.addEventListener('alpine:init', registerEditorJsComponent, { once: true });
+            initEditorJsRoots();
         }
     })();
 </script>
 <style>
+    [data-editorjs-holder] .ce-block__content,
+    [data-editorjs-holder] .ce-toolbar__content {
+        max-width: 100%;
+    }
+
+    [data-editorjs-holder] .codex-editor {
+        padding-bottom: 1rem;
+    }
+
+    [data-editorjs-holder] .ce-paragraph {
+        line-height: 1.8;
+        color: #111827;
+    }
+
+    [data-editorjs-holder] .ce-header {
+        color: #111827;
+        font-weight: 700;
+    }
+
+    [data-editorjs-holder] .ce-toolbar__plus,
+    [data-editorjs-holder] .ce-toolbar__settings-btn {
+        color: #4f46e5;
+    }
+
+    [data-editorjs-holder] .ce-inline-toolbar,
+    [data-editorjs-holder] .ce-conversion-toolbar,
+    [data-editorjs-holder] .ce-popover {
+        border-radius: 0.9rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.12);
+    }
+
+    [data-editorjs-holder] .ce-inline-toolbar {
+        background: #ffffff;
+    }
+
+    [data-editorjs-holder] .ce-conversion-toolbar,
+    [data-editorjs-holder] .ce-popover {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+    }
+
+    [data-editorjs-holder] .ce-popover__item:hover,
+    [data-editorjs-holder] .ce-conversion-tool:hover {
+        background: #eef2ff;
+    }
+
+    [data-editorjs-holder] .cdx-input {
+        border-radius: 0.75rem;
+    }
+
     /* Basic overrides for editorjs dark mode integration */
     .dark .ce-block__content, 
     .dark .ce-toolbar__content {
         color: #e5e7eb;
     }
+    .dark [data-editorjs-holder] .ce-paragraph,
+    .dark [data-editorjs-holder] .ce-header {
+        color: #e5e7eb;
+    }
     .dark .ce-toolbar__plus,
     .dark .ce-toolbar__settings-btn {
-        color: #9ca3af;
+        color: #a5b4fc;
+    }
+    .dark .ce-inline-toolbar,
+    .dark .ce-conversion-toolbar,
+    .dark .ce-popover {
+        background: rgba(17, 24, 39, 0.96);
+        border-color: #374151;
+        box-shadow: 0 14px 35px rgba(2, 6, 23, 0.55);
     }
     .dark .ce-popover {
-        background: #1f2937;
+        background: rgba(17, 24, 39, 0.96);
         border-color: #374151;
     }
-    .dark .ce-popover__item:hover {
+    .dark .ce-popover__item:hover,
+    .dark .ce-conversion-tool:hover {
         background: #374151;
     }
     .dark .cdx-input {

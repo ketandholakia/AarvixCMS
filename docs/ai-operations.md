@@ -64,9 +64,43 @@ Use a dedicated worker for AI jobs:
 php artisan queue:work --queue=ai-high,ai-medium,ai-low --tries=1 --timeout=0
 ```
 
-On Windows/WAMP, run the worker under a process supervisor or scheduled task and keep
-the process dedicated to AI queues so retries and long-running jobs do not block the
-main web worker.
+## Windows Worker Supervision
+
+On Windows/WAMP, run the worker as a dedicated scheduled task or service so it stays
+isolated from the web worker.
+
+Recommended setup:
+
+1. Create a Task Scheduler task named `Aarvix AI Queue Worker`.
+2. Set the trigger to `At startup` and also add a fallback `At log on` trigger for the
+   admin account that owns the UniWamp environment.
+3. Use `O:\UniWamp\runtime\php\php83\php.exe` as the program.
+4. Use this argument set:
+
+```bash
+artisan queue:work --queue=ai-high,ai-medium,ai-low --tries=1 --timeout=0 --sleep=1
+```
+
+5. Set the task to restart on failure and run under the same account that owns the
+   project files and Redis socket/process.
+6. Keep the task dedicated to AI queues so retries and long-running jobs do not block
+   the main web worker.
+
+## Graceful Restart
+
+After deploys, configuration changes, or worker code changes, signal existing workers
+to exit cleanly before Windows restarts them:
+
+```bash
+php artisan queue:restart
+```
+
+Operational sequence:
+
+1. Deploy the code or configuration change.
+2. Run `php artisan queue:restart`.
+3. Allow the scheduled task or supervisor to start a fresh worker process.
+4. Verify the worker with `php artisan ai:queues` and a small AI request.
 
 ## Health Check
 

@@ -593,7 +593,7 @@ Implementation rules:
 - Separate provider retryable errors from validation and policy failures.
 - Add circuit breaking or temporary provider disablement after repeated outages.
 - [x] Reconcile stuck `pending/running` requests with a scheduled command.
-- Document Windows worker supervision and graceful restart procedures.
+- [x] Document Windows worker supervision and graceful restart procedures.
 
 ## 9. Security and Privacy Workstream
 

@@ -37,6 +37,7 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
         Route::put('settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update')->middleware('can:manage_settings');
         Route::get('ai/diagnostics', [\App\Http\Controllers\Admin\AiDiagnosticsController::class, 'index'])->name('ai.diagnostics')->middleware('admin:view_ai_usage,manage_ai_providers');
         Route::get('ai/requests', [\App\Http\Controllers\Admin\AiRequestController::class, 'index'])->name('ai-requests.index')->middleware('admin:view_ai_usage');
+        Route::get('ai/requests/{ai_request}', [\App\Http\Controllers\Admin\AiRequestController::class, 'show'])->name('ai-requests.show')->middleware('admin:view_ai_usage');
         Route::resource('ai-prompts', \App\Http\Controllers\Admin\AiPromptController::class)->middleware('admin:manage_ai_prompts');
         Route::get('ai-prompts/{ai_prompt}/versions/{version}/compare', [\App\Http\Controllers\Admin\AiPromptController::class, 'compare'])->name('ai-prompts.compare')->middleware('admin:manage_ai_prompts');
         Route::post('ai-prompts/{ai_prompt}/versions/{version}/rollback', [\App\Http\Controllers\Admin\AiPromptController::class, 'rollback'])->name('ai-prompts.rollback')->middleware('admin:manage_ai_prompts');

@@ -40,13 +40,14 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Cost</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Actor</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Created</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
                     @forelse($requests as $request)
                         <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-800/50">
                             <td class="px-6 py-4">
-                                <div class="font-medium text-gray-900 dark:text-white">{{ $request->feature }}</div>
+                                <a href="{{ route('admin.ai-requests.show', $request) }}" class="font-medium text-gray-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-400">{{ $request->feature }}</a>
                                 <div class="mt-1 font-mono text-xs text-gray-500 dark:text-gray-400">{{ $request->prompt_key ?? 'n/a' }}</div>
                                 <div class="mt-1 font-mono text-xs text-gray-400 dark:text-gray-500">{{ $request->request_uuid }}</div>
                             </td>
@@ -76,10 +77,13 @@
                             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">${{ number_format((float) ($request->estimated_cost ?? 0), 4) }}</td>
                             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ $request->user?->name ?? 'System' }}</td>
                             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ optional($request->created_at)->format('Y-m-d H:i') }}</td>
+                            <td class="px-6 py-4 text-right text-sm">
+                                <a href="{{ route('admin.ai-requests.show', $request) }}" class="text-indigo-600 hover:underline dark:text-indigo-400">View</a>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                            <td colspan="8" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                                 No AI requests found.
                             </td>
                         </tr>

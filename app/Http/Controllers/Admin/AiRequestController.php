@@ -27,4 +27,13 @@ class AiRequestController extends Controller
             ],
         ]);
     }
+
+    public function show(AiRequest $ai_request): View
+    {
+        $ai_request->loadMissing(['user']);
+
+        return view('admin.ai-requests.show', [
+            'request' => $ai_request,
+        ]);
+    }
 }

@@ -27,7 +27,7 @@ class AiRequestLogTest extends TestCase
     {
         $admin = $this->admin();
 
-        AiRequest::create([
+        $request = AiRequest::create([
             'request_uuid' => (string) \Illuminate\Support\Str::uuid(),
             'user_id' => $admin->id,
             'feature' => 'writer',
@@ -56,5 +56,13 @@ class AiRequestLogTest extends TestCase
         $response->assertSeeText('AI Requests');
         $response->assertSeeText('writer');
         $response->assertSeeText('fake-writer');
+
+        $detail = $this->actingAs($admin)->get(route('admin.ai-requests.show', $request));
+
+        $detail->assertOk();
+        $detail->assertViewIs('admin.ai-requests.show');
+        $detail->assertSeeText('Request Metadata');
+        $detail->assertSeeText('Response Payload');
+        $detail->assertSeeText('writer.rewrite');
     }
 }

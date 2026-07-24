@@ -191,6 +191,105 @@ class AiPromptCrudTest extends TestCase
         $response->assertSee('writer.disabled');
     }
 
+    public function test_admin_can_export_prompt_as_json(): void
+    {
+        $admin = $this->admin();
+
+        $prompt = AiPrompt::create([
+            'prompt_key' => 'writer.exportable',
+            'category' => 'writer',
+            'title' => 'Exportable',
+            'description' => 'Exportable prompt',
+            'active_version_number' => 2,
+            'output_schema' => ['type' => 'object'],
+            'is_enabled' => true,
+        ]);
+
+        $prompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Return a polished rewrite.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $prompt->versions()->create([
+            'version_number' => 2,
+            'system_template' => 'Return a sharper rewrite.',
+            'user_template' => 'Use a concise tone.',
+            'variables' => ['tone' => 'direct'],
+            'output_schema' => ['type' => 'object'],
+            'change_summary' => 'Second version',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-prompts.export', $prompt));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'application/json');
+        $response->assertSeeText('writer.exportable');
+        $response->assertSeeText('Return a sharper rewrite.');
+        $response->assertSeeText('Use a concise tone.');
+        $response->assertSeeText('Second version');
+    }
+
+    public function test_admin_can_import_prompt_from_exported_json(): void
+    {
+        $admin = $this->admin();
+
+        $payload = [
+            'prompt' => [
+                'prompt_key' => 'writer.imported',
+                'category' => 'writer',
+                'title' => 'Imported Prompt',
+                'description' => 'Imported from JSON',
+                'active_version_number' => 2,
+                'output_schema' => ['type' => 'object'],
+                'is_enabled' => true,
+            ],
+            'versions' => [
+                [
+                    'version_number' => 1,
+                    'system_template' => 'Return a polished rewrite.',
+                    'user_template' => null,
+                    'variables' => [],
+                    'output_schema' => [],
+                    'change_summary' => 'Initial version',
+                ],
+                [
+                    'version_number' => 2,
+                    'system_template' => 'Return a sharper rewrite in a {{tone}} tone.',
+                    'user_template' => null,
+                    'variables' => ['tone' => 'direct'],
+                    'output_schema' => ['type' => 'object'],
+                    'change_summary' => 'Second version',
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.ai-prompts.import'))
+            ->post(route('admin.ai-prompts.import.store'), [
+                'payload_json' => json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            ]);
+
+        $response->assertRedirect();
+
+        $prompt = AiPrompt::query()->where('prompt_key', 'writer.imported')->firstOrFail();
+        $this->assertSame('Imported Prompt', $prompt->title);
+        $this->assertSame(2, $prompt->active_version_number);
+        $this->assertSame(2, $prompt->versions()->count());
+    }
+
+    public function test_admin_can_view_prompt_import_form(): void
+    {
+        $response = $this->actingAs($this->admin())->get(route('admin.ai-prompts.import'));
+
+        $response->assertOk();
+        $response->assertSee('Import Prompt JSON', false);
+        $response->assertSee('Paste the JSON exported from a prompt detail page.', false);
+    }
+
     public function test_admin_can_filter_prompt_library_by_search_and_state(): void
     {
         $admin = $this->admin();

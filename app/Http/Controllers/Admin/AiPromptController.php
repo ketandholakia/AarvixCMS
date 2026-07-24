@@ -8,8 +8,10 @@ use App\Http\Controllers\Controller;
 use App\Models\AiPrompt;
 use App\Models\AiPromptVersion;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class AiPromptController extends Controller
 {
@@ -57,6 +59,11 @@ class AiPromptController extends Controller
         ]);
     }
 
+    public function import()
+    {
+        return view('admin.ai-prompts.import');
+    }
+
     public function store(Request $request, PromptService $promptService)
     {
         $data = $this->validatePrompt($request);
@@ -82,6 +89,66 @@ class AiPromptController extends Controller
         ]);
 
         return redirect()->route('admin.ai-prompts.show', $prompt)->with('success', 'Prompt created successfully.');
+    }
+
+    public function importStore(Request $request, PromptService $promptService): RedirectResponse
+    {
+        $payload = $this->decodeImportPayload($request->input('payload_json', ''));
+        $this->validateImportPayload($payload, $promptService);
+
+        $prompt = AiPrompt::create([
+            'prompt_key' => $payload['prompt']['prompt_key'],
+            'category' => $payload['prompt']['category'],
+            'title' => $payload['prompt']['title'],
+            'description' => $payload['prompt']['description'] ?? null,
+            'active_version_number' => (int) ($payload['prompt']['active_version_number'] ?? 1),
+            'output_schema' => $payload['prompt']['output_schema'] ?? [],
+            'is_enabled' => (bool) ($payload['prompt']['is_enabled'] ?? false),
+        ]);
+
+        foreach ($payload['versions'] as $versionData) {
+            $prompt->versions()->create([
+                'version_number' => (int) $versionData['version_number'],
+                'system_template' => $versionData['system_template'],
+                'user_template' => $versionData['user_template'] ?? null,
+                'variables' => $versionData['variables'] ?? [],
+                'output_schema' => $versionData['output_schema'] ?? [],
+                'change_summary' => $versionData['change_summary'] ?? null,
+            ]);
+        }
+
+        return redirect()->route('admin.ai-prompts.show', $prompt)->with('success', 'Prompt imported successfully.');
+    }
+
+    public function export(AiPrompt $ai_prompt): Response
+    {
+        $ai_prompt->loadMissing(['versions' => function ($query) {
+            $query->orderBy('version_number');
+        }]);
+
+        $payload = [
+            'prompt' => [
+                'prompt_key' => $ai_prompt->prompt_key,
+                'category' => $ai_prompt->category,
+                'title' => $ai_prompt->title,
+                'description' => $ai_prompt->description,
+                'active_version_number' => $ai_prompt->active_version_number,
+                'output_schema' => $ai_prompt->output_schema,
+                'is_enabled' => $ai_prompt->is_enabled,
+            ],
+            'versions' => $ai_prompt->versions->map(static function (AiPromptVersion $version): array {
+                return [
+                    'version_number' => $version->version_number,
+                    'system_template' => $version->system_template,
+                    'user_template' => $version->user_template,
+                    'variables' => $version->variables ?? [],
+                    'output_schema' => $version->output_schema ?? [],
+                    'change_summary' => $version->change_summary,
+                ];
+            })->values()->all(),
+        ];
+
+        return response()->json($payload, 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
     public function show(AiPrompt $ai_prompt)
@@ -364,5 +431,100 @@ class AiPromptController extends Controller
         }
 
         return $candidate;
+    }
+
+    protected function decodeImportPayload(string $payloadJson): array
+    {
+        $payload = json_decode($payloadJson, true);
+
+        if (! is_array($payload)) {
+            throw ValidationException::withMessages([
+                'payload_json' => 'The imported JSON must decode to an object.',
+            ]);
+        }
+
+        return $payload;
+    }
+
+    protected function validateImportPayload(array $payload, PromptService $promptService): void
+    {
+        $prompt = $payload['prompt'] ?? null;
+        $versions = $payload['versions'] ?? null;
+
+        if (! is_array($prompt) || ! is_array($versions) || $versions === []) {
+            throw ValidationException::withMessages([
+                'payload_json' => 'The imported JSON must contain prompt metadata and at least one version.',
+            ]);
+        }
+
+        foreach (['prompt_key', 'category', 'title'] as $field) {
+            if (blank($prompt[$field] ?? null)) {
+                throw ValidationException::withMessages([
+                    'payload_json' => "The imported JSON is missing prompt.{$field}.",
+                ]);
+            }
+        }
+
+        if (AiPrompt::query()->where('prompt_key', $prompt['prompt_key'])->exists()) {
+            throw ValidationException::withMessages([
+                'payload_json' => 'A prompt with that key already exists.',
+            ]);
+        }
+
+        foreach ($versions as $versionData) {
+            if (! is_array($versionData)) {
+                throw ValidationException::withMessages([
+                    'payload_json' => 'Each imported version must be an object.',
+                ]);
+            }
+
+            $requiredFields = ['version_number', 'system_template'];
+
+            foreach ($requiredFields as $field) {
+                if (! array_key_exists($field, $versionData)) {
+                    throw ValidationException::withMessages([
+                        'payload_json' => "The imported JSON is missing version.{$field}.",
+                    ]);
+                }
+            }
+
+            $variables = is_array($versionData['variables'] ?? null) ? $versionData['variables'] : [];
+            $userTemplate = (string) ($versionData['user_template'] ?? '');
+            $systemTemplate = (string) $versionData['system_template'];
+
+            $expected = array_values(array_unique(array_merge(
+                $promptService->placeholders($systemTemplate),
+                $promptService->placeholders($userTemplate)
+            )));
+            $provided = array_keys($variables);
+            sort($expected);
+            sort($provided);
+
+            if ($expected !== $provided) {
+                $missing = array_values(array_diff($expected, $provided));
+                $unknown = array_values(array_diff($provided, $expected));
+                $messages = [];
+
+                if ($missing !== []) {
+                    $messages[] = 'missing variables: ' . implode(', ', $missing);
+                }
+
+                if ($unknown !== []) {
+                    $messages[] = 'unknown variables: ' . implode(', ', $unknown);
+                }
+
+                if ($messages !== []) {
+                    throw ValidationException::withMessages([
+                        'payload_json' => 'Version ' . ($versionData['version_number'] ?? '?') . ' has invalid variables: ' . implode('; ', $messages),
+                    ]);
+                }
+            }
+
+            $promptService->renderTemplate($systemTemplate, $promptService->filterVariables($systemTemplate, $variables));
+
+            if ($userTemplate !== '') {
+                $promptService->renderTemplate($userTemplate, $promptService->filterVariables($userTemplate, $variables));
+            }
+        }
     }
 }

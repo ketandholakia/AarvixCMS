@@ -10,6 +10,9 @@
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Versioned prompt templates used by the AI services.</p>
         </div>
         <div class="flex flex-wrap gap-3">
+            <a href="{{ route('admin.ai-prompts.import') }}" class="px-4 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/30 transition-colors font-medium">
+                Import JSON
+            </a>
             <a href="{{ route('admin.ai-prompts.create') }}" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium">
                 Create Prompt
             </a>

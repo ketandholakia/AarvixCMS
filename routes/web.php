@@ -39,6 +39,9 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
         Route::get('ai/requests', [\App\Http\Controllers\Admin\AiRequestController::class, 'index'])->name('ai-requests.index')->middleware('admin:view_ai_usage');
         Route::get('ai/requests/export', [\App\Http\Controllers\Admin\AiRequestController::class, 'export'])->name('ai-requests.export')->middleware('admin:view_ai_usage');
         Route::get('ai/requests/{ai_request}', [\App\Http\Controllers\Admin\AiRequestController::class, 'show'])->name('ai-requests.show')->middleware('admin:view_ai_usage');
+        Route::get('ai-prompts/import', [\App\Http\Controllers\Admin\AiPromptController::class, 'import'])->name('ai-prompts.import')->middleware('admin:manage_ai_prompts');
+        Route::post('ai-prompts/import', [\App\Http\Controllers\Admin\AiPromptController::class, 'importStore'])->name('ai-prompts.import.store')->middleware('admin:manage_ai_prompts');
+        Route::get('ai-prompts/{ai_prompt}/export', [\App\Http\Controllers\Admin\AiPromptController::class, 'export'])->name('ai-prompts.export')->middleware('admin:manage_ai_prompts');
         Route::resource('ai-prompts', \App\Http\Controllers\Admin\AiPromptController::class)->middleware('admin:manage_ai_prompts');
         Route::get('ai-prompts/{ai_prompt}/versions/{version}/compare', [\App\Http\Controllers\Admin\AiPromptController::class, 'compare'])->name('ai-prompts.compare')->middleware('admin:manage_ai_prompts');
         Route::post('ai-prompts/{ai_prompt}/versions/{version}/rollback', [\App\Http\Controllers\Admin\AiPromptController::class, 'rollback'])->name('ai-prompts.rollback')->middleware('admin:manage_ai_prompts');

@@ -62,4 +62,31 @@ class AiAuthorizationTest extends TestCase
         $this->get(route('admin.ai-prompts.create'))->assertOk();
         $this->get(route('admin.ai.diagnostics'))->assertOk();
     }
+
+    public function test_ai_generation_routes_are_disabled_when_global_ai_is_off(): void
+    {
+        config()->set('ai.enabled', false);
+        config()->set('ai.image.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+
+        $admin = User::factory()->create(['is_active' => true]);
+        $admin->roles()->attach(Role::where('name', 'Admin')->firstOrFail());
+
+        $this->actingAs($admin);
+
+        $this->post(route('admin.ai.writer.generate'), [
+            'context' => 'post',
+            'operation' => 'rewrite',
+            'document' => json_encode([
+                'blocks' => [
+                    ['type' => 'paragraph', 'data' => ['text' => 'Draft text.']],
+                ],
+            ]),
+        ])->assertForbidden();
+
+        $this->postJson(route('admin.ai.images.generate'), [
+            'prompt' => 'Generate a test image',
+            'operation' => 'generate',
+        ])->assertForbidden();
+    }
 }

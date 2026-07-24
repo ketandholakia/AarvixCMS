@@ -16,6 +16,12 @@ class AiImageRequest extends FormRequest
             return false;
         }
 
+        $enabled = app(SettingService::class)->get('ai.enabled', config('ai.enabled', false));
+
+        if (! filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
+            return false;
+        }
+
         $enabled = app(SettingService::class)->get('ai.image.enabled', config('ai.image.enabled', true));
 
         return filter_var($enabled, FILTER_VALIDATE_BOOLEAN) && $user->hasPermission('manage_media');

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Models\Entry;
 use App\Models\Page;
 use App\Models\Post;
+use App\Services\SettingService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
@@ -16,6 +17,12 @@ class AiWriterRequest extends FormRequest
         $user = $this->user();
 
         if (! $user || ! $user->is_active) {
+            return false;
+        }
+
+        $enabled = app(SettingService::class)->get('ai.enabled', config('ai.enabled', false));
+
+        if (! filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
             return false;
         }
 

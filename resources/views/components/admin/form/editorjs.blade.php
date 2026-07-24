@@ -50,8 +50,15 @@
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
 
 <script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('editorJsComponent', (name, initialData, aiConfig) => ({
+    (() => {
+        const registerEditorJsComponent = () => {
+            if (window.__editorJsComponentRegistered) {
+                return;
+            }
+
+            window.__editorJsComponentRegistered = true;
+
+            Alpine.data('editorJsComponent', (name, initialData, aiConfig) => ({
             editor: null,
             documentData: null,
             aiConfig,
@@ -159,8 +166,19 @@
                     });
                 });
             }
-        }));
-    });
+            }));
+
+            if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+                window.Alpine.initTree(document.body);
+            }
+        };
+
+        if (window.Alpine) {
+            registerEditorJsComponent();
+        } else {
+            document.addEventListener('alpine:init', registerEditorJsComponent, { once: true });
+        }
+    })();
 </script>
 <style>
     /* Basic overrides for editorjs dark mode integration */

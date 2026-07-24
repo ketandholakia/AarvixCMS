@@ -80,8 +80,15 @@
 @once
 @push('scripts')
 <script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('aiSeoPanel', (config) => ({
+(() => {
+    const registerAiSeoPanel = () => {
+        if (window.__aiSeoPanelRegistered) {
+            return;
+        }
+
+        window.__aiSeoPanelRegistered = true;
+
+        Alpine.data('aiSeoPanel', (config) => ({
         loading: false,
         error: '',
         preview: null,
@@ -169,8 +176,19 @@ document.addEventListener('alpine:init', () => {
         clearPreview() {
             this.preview = null;
         },
-    }));
-});
+        }));
+
+        if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+            window.Alpine.initTree(document.body);
+        }
+    };
+
+    if (window.Alpine) {
+        registerAiSeoPanel();
+    } else {
+        document.addEventListener('alpine:init', registerAiSeoPanel, { once: true });
+    }
+})();
 </script>
 @endpush
 @endonce

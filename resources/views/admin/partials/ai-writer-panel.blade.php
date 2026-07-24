@@ -86,8 +86,15 @@
 @once
 @push('scripts')
 <script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('aiWriterPanel', (config) => ({
+(() => {
+    const registerAiWriterPanel = () => {
+        if (window.__aiWriterPanelRegistered) {
+            return;
+        }
+
+        window.__aiWriterPanelRegistered = true;
+
+        Alpine.data('aiWriterPanel', (config) => ({
         operation: 'rewrite',
         scope: 'document',
         tone: '',
@@ -183,8 +190,19 @@ document.addEventListener('alpine:init', () => {
         cancelPreview() {
             this.preview = null;
         },
-    }));
-});
+        }));
+
+        if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+            window.Alpine.initTree(document.body);
+        }
+    };
+
+    if (window.Alpine) {
+        registerAiWriterPanel();
+    } else {
+        document.addEventListener('alpine:init', registerAiWriterPanel, { once: true });
+    }
+})();
 </script>
 @endpush
 @endonce

@@ -42,7 +42,7 @@
         </button>
     </div>
 
-    <input type="hidden" name="ai_request_uuid" data-ai-writer-request-uuid value="">
+    <input type="hidden" name="ai_request_uuid" data-ai-writer-request-uuid data-ai-request-uuid value="">
 
     <div class="mt-4">
         <p class="text-xs text-gray-500 dark:text-gray-400">Selection is used when available; otherwise the whole document is sent.</p>

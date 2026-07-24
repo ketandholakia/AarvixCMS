@@ -4,6 +4,8 @@ namespace Tests\Feature\Admin;
 
 use App\Models\User;
 use App\Models\Role;
+use App\Models\AiRequest;
+use App\Models\Revision;
 use App\Models\Page;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -79,5 +81,43 @@ class PageCrudTest extends TestCase
 
         $response->assertRedirect(route('admin.pages.index'));
         $this->assertDatabaseHas('pages', ['title' => 'About Us', 'slug' => 'about-us', 'body' => $body]);
+    }
+
+    public function test_admin_can_store_page_with_ai_request_uuid_and_track_revision(): void
+    {
+        $admin = $this->getAdmin();
+        $aiRequest = AiRequest::create([
+            'request_uuid' => 'page-ai-request-1',
+            'feature' => 'writer',
+            'status' => 'succeeded',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+        ]);
+
+        $body = json_encode([
+            'blocks' => [
+                ['type' => 'paragraph', 'data' => ['text' => 'AI-assisted page body.']],
+            ],
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.pages.store'), [
+            'title' => 'AI Page',
+            'slug' => 'ai-page',
+            'body' => $body,
+            'status' => 'published',
+            'template' => 'default',
+            'ai_request_uuid' => $aiRequest->request_uuid,
+        ]);
+
+        $response->assertRedirect(route('admin.pages.index'));
+
+        $page = Page::where('slug', 'ai-page')->firstOrFail();
+        $revision = Revision::where('revisionable_type', Page::class)
+            ->where('revisionable_id', $page->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame($aiRequest->id, $revision->ai_request_id);
+        $this->assertSame($aiRequest->request_uuid, $revision->aiRequest?->request_uuid);
     }
 }

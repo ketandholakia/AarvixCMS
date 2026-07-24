@@ -92,7 +92,34 @@
         loading: false,
         error: '',
         preview: null,
+        requestId: '',
         config,
+        getRequestIdField(createIfMissing = false) {
+            const form = this.$root.closest('form');
+
+            if (! form) {
+                return null;
+            }
+
+            let field = form.querySelector('[data-ai-request-uuid]');
+
+            if (! field && createIfMissing) {
+                field = document.createElement('input');
+                field.type = 'hidden';
+                field.name = 'ai_request_uuid';
+                field.dataset.aiRequestUuid = '';
+                form.appendChild(field);
+            }
+
+            return field;
+        },
+        syncRequestIdField(value = '', createIfMissing = false) {
+            const field = this.getRequestIdField(createIfMissing);
+
+            if (field) {
+                field.value = value || '';
+            }
+        },
         getFieldValue(name) {
             if (! name) {
                 return '';
@@ -127,6 +154,8 @@
             this.loading = true;
             this.error = '';
             this.preview = null;
+            this.requestId = '';
+            this.syncRequestIdField('');
 
             try {
                 const response = await fetch('{{ route('admin.ai.writer.generate') }}', {
@@ -153,6 +182,7 @@
                     throw new Error(payload.message || 'SEO request failed.');
                 }
 
+                this.requestId = payload.ai_request_uuid || payload.request_id || '';
                 this.preview = payload.preview || null;
             } catch (error) {
                 this.error = error.message || 'SEO request failed.';
@@ -171,10 +201,13 @@
                 this.setFieldValue(this.config.slugField, this.preview.seo.slug || '', true);
             }
 
+            this.syncRequestIdField(this.requestId, true);
             this.preview = null;
         },
         clearPreview() {
             this.preview = null;
+            this.requestId = '';
+            this.syncRequestIdField('');
         },
         }));
 

@@ -13,9 +13,11 @@ class AiRequestController extends Controller
     public function index(Request $request): View
     {
         $query = $this->buildQuery($request);
+        $summary = $this->buildSummary(clone $query);
 
         return view('admin.ai-requests.index', [
             'requests' => $query->paginate(20)->withQueryString(),
+            'summary' => $summary,
             'filters' => [
                 'feature' => $request->string('feature')->toString(),
                 'status' => $request->string('status')->toString(),
@@ -89,6 +91,19 @@ class AiRequestController extends Controller
         return view('admin.ai-requests.show', [
             'request' => $ai_request,
         ]);
+    }
+
+    protected function buildSummary($query): array
+    {
+        $requests = $query->get();
+
+        return [
+            'total_requests' => $requests->count(),
+            'succeeded_count' => $requests->where('status', 'succeeded')->count(),
+            'failed_count' => $requests->whereIn('status', ['failed', 'timed_out', 'rate_limited', 'rejected', 'cancelled'])->count(),
+            'average_latency_ms' => (int) round((float) $requests->avg('latency_ms')),
+            'total_tokens' => $requests->sum('total_tokens'),
+        ];
     }
 
     protected function buildQuery(Request $request)

@@ -56,6 +56,11 @@ class AiRequestLogTest extends TestCase
         $response->assertSeeText('AI Requests');
         $response->assertSeeText('writer');
         $response->assertSeeText('fake-writer');
+        $response->assertSeeText('Total requests');
+        $response->assertSeeText('Succeeded');
+        $response->assertSeeText('Failed');
+        $response->assertSeeText('Avg latency');
+        $response->assertSeeText('Total tokens');
 
         $detail = $this->actingAs($admin)->get(route('admin.ai-requests.show', $request));
 

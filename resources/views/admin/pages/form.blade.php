@@ -39,8 +39,15 @@
 
                 @foreach(['en', 'hi', 'gu'] as $loc)
                     @php
-                        // For 'en', we bind directly to the model. For others, we get from the translations array or relationship.
-                        $trans = $loc === 'en' ? $record : ($record->translations->where('locale', $loc)->first() ?? new \App\Models\PageTranslation());
+                        // English should always use the raw stored columns because the model accessor is locale-aware.
+                        $trans = $loc === 'en'
+                            ? (object) [
+                                'title' => $record->getRawOriginal('title'),
+                                'body' => $record->getRawOriginal('body'),
+                                'meta_title' => $record->getRawOriginal('meta_title'),
+                                'meta_description' => $record->getRawOriginal('meta_description'),
+                            ]
+                            : ($record->translations->where('locale', $loc)->first() ?? new \App\Models\PageTranslation());
                         $prefix = $loc === 'en' ? '' : "translations[{$loc}][";
                         $suffix = $loc === 'en' ? '' : "]";
                     @endphp
@@ -131,7 +138,12 @@
                     
                     @foreach(['en', 'hi', 'gu'] as $loc)
                         @php
-                            $trans = $loc === 'en' ? $record : ($record->translations->where('locale', $loc)->first() ?? new \App\Models\PageTranslation());
+                            $trans = $loc === 'en'
+                                ? (object) [
+                                    'meta_title' => $record->getRawOriginal('meta_title'),
+                                    'meta_description' => $record->getRawOriginal('meta_description'),
+                                ]
+                                : ($record->translations->where('locale', $loc)->first() ?? new \App\Models\PageTranslation());
                             $prefix = $loc === 'en' ? '' : "translations[{$loc}][";
                             $suffix = $loc === 'en' ? '' : "]";
                         @endphp

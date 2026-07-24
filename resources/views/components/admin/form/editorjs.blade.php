@@ -27,6 +27,7 @@
             'aiContext' => $aiContext,
             'aiRecordId' => $aiRecordId,
             'aiContentTypeSlug' => $aiContentTypeSlug,
+            'fieldName' => $name,
         ])
     @endif
 
@@ -387,10 +388,20 @@
                 });
 
                 const syncTextarea = async () => {
+                    await editor.isReady;
                     const outputData = await editor.save();
                     documentData = outputData;
                     textarea.value = JSON.stringify(outputData);
                     return outputData;
+                };
+
+                const syncTextareaOrFallback = async () => {
+                    try {
+                        return await syncTextarea();
+                    } catch (error) {
+                        console.error('Editor.js sync failed, falling back to the raw textarea value.', error);
+                        return textarea.value || '';
+                    }
                 };
 
                 const insertImageBlock = async (payload) => {
@@ -543,6 +554,7 @@
                 };
 
                 window.AarvixEditorJs[name] = {
+                    sync: syncTextareaOrFallback,
                     applyPreview(blocks, mode) {
                         const snapshot = JSON.parse(JSON.stringify(documentData || {}));
                         const nextBlocks = mode === 'insert'
@@ -594,25 +606,38 @@
                     }
                 });
 
-                textarea.closest('form')?.addEventListener('submit', (e) => {
-                    if (submitting) {
-                        return;
-                    }
+                const form = textarea.closest('form');
+                if (form && form.dataset.editorjsSubmitInitialized !== 'true') {
+                    form.dataset.editorjsSubmitInitialized = 'true';
 
-                    e.preventDefault();
-                    submitting = true;
+                    form.addEventListener('submit', async (event) => {
+                        if (form.dataset.editorjsSubmitting === 'true') {
+                            return;
+                        }
 
-                    editor.save()
-                        .then((outputData) => {
-                            documentData = outputData;
-                            textarea.value = JSON.stringify(outputData);
-                            e.target.submit();
-                        })
-                        .catch((error) => {
-                            submitting = false;
-                            throw error;
-                        });
-                });
+                        event.preventDefault();
+                        form.dataset.editorjsSubmitting = 'true';
+
+                        try {
+                            const roots = Array.from(form.querySelectorAll('[data-editorjs-root]'));
+
+                            for (const currentRoot of roots) {
+                                const fieldName = currentRoot.dataset.editorjsName || '';
+                                const editorApi = window.AarvixEditorJs?.[fieldName];
+
+                                if (editorApi && typeof editorApi.sync === 'function') {
+                                    await editorApi.sync();
+                                }
+                            }
+
+                            form.submit();
+                        } catch (error) {
+                            console.error('Unable to submit the form because one or more Editor.js fields failed to sync.', error);
+                        } finally {
+                            form.dataset.editorjsSubmitting = 'false';
+                        }
+                    });
+                }
             });
         };
 

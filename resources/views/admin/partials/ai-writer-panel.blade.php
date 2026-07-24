@@ -5,6 +5,7 @@
         'context' => $aiContext ?? null,
         'recordId' => $aiRecordId ?? null,
         'contentTypeSlug' => $aiContentTypeSlug ?? null,
+        'fieldName' => $fieldName ?? null,
     ];
 @endphp
 

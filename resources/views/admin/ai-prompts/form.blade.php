@@ -9,6 +9,17 @@
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Every save creates a new immutable prompt version.</p>
     </div>
 
+    @if($errors->any())
+        <div class="mx-6 mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-900/20">
+            <div class="text-sm font-semibold text-red-800 dark:text-red-200">Fix the highlighted fields before saving.</div>
+            <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-300">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <form action="{{ $prompt->exists ? route('admin.ai-prompts.update', $prompt) : route('admin.ai-prompts.store') }}" method="POST" class="space-y-0">
         @csrf
         @if($prompt->exists)

@@ -76,6 +76,34 @@ class AiPromptCrudTest extends TestCase
         $response->assertSee('Current versions', false);
     }
 
+    public function test_admin_sees_validation_summary_when_prompt_form_is_invalid(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.ai-prompts.create'))
+            ->followingRedirects()
+            ->post(route('admin.ai-prompts.store'), [
+                'prompt_key' => '',
+                'category' => '',
+                'title' => '',
+                'description' => 'Invalid prompt',
+                'system_template' => '',
+                'user_template' => '',
+                'variables_json' => 'not-json',
+                'output_schema_json' => '{}',
+                'change_summary' => '',
+                'is_enabled' => 1,
+            ]);
+
+        $response->assertOk();
+        $response->assertSee('Fix the highlighted fields before saving.', false);
+        $response->assertSee('The prompt key field is required.', false);
+        $response->assertSee('The category field is required.', false);
+        $response->assertSee('The title field is required.', false);
+        $response->assertSee('The variables json field must be a valid JSON string.', false);
+    }
+
     public function test_admin_can_view_prompt_edit_form_version_summary(): void
     {
         $admin = $this->admin();

@@ -21,6 +21,7 @@ class SettingsController extends Controller
             'ai_default_provider' => $service->get('ai.default_provider', data_get(config('ai'), 'default_provider', 'fake')),
             'ai_fallback_provider' => $service->get('ai.fallback_provider', data_get(config('ai'), 'fallback_provider', 'fake')),
             'ai_writer_enabled' => $service->get('ai.writer.enabled', true),
+            'ai_writer_style_guide' => $service->get('ai.writer.style_guide', ''),
             'ai_chat_enabled' => $service->get('ai.chat.enabled', true),
             'ai_image_enabled' => $service->get('ai.image.enabled', true),
             'ai_writer_model' => $service->get('ai.models.writer.model', data_get(config('ai'), 'models.writer.model', 'fake-writer')),
@@ -113,6 +114,7 @@ class SettingsController extends Controller
             'ai_default_provider' => ['required', 'string', 'in:' . implode(',', array_keys((array) config('ai.providers', [])))],
             'ai_fallback_provider' => ['required', 'string', 'in:' . implode(',', array_keys((array) config('ai.providers', [])))],
             'ai_writer_enabled' => ['nullable', 'boolean'],
+            'ai_writer_style_guide' => ['nullable', 'string', 'max:5000'],
             'ai_chat_enabled' => ['nullable', 'boolean'],
             'ai_image_enabled' => ['nullable', 'boolean'],
             'ai_writer_model' => ['nullable', 'string', 'max:255'],
@@ -135,6 +137,7 @@ class SettingsController extends Controller
         $service->set('ai.default_provider', $data['ai_default_provider'], 'ai');
         $service->set('ai.fallback_provider', $data['ai_fallback_provider'], 'ai');
         $service->set('ai.writer.enabled', $request->boolean('ai_writer_enabled'), 'ai', 'boolean');
+        $service->set('ai.writer.style_guide', trim((string) ($data['ai_writer_style_guide'] ?? '')), 'ai');
         $service->set('ai.chat.enabled', $request->boolean('ai_chat_enabled'), 'ai', 'boolean');
         $service->set('ai.image.enabled', $request->boolean('ai_image_enabled'), 'ai', 'boolean');
         $service->set('ai.models.writer.model', trim((string) ($data['ai_writer_model'] ?? data_get(config('ai'), 'models.writer.model', 'fake-writer'))), 'ai');

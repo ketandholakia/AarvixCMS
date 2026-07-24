@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\AI\DTOs\AiRequestData;
+use App\AI\Exceptions\AiPromptException;
 use App\AI\Services\AiManager;
+use App\AI\Services\PromptService;
 use App\AI\Exceptions\AiCapabilityException;
 use App\AI\Exceptions\AiProviderException;
 use App\AI\Exceptions\AiRateLimitException;
@@ -11,6 +13,7 @@ use App\AI\Support\WriterDocument;
 use App\AI\Support\WriterPreview;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AiWriterRequest;
+use App\Models\AiPrompt;
 use App\Models\Entry;
 use App\Services\SettingService;
 use Illuminate\Database\Eloquent\Model;
@@ -20,10 +23,11 @@ use Illuminate\Support\Str;
 
 class AiWriterController extends Controller
 {
-    public function generate(AiWriterRequest $request, AiManager $aiManager, SettingService $settings)
+    public function generate(AiWriterRequest $request, AiManager $aiManager, SettingService $settings, PromptService $promptService)
     {
         $data = $request->validated();
         $subject = $this->resolveSubject($data);
+        $promptKey = 'writer.' . $data['operation'];
 
         $writerDocument = WriterDocument::fromEditorJs(
             $data['document'],
@@ -31,24 +35,45 @@ class AiWriterController extends Controller
             $data['scope'] ?? 'document'
         );
 
+        $input = [
+            'operation' => $data['operation'],
+            'context' => $data['context'],
+            'document' => $writerDocument,
+            'content' => $writerDocument['plain_text'],
+            'selection' => $writerDocument['selection'],
+            'title' => $data['title'] ?? ($subject?->title ?? null),
+            'tone' => $data['tone'] ?? null,
+            'style_guide' => $this->writerStyleGuide($settings),
+        ];
+
+        $prompt = AiPrompt::query()
+            ->where('prompt_key', $promptKey)
+            ->where('is_enabled', true)
+            ->first();
+
+        if ($prompt instanceof AiPrompt) {
+            try {
+                $rendered = $promptService->renderPrompt($prompt, $input);
+                $messages = $this->writerPromptMessages($rendered, $writerDocument['plain_text']);
+
+                if ($messages !== []) {
+                    $input['messages'] = $messages;
+                }
+            } catch (AiPromptException $e) {
+                report($e);
+            }
+        }
+
         try {
             $result = $aiManager->generate(new AiRequestData(
-                input: [
-                    'operation' => $data['operation'],
-                    'context' => $data['context'],
-                    'document' => $writerDocument,
-                    'content' => $writerDocument['plain_text'],
-                    'selection' => $writerDocument['selection'],
-                    'title' => $data['title'] ?? ($subject?->title ?? null),
-                    'tone' => $data['tone'] ?? null,
-                ],
+                input: $input,
                 options: [
                     'content_length' => Str::length($writerDocument['plain_text']),
                     'context_model' => $subject ? $subject::class : null,
                 ],
                 provider: $settings->get('ai.default_provider', config('ai.default_provider', 'fake')),
                 model: $settings->get('ai.models.writer.model', data_get(config('ai.models.writer'), 'model', 'fake-writer')),
-                promptKey: 'writer.' . $data['operation'],
+                promptKey: $promptKey,
                 feature: 'writer',
             ));
         } catch (AiRateLimitException $e) {
@@ -132,5 +157,41 @@ class AiWriterController extends Controller
         }
 
         return $entry;
+    }
+
+    protected function writerStyleGuide(SettingService $settings): string
+    {
+        return trim((string) $settings->get('ai.writer.style_guide', ''));
+    }
+
+    /**
+     * @param array<string, string|null> $rendered
+     * @return array<int, array{role: string, content: string}>
+     */
+    protected function writerPromptMessages(array $rendered, string $fallbackContent): array
+    {
+        $messages = [];
+
+        $system = trim((string) ($rendered['system'] ?? ''));
+        if ($system !== '') {
+            $messages[] = [
+                'role' => 'system',
+                'content' => $system,
+            ];
+        }
+
+        $user = trim((string) ($rendered['user'] ?? ''));
+        if ($user === '') {
+            $user = trim($fallbackContent);
+        }
+
+        if ($user !== '') {
+            $messages[] = [
+                'role' => 'user',
+                'content' => $user,
+            ];
+        }
+
+        return $messages;
     }
 }

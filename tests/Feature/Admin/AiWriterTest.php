@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\AI\Providers\FakeAiProvider;
+use App\Models\AiRequest;
 use App\Models\Page;
 use App\Models\Revision;
 use App\Models\Post;
@@ -10,6 +11,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Services\SettingService;
 use Tests\Support\ImageBlockAiProvider;
 use Tests\Support\ThrowingAiProvider;
 use Tests\TestCase;
@@ -53,6 +55,50 @@ class AiWriterTest extends TestCase
         $response->assertJsonPath('preview.mode', 'replace');
         $response->assertJsonPath('preview.blocks.0.type', 'paragraph');
         $response->assertSee('Rewritten draft', false);
+    }
+
+    public function test_ai_writer_uses_the_versioned_prompt_and_style_guide(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.driver', FakeAiProvider::class);
+        config()->set('ai.logging.log_prompts', true);
+
+        $this->artisan('db:seed', ['--class' => 'AiPromptSeeder']);
+
+        app(SettingService::class)->set('ai.writer.style_guide', 'Keep it concise and editorial.', 'ai');
+
+        $post = Post::factory()->create(['author_id' => $this->admin()->id]);
+
+        $response = $this->actingAs($this->admin())->postJson(route('admin.ai.writer.generate'), [
+            'context' => 'post',
+            'record_id' => $post->id,
+            'operation' => 'rewrite',
+            'tone' => 'friendly',
+            'document' => json_encode([
+                'blocks' => [
+                    ['type' => 'paragraph', 'data' => ['text' => 'Original draft text.']],
+                ],
+            ]),
+        ]);
+
+        $response->assertOk();
+
+        $request = AiRequest::query()->latest('id')->firstOrFail();
+        $this->assertSame('writer.rewrite', $request->prompt_key);
+
+        $payload = json_decode((string) $request->getRawOriginal('request_payload'), true);
+        if (is_string($payload)) {
+            $payload = json_decode($payload, true);
+        }
+
+        $this->assertIsArray($payload);
+        $this->assertSame('post', $payload['context'] ?? null);
+        $this->assertSame('Keep it concise and editorial.', $payload['style_guide'] ?? null);
+        $this->assertSame('system', $payload['messages'][0]['role'] ?? null);
+        $this->assertStringContainsString('Keep it concise and editorial.', $payload['messages'][0]['content'] ?? '');
+        $this->assertSame('user', $payload['messages'][1]['role'] ?? null);
+        $this->assertStringContainsString('Rewrite the following content', $payload['messages'][1]['content'] ?? '');
     }
 
     public function test_admin_can_generate_ai_writer_preview_for_a_new_page(): void

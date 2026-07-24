@@ -62,6 +62,7 @@ class SettingsTest extends TestCase
             'ai_default_provider' => 'gemini',
             'ai_fallback_provider' => 'ollama',
             'ai_writer_enabled' => 1,
+            'ai_writer_style_guide' => 'Write in a concise, editorial tone.',
             'ai_chat_enabled' => 0,
             'ai_image_enabled' => 1,
             'ai_writer_model' => 'gemini-2.5-flash',
@@ -101,6 +102,7 @@ class SettingsTest extends TestCase
         $this->assertSame('ollama', app(SettingService::class)->get('ai.fallback_provider'));
         $this->assertFalse(app(SettingService::class)->get('ai.chat.enabled', true));
         $this->assertSame('gemini-2.5-flash', app(SettingService::class)->get('ai.models.writer.model'));
+        $this->assertSame('Write in a concise, editorial tone.', app(SettingService::class)->get('ai.writer.style_guide'));
         $this->assertSame('gemini-2.5-flash', app(SettingService::class)->get('ai.models.chat.model'));
         $this->assertSame('gemini-2.5-flash', app(SettingService::class)->get('ai.models.vision.model'));
         $this->assertSame('imagen-4.0-generate-preview', app(SettingService::class)->get('ai.models.image.model'));

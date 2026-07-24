@@ -145,6 +145,13 @@
                             :value="$settings['ai_writer_model'] ?? ''"
                             help="Recommended: gpt-4.1-mini, gemini-2.5-flash, or llama3.2:3b depending on provider."
                         />
+                        <x-admin.form.textarea
+                            name="ai_writer_style_guide"
+                            label="Writer style guide"
+                            :value="$settings['ai_writer_style_guide'] ?? ''"
+                            rows="4"
+                            help="Optional house style instructions used by writer prompts."
+                        />
                         <x-admin.form.input
                             name="ai_chat_model"
                             label="Chat model"

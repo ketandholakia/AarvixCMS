@@ -19,6 +19,7 @@ class SettingService
         'ai.default_provider',
         'ai.fallback_provider',
         'ai.writer.enabled',
+        'ai.writer.style_guide',
         'ai.chat.enabled',
         'ai.image.enabled',
         'ai.models.writer.model',

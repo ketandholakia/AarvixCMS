@@ -9,12 +9,15 @@ use App\Http\Requests\Admin\AiImageRequest;
 use App\Jobs\GenerateAiImageJob;
 use App\Services\AiImagePolicyService;
 use App\Services\AiImageCapabilityService;
+use App\Services\SettingService;
 
 class AiImageController extends Controller
 {
-    public function generate(AiImageRequest $request, AiImageCapabilityService $capabilities, AiImagePolicyService $policy)
+    public function generate(AiImageRequest $request, AiImageCapabilityService $capabilities, AiImagePolicyService $policy, SettingService $settings)
     {
         $data = $request->validated();
+        $provider = $settings->get('ai.default_provider', config('ai.default_provider', 'fake'));
+        $model = $settings->get('ai.models.image.model', data_get(config('ai.models.image'), 'model', 'fake-image'));
 
         if (! empty($data['replace_media_id']) && ! $request->boolean('confirm_replace')) {
             return response()->json([
@@ -27,7 +30,7 @@ class AiImageController extends Controller
 
         try {
             $policy->assertPublicGenerationAllowed((bool) ($data['public_generation'] ?? false));
-            $capabilities->assertSupported($data, config('ai.default_provider', 'fake'));
+            $capabilities->assertSupported($data, $provider);
         } catch (AiImagePolicyException|AiImageCapabilityException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
@@ -44,8 +47,8 @@ class AiImageController extends Controller
             seed: $data['seed'] ?? null,
             publicGeneration: (bool) ($data['public_generation'] ?? false),
             userId: $request->user()?->id,
-            provider: config('ai.default_provider', 'fake'),
-            model: data_get(config('ai.models.image'), 'model', 'fake-image'),
+            provider: $provider,
+            model: $model,
         )->onQueue(config('ai.queue.low', 'ai-low'));
 
         return response()->json([

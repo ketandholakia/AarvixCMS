@@ -207,14 +207,27 @@
             <div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">Writer enabled</div>
                 <div class="mt-1 font-medium text-gray-900 dark:text-white">{{ ($settings['writer_enabled'] ?? false) ? 'Yes' : 'No' }}</div>
+                <div class="mt-1 text-xs font-mono text-gray-500 dark:text-gray-400">{{ $settings['writer_model'] ?? 'n/a' }}</div>
             </div>
             <div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">Chat enabled</div>
                 <div class="mt-1 font-medium text-gray-900 dark:text-white">{{ ($settings['chat_enabled'] ?? false) ? 'Yes' : 'No' }}</div>
+                <div class="mt-1 text-xs font-mono text-gray-500 dark:text-gray-400">{{ $settings['chat_model'] ?? 'n/a' }}</div>
             </div>
             <div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">Image enabled</div>
                 <div class="mt-1 font-medium text-gray-900 dark:text-white">{{ ($settings['image_enabled'] ?? false) ? 'Yes' : 'No' }}</div>
+                <div class="mt-1 text-xs font-mono text-gray-500 dark:text-gray-400">{{ $settings['image_model'] ?? 'n/a' }}</div>
+            </div>
+        </div>
+        <div class="grid gap-4 border-t border-gray-200 p-6 md:grid-cols-2 dark:border-gray-800">
+            <div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">Vision model</div>
+                <div class="mt-1 font-medium text-gray-900 dark:text-white">{{ $settings['vision_model'] ?? 'n/a' }}</div>
+            </div>
+            <div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">Effective provider chain</div>
+                <div class="mt-1 font-medium text-gray-900 dark:text-white">{{ $settings['default_provider'] ?? 'n/a' }} -> {{ $settings['fallback_provider'] ?? 'n/a' }}</div>
             </div>
         </div>
     </div>

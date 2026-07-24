@@ -12,6 +12,7 @@ use App\AI\Support\WriterPreview;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AiWriterRequest;
 use App\Models\Entry;
+use App\Services\SettingService;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Page;
 use App\Models\Post;
@@ -19,7 +20,7 @@ use Illuminate\Support\Str;
 
 class AiWriterController extends Controller
 {
-    public function generate(AiWriterRequest $request, AiManager $aiManager)
+    public function generate(AiWriterRequest $request, AiManager $aiManager, SettingService $settings)
     {
         $data = $request->validated();
         $subject = $this->resolveSubject($data);
@@ -45,8 +46,8 @@ class AiWriterController extends Controller
                     'content_length' => Str::length($writerDocument['plain_text']),
                     'context_model' => $subject ? $subject::class : null,
                 ],
-                provider: config('ai.default_provider', 'fake'),
-                model: data_get(config('ai.models.writer'), 'model', 'fake-writer'),
+                provider: $settings->get('ai.default_provider', config('ai.default_provider', 'fake')),
+                model: $settings->get('ai.models.writer.model', data_get(config('ai.models.writer'), 'model', 'fake-writer')),
                 promptKey: 'writer.' . $data['operation'],
                 feature: 'writer',
             ));

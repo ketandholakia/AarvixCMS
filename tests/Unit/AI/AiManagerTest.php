@@ -9,8 +9,10 @@ use App\AI\Enums\AiStatus;
 use App\AI\Exceptions\AiCapabilityException;
 use App\AI\Providers\FakeAiProvider;
 use App\AI\Services\AiManager;
+use App\Services\SettingService;
 use Illuminate\Container\Container;
 use PHPUnit\Framework\TestCase;
+use Tests\Support\ImageBlockAiProvider;
 
 class AiManagerTest extends TestCase
 {
@@ -123,7 +125,28 @@ class AiManagerTest extends TestCase
         $manager->image(new AiRequestData());
     }
 
-    protected function makeManager(): AiManager
+    public function test_generate_uses_the_saved_default_provider_when_request_provider_is_not_provided(): void
+    {
+        $settings = new class extends SettingService {
+            public function get(string $key, mixed $default = null): mixed
+            {
+                return match ($key) {
+                    'ai.default_provider' => 'image-block',
+                    default => $default,
+                };
+            }
+        };
+
+        $manager = $this->makeManager($settings);
+
+        $result = $manager->generate(new AiRequestData(
+            input: ['prompt' => 'Use saved model'],
+        ));
+
+        $this->assertSame('image-block', $result->provider);
+    }
+
+    protected function makeManager(?SettingService $settings = null): AiManager
     {
         $container = new Container();
 
@@ -135,7 +158,11 @@ class AiManagerTest extends TestCase
                     'driver' => FakeAiProvider::class,
                     'capabilities' => ['generate', 'stream', 'chat', 'embedding', 'image', 'vision', 'json'],
                 ],
+                'image-block' => [
+                    'driver' => ImageBlockAiProvider::class,
+                    'capabilities' => ['generate', 'stream', 'chat', 'embedding', 'image', 'vision', 'json'],
+                ],
             ],
-        ]);
+        ], settings: $settings);
     }
 }

@@ -12,6 +12,7 @@ use App\AI\Exceptions\AiRateLimitException;
 use App\AI\Exceptions\AiProviderException;
 use App\AI\Services\AiPolicyService;
 use App\AI\Services\UsageService;
+use App\Services\SettingService;
 use Illuminate\Contracts\Container\Container;
 use Throwable;
 
@@ -27,12 +28,14 @@ class AiManager
         protected array $config = [],
         protected ?UsageService $usageService = null,
         protected ?AiPolicyService $policyService = null,
+        protected ?SettingService $settings = null,
     ) {
     }
 
     public function provider(?string $name = null): AiProvider
     {
-        $name ??= $this->config['default_provider'] ?? 'fake';
+        $name ??= $this->settings?->get('ai.default_provider', $this->config['default_provider'] ?? 'fake')
+            ?? $this->config['default_provider'] ?? 'fake';
 
         if (isset($this->resolvedProviders[$name])) {
             return $this->resolvedProviders[$name];
@@ -41,7 +44,8 @@ class AiManager
         $providerConfig = $this->config['providers'][$name] ?? null;
 
         if (! is_array($providerConfig) || empty($providerConfig['driver'])) {
-            $fallback = $this->config['fallback_provider'] ?? null;
+            $fallback = $this->settings?->get('ai.fallback_provider', $this->config['fallback_provider'] ?? null)
+                ?? $this->config['fallback_provider'] ?? null;
 
             if (is_string($fallback) && isset($this->config['providers'][$fallback]['driver'])) {
                 $name = $fallback;
@@ -156,6 +160,12 @@ class AiManager
 
     protected function defaultModelFor(string $feature, string $providerName): string
     {
+        $configuredModel = $this->settings?->get("ai.models.{$feature}.model");
+
+        if (is_string($configuredModel) && trim($configuredModel) !== '') {
+            return $configuredModel;
+        }
+
         $featureConfig = $this->config['models'][$feature] ?? [];
 
         if (is_array($featureConfig) && isset($featureConfig['model']) && is_string($featureConfig['model'])) {

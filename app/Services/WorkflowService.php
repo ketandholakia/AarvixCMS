@@ -18,6 +18,7 @@ class WorkflowService
     public function __construct(
         protected AiManager $aiManager,
         protected ContentEmbeddingService $contentEmbeddingService,
+        protected SettingService $settings,
     ) {
     }
 
@@ -119,8 +120,8 @@ class WorkflowService
                     'source_id' => $source->getKey(),
                     'locales' => $locales,
                 ],
-                provider: config('ai.default_provider', 'fake'),
-                model: data_get(config('ai.models.writer'), 'model', 'fake-writer'),
+                provider: $this->settings->get('ai.default_provider', config('ai.default_provider', 'fake')),
+                model: $this->settings->get('ai.models.writer.model', data_get(config('ai.models.writer'), 'model', 'fake-writer')),
                 promptKey: 'workflow.request.translate',
                 feature: 'writer',
             ));
@@ -243,8 +244,8 @@ class WorkflowService
                     'source_id' => $source->getKey(),
                     'missing_fields' => $run->payload['missing_fields'] ?? [],
                 ],
-                provider: config('ai.default_provider', 'fake'),
-                model: data_get(config('ai.models.writer'), 'model', 'fake-writer'),
+                provider: $this->settings->get('ai.default_provider', config('ai.default_provider', 'fake')),
+                model: $this->settings->get('ai.models.writer.model', data_get(config('ai.models.writer'), 'model', 'fake-writer')),
                 promptKey: 'workflow.publish.seo',
                 feature: 'writer',
             ));
@@ -300,8 +301,8 @@ class WorkflowService
                     'source_id' => $source->getKey(),
                     'channels' => $run->payload['channels'] ?? [],
                 ],
-                provider: config('ai.default_provider', 'fake'),
-                model: data_get(config('ai.models.writer'), 'model', 'fake-writer'),
+                provider: $this->settings->get('ai.default_provider', config('ai.default_provider', 'fake')),
+                model: $this->settings->get('ai.models.writer.model', data_get(config('ai.models.writer'), 'model', 'fake-writer')),
                 promptKey: 'workflow.publish.social',
                 feature: 'writer',
             ));

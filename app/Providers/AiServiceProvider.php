@@ -30,6 +30,7 @@ class AiServiceProvider extends ServiceProvider
                 config('ai', []),
                 $app->make(UsageService::class),
                 $app->make(AiPolicyService::class),
+                $app->make(\App\Services\SettingService::class),
             );
         });
 

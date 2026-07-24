@@ -6,6 +6,7 @@ use App\AI\Services\AiPolicyService;
 use App\Http\Controllers\Controller;
 use App\Jobs\AnalyzeMediaVisionJob;
 use App\Models\Media;
+use App\Services\SettingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -40,7 +41,7 @@ class MediaController extends Controller
         return view('admin.media.show', compact('media'));
     }
 
-    public function analyze(Request $request, Media $media, AiPolicyService $policy): JsonResponse|\Illuminate\Http\RedirectResponse
+    public function analyze(Request $request, Media $media, AiPolicyService $policy, SettingService $settings): JsonResponse|\Illuminate\Http\RedirectResponse
     {
         if (! $media->isImage()) {
             abort(422, 'Only image media can be analyzed.');
@@ -49,12 +50,15 @@ class MediaController extends Controller
         $policy->assertEnabled('vision');
         $analysisType = $request->string('analysis_type')->toString() === 'screenshot' ? 'screenshot' : 'vision';
 
+        $provider = $settings->get('ai.default_provider', config('ai.default_provider', 'fake'));
+        $model = $settings->get('ai.models.vision.model', data_get(config('ai.models.vision'), 'model', 'fake-vision'));
+
         AnalyzeMediaVisionJob::dispatch(
             mediaId: $media->id,
             analysisType: $analysisType,
             userId: $request->user()?->id,
-            provider: config('ai.default_provider', 'fake'),
-            model: data_get(config('ai.models.vision'), 'model', 'fake-vision'),
+            provider: $provider,
+            model: $model,
         )->onQueue(config('ai.queue.low', 'ai-low'));
 
         if ($request->expectsJson()) {

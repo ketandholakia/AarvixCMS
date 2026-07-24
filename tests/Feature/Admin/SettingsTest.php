@@ -59,9 +59,15 @@ class SettingsTest extends TestCase
             'site_name' => 'New Awesome Site',
             'social_twitter' => 'https://twitter.com/awesomesite',
             'ai_enabled' => 1,
+            'ai_default_provider' => 'gemini',
+            'ai_fallback_provider' => 'ollama',
             'ai_writer_enabled' => 1,
             'ai_chat_enabled' => 0,
             'ai_image_enabled' => 1,
+            'ai_writer_model' => 'gemini-2.5-flash',
+            'ai_chat_model' => 'gemini-2.5-flash',
+            'ai_vision_model' => 'gemini-2.5-flash',
+            'ai_image_model' => 'imagen-4.0-generate-preview',
             'ai_agent_seo_enabled' => 1,
             'ai_agent_marketing_enabled' => 0,
             'ai_agent_translation_enabled' => 1,
@@ -91,7 +97,13 @@ class SettingsTest extends TestCase
         $this->assertSame('New Awesome Site', app(SettingService::class)->get('site_name'));
         $this->assertSame('https://twitter.com/awesomesite', Setting::get('social_twitter'));
         $this->assertTrue(app(SettingService::class)->get('ai.enabled', false));
+        $this->assertSame('gemini', app(SettingService::class)->get('ai.default_provider'));
+        $this->assertSame('ollama', app(SettingService::class)->get('ai.fallback_provider'));
         $this->assertFalse(app(SettingService::class)->get('ai.chat.enabled', true));
+        $this->assertSame('gemini-2.5-flash', app(SettingService::class)->get('ai.models.writer.model'));
+        $this->assertSame('gemini-2.5-flash', app(SettingService::class)->get('ai.models.chat.model'));
+        $this->assertSame('gemini-2.5-flash', app(SettingService::class)->get('ai.models.vision.model'));
+        $this->assertSame('imagen-4.0-generate-preview', app(SettingService::class)->get('ai.models.image.model'));
         $this->assertTrue(app(SettingService::class)->get('ai.agents.seo.enabled', false));
         $this->assertFalse(app(SettingService::class)->get('ai.agents.marketing.enabled', true));
         $this->assertTrue(app(SettingService::class)->get('ai.agents.translation.enabled', false));

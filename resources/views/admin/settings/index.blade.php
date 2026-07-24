@@ -63,6 +63,48 @@
 
                 <div>
                     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-800 pb-2">AI Controls</h3>
+                    <div class="mb-6 grid gap-4 md:grid-cols-2">
+                        <x-admin.form.select
+                            name="ai_default_provider"
+                            label="Default provider"
+                            :value="$settings['ai_default_provider'] ?? 'fake'"
+                            :options="$providerOptions"
+                            help="Primary provider used for AI requests unless a feature overrides it."
+                        />
+                        <x-admin.form.select
+                            name="ai_fallback_provider"
+                            label="Fallback provider"
+                            :value="$settings['ai_fallback_provider'] ?? 'fake'"
+                            :options="$providerOptions"
+                            help="Provider used when the selected primary provider is unavailable."
+                        />
+                    </div>
+                    <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50/70 p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300">
+                        <div class="font-medium text-gray-900 dark:text-white">Recommended presets</div>
+                        <div class="mt-2 grid gap-3 lg:grid-cols-2">
+                            @foreach($providerPresets as $providerKey => $preset)
+                                <div class="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900/60">
+                                    <div class="font-medium text-gray-900 dark:text-white">{{ $preset['label'] }}</div>
+                                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $preset['description'] }}</div>
+                                    <div class="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                                        Writer: <span class="font-mono">{{ $preset['models']['writer'] }}</span>
+                                    </div>
+                                    <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                                        Chat: <span class="font-mono">{{ $preset['models']['chat'] }}</span>
+                                    </div>
+                                    <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                                        Vision: <span class="font-mono">{{ $preset['models']['vision'] }}</span>
+                                    </div>
+                                    <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                                        Image: <span class="font-mono">{{ $preset['models']['image'] }}</span>
+                                    </div>
+                                    <div class="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+                                        Use these values when this provider is your default.
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
                     <div class="grid gap-4 md:grid-cols-2">
                         <label class="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
                             <input type="checkbox" name="ai_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_enabled', $settings['ai_enabled'] ?? false) ? 'checked' : '' }}>
@@ -95,6 +137,32 @@
                                 <span class="block text-sm text-gray-500 dark:text-gray-400">Controls generation and editing utilities.</span>
                             </span>
                         </label>
+                    </div>
+                    <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <x-admin.form.input
+                            name="ai_writer_model"
+                            label="Writer model"
+                            :value="$settings['ai_writer_model'] ?? ''"
+                            help="Recommended: gpt-4.1-mini, gemini-2.5-flash, or llama3.2:3b depending on provider."
+                        />
+                        <x-admin.form.input
+                            name="ai_chat_model"
+                            label="Chat model"
+                            :value="$settings['ai_chat_model'] ?? ''"
+                            help="Recommended: gpt-4.1-mini, gemini-2.5-flash, or llama3.2:3b depending on provider."
+                        />
+                        <x-admin.form.input
+                            name="ai_vision_model"
+                            label="Vision model"
+                            :value="$settings['ai_vision_model'] ?? ''"
+                            help="Recommended: gpt-4.1-mini, gemini-2.5-flash, or llava depending on provider."
+                        />
+                        <x-admin.form.input
+                            name="ai_image_model"
+                            label="Image model"
+                            :value="$settings['ai_image_model'] ?? ''"
+                            help="Recommended: gpt-image-1 or imagen-4.0-generate-preview. Ollama image generation is not wired yet."
+                        />
                     </div>
                 </div>
 

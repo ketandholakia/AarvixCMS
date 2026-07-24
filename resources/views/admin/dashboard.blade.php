@@ -85,6 +85,94 @@
         </div>
     </div>
 
+    @if($aiStats !== null)
+        <div class="space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">AI Usage</h2>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Last 30 days of request volume, cost, and reliability.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+                <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Requests</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($aiStats['requests_count']) }}</p>
+                </div>
+                <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Success Rate</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($aiStats['success_rate'], 1) }}%</p>
+                </div>
+                <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Failures</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($aiStats['failure_count']) }}</p>
+                </div>
+                <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tokens</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($aiStats['total_tokens']) }}</p>
+                </div>
+                <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Estimated Cost</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">${{ number_format((float) $aiStats['estimated_cost'], 4) }}</p>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent AI Requests</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Most recent requests across writers, chat, tools, and workflows.</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                        <thead class="bg-gray-50 dark:bg-gray-800/50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Feature</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Provider</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tokens</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Cost</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Actor</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Completed</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                            @forelse($recentAiRequests as $request)
+                                <tr>
+                                    <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $request->feature }}</td>
+                                    <td class="px-6 py-4 text-sm">
+                                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold
+                                            @if($request->status === 'succeeded') bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
+                                            @elseif(in_array($request->status, ['failed', 'timed_out', 'rate_limited', 'rejected'], true)) bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
+                                            @else bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300
+                                            @endif">
+                                            {{ str_replace('_', ' ', $request->status) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                        <div>{{ $request->provider }}</div>
+                                        <div class="text-xs text-gray-400 dark:text-gray-500">{{ $request->model }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ number_format($request->total_tokens ?? 0) }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">${{ number_format((float) ($request->estimated_cost ?? 0), 4) }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ $request->user?->name ?? 'System' }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ optional($request->completed_at)->diffForHumans() ?? 'Pending' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                                        No AI requests have been recorded yet.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Traffic Chart -->
         <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden p-6">

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\AiRequest;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,6 +21,7 @@ class DashboardTest extends TestCase
     public function test_active_admin_can_view_dashboard(): void
     {
         // Seed RBAC setup
+        $this->artisan('db:seed', ['--class' => 'PermissionSeeder']);
         $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
         
         $admin = User::factory()->create(['is_active' => true]);
@@ -30,5 +32,43 @@ class DashboardTest extends TestCase
         $response->assertStatus(200);
         $response->assertViewIs('admin.dashboard');
         $response->assertSeeText('Total Posts');
+    }
+
+    public function test_admin_with_ai_usage_permission_can_view_ai_dashboard_metrics(): void
+    {
+        $this->artisan('db:seed', ['--class' => 'PermissionSeeder']);
+        $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
+
+        $admin = User::factory()->create(['is_active' => true]);
+        $adminRole = Role::where('name', 'Admin')->first();
+        $admin->roles()->attach($adminRole);
+
+        AiRequest::create([
+            'request_uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $admin->id,
+            'feature' => 'writer',
+            'status' => 'succeeded',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+            'prompt_key' => 'writer.rewrite',
+            'scope' => [],
+            'request_metadata' => [],
+            'response_metadata' => [],
+            'request_payload' => [],
+            'response_payload' => [],
+            'prompt_tokens' => 10,
+            'completion_tokens' => 5,
+            'total_tokens' => 15,
+            'estimated_cost' => '0.00015000',
+            'latency_ms' => 120,
+            'started_at' => now()->subMinutes(5),
+            'completed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+        $response->assertOk();
+        $response->assertSeeText('AI Usage');
+        $response->assertSeeText('writer');
     }
 }

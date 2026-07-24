@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\AiRequest;
+use App\Models\AiUsageDaily;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -65,10 +66,24 @@ class DashboardTest extends TestCase
             'completed_at' => now(),
         ]);
 
+        AiUsageDaily::create([
+            'usage_date' => now()->toDateString(),
+            'user_id' => $admin->id,
+            'feature' => 'writer',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+            'requests_count' => 3,
+            'prompt_tokens' => 30,
+            'completion_tokens' => 12,
+            'total_tokens' => 42,
+            'estimated_cost' => '0.00042000',
+        ]);
+
         $response = $this->actingAs($admin)->get(route('admin.dashboard'));
 
         $response->assertOk();
         $response->assertSeeText('AI Usage');
+        $response->assertSeeText('AI Activity Trend');
         $response->assertSeeText('writer');
     }
 }

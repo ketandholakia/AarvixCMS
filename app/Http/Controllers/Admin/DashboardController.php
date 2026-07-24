@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\AI\Enums\AiStatus;
 use App\Http\Controllers\Controller;
 use App\Models\AiRequest;
+use App\Models\AiUsageDaily;
 use App\Models\Post;
 use App\Models\Page;
 use App\Models\User;
@@ -45,6 +46,9 @@ class DashboardController extends Controller
         $recentActivity = ActivityLog::with('user')->latest()->take(10)->get();
 
         $aiStats = null;
+        $aiChartDates = [];
+        $aiChartRequests = [];
+        $aiChartTokens = [];
         $recentAiRequests = collect();
 
         if (auth()->user()?->hasPermission('view_ai_usage')) {
@@ -68,6 +72,21 @@ class DashboardController extends Controller
                 'average_latency_ms' => (int) round((float) ((clone $aiRequests)->avg('latency_ms') ?? 0)),
             ];
 
+            $usageByDate = AiUsageDaily::query()
+                ->selectRaw('usage_date, sum(requests_count) as requests_count, sum(total_tokens) as total_tokens')
+                ->where('usage_date', '>=', now()->subDays(29)->toDateString())
+                ->groupBy('usage_date')
+                ->orderBy('usage_date')
+                ->get()
+                ->keyBy('usage_date');
+
+            for ($i = 29; $i >= 0; $i--) {
+                $date = now()->subDays($i)->format('Y-m-d');
+                $aiChartDates[] = $date;
+                $aiChartRequests[] = (int) ($usageByDate[$date]->requests_count ?? 0);
+                $aiChartTokens[] = (int) ($usageByDate[$date]->total_tokens ?? 0);
+            }
+
             $recentAiRequests = AiRequest::with('user')->latest()->take(5)->get();
         }
 
@@ -78,6 +97,9 @@ class DashboardController extends Controller
             'chartViews',
             'topPosts',
             'aiStats',
+            'aiChartDates',
+            'aiChartRequests',
+            'aiChartTokens',
             'recentAiRequests'
         ));
     }

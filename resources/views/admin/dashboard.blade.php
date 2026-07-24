@@ -120,6 +120,18 @@
                 </div>
             </div>
 
+            <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden p-6">
+                <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">AI Activity Trend</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Daily requests and tokens from the usage aggregation table.</p>
+                    </div>
+                </div>
+                <div class="relative mt-4 h-72 w-full">
+                    <canvas id="aiUsageChart"></canvas>
+                </div>
+            </div>
+
             <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                     <div>
@@ -338,6 +350,92 @@
                 }
             }
         });
+
+        @if($aiStats !== null)
+        const aiCtx = document.getElementById('aiUsageChart').getContext('2d');
+
+        new Chart(aiCtx, {
+            type: 'line',
+            data: {
+                labels: {!! json_encode($aiChartDates) !!},
+                datasets: [
+                    {
+                        label: 'Requests',
+                        data: {!! json_encode($aiChartRequests) !!},
+                        borderColor: '#0f766e',
+                        backgroundColor: 'rgba(15, 118, 110, 0.08)',
+                        borderWidth: 2,
+                        tension: 0.35,
+                        fill: false,
+                        pointRadius: 3,
+                    },
+                    {
+                        label: 'Tokens',
+                        data: {!! json_encode($aiChartTokens) !!},
+                        borderColor: '#7c3aed',
+                        backgroundColor: 'rgba(124, 58, 237, 0.08)',
+                        borderWidth: 2,
+                        tension: 0.35,
+                        fill: false,
+                        pointRadius: 3,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: textColor,
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                        titleColor: isDark ? '#ffffff' : '#111827',
+                        bodyColor: isDark ? '#d1d5db' : '#4b5563',
+                        borderColor: isDark ? '#374151' : '#e5e7eb',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: true,
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                        },
+                        ticks: {
+                            color: textColor,
+                            maxTicksLimit: 7,
+                            maxRotation: 0,
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: gridColor,
+                            borderDash: [5, 5],
+                        },
+                        ticks: {
+                            color: textColor,
+                            beginAtZero: true,
+                            precision: 0,
+                        },
+                        border: {
+                            display: false
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+        @endif
     });
 </script>
 @endsection

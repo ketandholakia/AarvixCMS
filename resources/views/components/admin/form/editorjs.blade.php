@@ -79,6 +79,8 @@
             }
 
             window.AarvixEditorJs = window.AarvixEditorJs || {};
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const uploadEndpoint = '{{ route('admin.upload.image') }}';
 
             roots.forEach((root) => {
                 if (root.dataset.editorjsInitialized === 'true') {
@@ -143,9 +145,51 @@
                     image: window.ImageTool ? {
                         class: window.ImageTool,
                         config: {
-                            endpoints: {
-                                byFile: '{{ route('admin.upload.image') }}',
-                            }
+                            captionPlaceholder: 'Describe the image',
+                            uploader: {
+                                async uploadByFile(file) {
+                                    const formData = new FormData();
+                                    formData.append('file', file);
+
+                                    const response = await fetch(uploadEndpoint, {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': csrfToken,
+                                            'Accept': 'application/json',
+                                        },
+                                        body: formData,
+                                        credentials: 'same-origin',
+                                    });
+
+                                    const payload = await response.json();
+
+                                    if (! response.ok) {
+                                        throw new Error(payload.message || 'Image upload failed.');
+                                    }
+
+                                    return payload;
+                                },
+                                async uploadByUrl(url) {
+                                    const response = await fetch(uploadEndpoint, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': csrfToken,
+                                            'Accept': 'application/json',
+                                        },
+                                        credentials: 'same-origin',
+                                        body: JSON.stringify({ url }),
+                                    });
+
+                                    const payload = await response.json();
+
+                                    if (! response.ok) {
+                                        throw new Error(payload.message || 'Image import failed.');
+                                    }
+
+                                    return payload;
+                                },
+                            },
                         }
                     } : undefined,
                     quote: window.Quote ? {
@@ -167,6 +211,13 @@
                     } : undefined,
                     underline: window.Underline ? {
                         class: window.Underline,
+                    } : undefined,
+                    checklist: window.EditorjsList || window.List ? {
+                        class: window.EditorjsList || window.List,
+                        inlineToolbar: true,
+                        config: {
+                            defaultStyle: 'checklist',
+                        },
                     } : undefined,
                     table: window.Table ? {
                         class: window.Table,

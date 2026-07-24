@@ -34,15 +34,21 @@ class PostCrudTest extends TestCase
 
     public function test_admin_can_store_post(): void
     {
+        $body = json_encode([
+            'blocks' => [
+                ['type' => 'paragraph', 'data' => ['text' => 'This is the body content.']],
+            ],
+        ]);
+
         $response = $this->actingAs($this->getAdmin())->post(route('admin.posts.store'), [
             'title' => 'My First Post',
             'slug' => 'my-first-post',
             'excerpt' => 'This is an excerpt',
-            'body' => 'This is the body content.',
+            'body' => $body,
             'status' => 'draft',
         ]);
 
         $response->assertRedirect(route('admin.posts.index'));
-        $this->assertDatabaseHas('posts', ['title' => 'My First Post', 'slug' => 'my-first-post']);
+        $this->assertDatabaseHas('posts', ['title' => 'My First Post', 'slug' => 'my-first-post', 'body' => $body]);
     }
 }

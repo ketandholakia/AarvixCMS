@@ -89,11 +89,17 @@ class EntryTest extends TestCase
     public function test_admin_can_create_an_entry(): void
     {
         $type = $this->makeContentType();
+        $body = json_encode([
+            'blocks' => [
+                ['type' => 'paragraph', 'data' => ['text' => 'ACME entry body']],
+            ],
+        ]);
 
         $response = $this->actingAs($this->getAdmin())
             ->post(route('admin.entries.store', ['type' => $type->slug]), [
                 'title'  => 'ACME Corp Branding',
                 'slug'   => 'acme-branding',
+                'body'   => $body,
                 'status' => 'draft',
             ]);
 
@@ -101,6 +107,7 @@ class EntryTest extends TestCase
         $this->assertDatabaseHas('entries', [
             'title'           => 'ACME Corp Branding',
             'slug'            => 'acme-branding',
+            'body'            => $body,
             'content_type_id' => $type->id,
         ]);
     }

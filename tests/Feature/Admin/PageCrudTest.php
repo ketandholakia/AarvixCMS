@@ -63,15 +63,21 @@ class PageCrudTest extends TestCase
 
     public function test_admin_can_store_page(): void
     {
+        $body = json_encode([
+            'blocks' => [
+                ['type' => 'paragraph', 'data' => ['text' => 'This is the about page.']],
+            ],
+        ]);
+
         $response = $this->actingAs($this->getAdmin())->post(route('admin.pages.store'), [
             'title' => 'About Us',
             'slug' => 'about-us',
-            'body' => 'This is the about page.',
+            'body' => $body,
             'status' => 'published',
             'template' => 'default',
         ]);
 
         $response->assertRedirect(route('admin.pages.index'));
-        $this->assertDatabaseHas('pages', ['title' => 'About Us', 'slug' => 'about-us']);
+        $this->assertDatabaseHas('pages', ['title' => 'About Us', 'slug' => 'about-us', 'body' => $body]);
     }
 }

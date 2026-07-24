@@ -135,6 +135,18 @@
                             </div>
                         </div>
 
+                        @if($aiRequest)
+                            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
+                                <div class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">AI Request</div>
+                                <div class="mt-2 flex flex-wrap items-center gap-3">
+                                    <div class="font-mono text-sm text-amber-900 dark:text-amber-100">{{ $aiRequest->request_uuid }}</div>
+                                    <a href="{{ route('admin.ai-requests.show', $aiRequest) }}" class="text-sm font-medium text-amber-700 hover:underline dark:text-amber-300">
+                                        View request
+                                    </a>
+                                </div>
+                            </div>
+                        @endif
+
                         <div>
                             <div class="text-gray-500 dark:text-gray-400">Response</div>
                             <pre class="mt-2 overflow-x-auto rounded-xl bg-gray-50 p-4 text-sm text-gray-800 dark:bg-gray-950 dark:text-gray-200">{{ is_array($result->response) ? json_encode($result->response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : (string) $result->response }}</pre>

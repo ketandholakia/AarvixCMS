@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\AI\Providers\FakeAiProvider;
+use App\Models\AiRequest;
 use App\Models\AiPrompt;
 use App\Models\Role;
 use App\Models\User;
@@ -68,6 +69,10 @@ class AiPromptTesterTest extends TestCase
         $response->assertSeeText('Draft the release note.');
         $response->assertSeeText('fake');
         $response->assertSeeText('fake-writer');
+        $response->assertSeeText('AI Request');
+
+        $request = AiRequest::query()->latest('id')->firstOrFail();
+        $response->assertSeeText($request->request_uuid);
     }
 
     protected function createPrompt(): AiPrompt

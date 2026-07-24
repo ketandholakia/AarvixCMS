@@ -7,6 +7,7 @@ use App\AI\Exceptions\AiPromptException;
 use App\AI\Services\AiManager;
 use App\AI\Services\PromptService;
 use App\Http\Controllers\Controller;
+use App\Models\AiRequest;
 use App\Models\AiPrompt;
 use App\Models\AiPromptVersion;
 use App\Services\SettingService;
@@ -288,6 +289,10 @@ class AiPromptController extends Controller
             ]);
         }
 
+        $aiRequest = $result->usageRequestId
+            ? AiRequest::query()->where('request_uuid', $result->usageRequestId)->first()
+            : null;
+
         return view('admin.ai-prompts.test', [
             'prompt' => $ai_prompt,
             'version' => $version,
@@ -299,6 +304,7 @@ class AiPromptController extends Controller
             ],
             'rendered' => $rendered,
             'result' => $result,
+            'aiRequest' => $aiRequest,
             'errorMessage' => null,
             'providerOptions' => collect((array) config('ai.providers', []))
                 ->keys()

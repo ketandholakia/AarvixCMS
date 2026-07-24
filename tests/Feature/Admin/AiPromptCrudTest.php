@@ -428,6 +428,88 @@ class AiPromptCrudTest extends TestCase
         $this->assertSame(1, $prompt->versions()->count());
     }
 
+    public function test_admin_cannot_import_prompt_when_active_version_is_missing(): void
+    {
+        $admin = $this->admin();
+
+        $payload = [
+            'prompt' => [
+                'prompt_key' => 'writer.invalid-import',
+                'category' => 'writer',
+                'title' => 'Invalid Import',
+                'description' => 'Missing active version',
+                'active_version_number' => 2,
+                'output_schema' => [],
+                'is_enabled' => true,
+            ],
+            'versions' => [
+                [
+                    'version_number' => 1,
+                    'system_template' => 'Return a polished rewrite.',
+                    'user_template' => null,
+                    'variables' => [],
+                    'output_schema' => [],
+                    'change_summary' => 'Initial version',
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.ai-prompts.import'))
+            ->post(route('admin.ai-prompts.import.store'), [
+                'payload_json' => json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            ]);
+
+        $response->assertRedirect(route('admin.ai-prompts.import'));
+        $response->assertSessionHasErrors(['payload_json']);
+        $this->assertDatabaseMissing('ai_prompts', ['prompt_key' => 'writer.invalid-import']);
+    }
+
+    public function test_admin_cannot_import_prompt_with_duplicate_version_numbers(): void
+    {
+        $admin = $this->admin();
+
+        $payload = [
+            'prompt' => [
+                'prompt_key' => 'writer.duplicate-versions',
+                'category' => 'writer',
+                'title' => 'Duplicate Versions',
+                'description' => 'Duplicate version numbers',
+                'active_version_number' => 1,
+                'output_schema' => [],
+                'is_enabled' => true,
+            ],
+            'versions' => [
+                [
+                    'version_number' => 1,
+                    'system_template' => 'Return a polished rewrite.',
+                    'user_template' => null,
+                    'variables' => [],
+                    'output_schema' => [],
+                    'change_summary' => 'Initial version',
+                ],
+                [
+                    'version_number' => 1,
+                    'system_template' => 'Return a sharper rewrite.',
+                    'user_template' => null,
+                    'variables' => [],
+                    'output_schema' => [],
+                    'change_summary' => 'Duplicate version',
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.ai-prompts.import'))
+            ->post(route('admin.ai-prompts.import.store'), [
+                'payload_json' => json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            ]);
+
+        $response->assertRedirect(route('admin.ai-prompts.import'));
+        $response->assertSessionHasErrors(['payload_json']);
+        $this->assertDatabaseMissing('ai_prompts', ['prompt_key' => 'writer.duplicate-versions']);
+    }
+
     public function test_admin_can_view_prompt_import_form(): void
     {
         $response = $this->actingAs($this->admin())->get(route('admin.ai-prompts.import'));

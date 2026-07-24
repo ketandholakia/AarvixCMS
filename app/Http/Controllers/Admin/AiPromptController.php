@@ -516,6 +516,8 @@ class AiPromptController extends Controller
             ]);
         }
 
+        $versionNumbers = [];
+
         foreach ($versions as $versionData) {
             if (! is_array($versionData)) {
                 throw ValidationException::withMessages([
@@ -532,6 +534,16 @@ class AiPromptController extends Controller
                     ]);
                 }
             }
+
+            $versionNumber = (int) $versionData['version_number'];
+
+            if (in_array($versionNumber, $versionNumbers, true)) {
+                throw ValidationException::withMessages([
+                    'payload_json' => 'The imported JSON contains duplicate version numbers.',
+                ]);
+            }
+
+            $versionNumbers[] = $versionNumber;
 
             $variables = is_array($versionData['variables'] ?? null) ? $versionData['variables'] : [];
             $userTemplate = (string) ($versionData['user_template'] ?? '');
@@ -570,6 +582,14 @@ class AiPromptController extends Controller
             if ($userTemplate !== '') {
                 $promptService->renderTemplate($userTemplate, $promptService->filterVariables($userTemplate, $variables));
             }
+        }
+
+        $activeVersionNumber = (int) ($prompt['active_version_number'] ?? 1);
+
+        if (! in_array($activeVersionNumber, $versionNumbers, true)) {
+            throw ValidationException::withMessages([
+                'payload_json' => 'The imported JSON active_version_number must reference one of the imported versions.',
+            ]);
         }
     }
 }

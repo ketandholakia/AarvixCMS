@@ -387,6 +387,150 @@ class AiPromptCrudTest extends TestCase
         $response->assertSee('writer.searchable');
     }
 
+    public function test_admin_can_view_bulk_actions_on_prompt_library(): void
+    {
+        $admin = $this->admin();
+
+        $prompt = AiPrompt::create([
+            'prompt_key' => 'writer.bulk',
+            'category' => 'writer',
+            'title' => 'Bulk Prompt',
+            'description' => 'Used for bulk controls',
+            'active_version_number' => 1,
+            'output_schema' => [],
+            'is_enabled' => true,
+        ]);
+
+        $prompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Bulk template.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-prompts.index'));
+
+        $response->assertOk();
+        $response->assertSee('Bulk actions');
+        $response->assertSee('Enable Selected', false);
+        $response->assertSee('Disable Selected', false);
+        $response->assertSee('name="prompt_ids[]"', false);
+    }
+
+    public function test_admin_can_bulk_disable_selected_prompts(): void
+    {
+        $admin = $this->admin();
+
+        $firstPrompt = AiPrompt::create([
+            'prompt_key' => 'writer.bulk-one',
+            'category' => 'writer',
+            'title' => 'Bulk One',
+            'description' => 'First bulk prompt',
+            'active_version_number' => 1,
+            'output_schema' => [],
+            'is_enabled' => true,
+        ]);
+
+        $firstPrompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'First template.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $secondPrompt = AiPrompt::create([
+            'prompt_key' => 'writer.bulk-two',
+            'category' => 'writer',
+            'title' => 'Bulk Two',
+            'description' => 'Second bulk prompt',
+            'active_version_number' => 1,
+            'output_schema' => [],
+            'is_enabled' => true,
+        ]);
+
+        $secondPrompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Second template.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.ai-prompts.bulk-update'), [
+            'action' => 'disable',
+            'prompt_ids' => [$firstPrompt->id, $secondPrompt->id],
+        ]);
+
+        $response->assertRedirect(route('admin.ai-prompts.index'));
+        $response->assertSessionHas('success', '2 prompts disabled successfully.');
+
+        $firstPrompt->refresh();
+        $secondPrompt->refresh();
+        $this->assertFalse($firstPrompt->is_enabled);
+        $this->assertFalse($secondPrompt->is_enabled);
+    }
+
+    public function test_admin_can_bulk_enable_selected_prompts(): void
+    {
+        $admin = $this->admin();
+
+        $firstPrompt = AiPrompt::create([
+            'prompt_key' => 'writer.bulk-disabled-one',
+            'category' => 'writer',
+            'title' => 'Bulk Disabled One',
+            'description' => 'First disabled bulk prompt',
+            'active_version_number' => 1,
+            'output_schema' => [],
+            'is_enabled' => false,
+        ]);
+
+        $firstPrompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'First disabled template.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $secondPrompt = AiPrompt::create([
+            'prompt_key' => 'writer.bulk-disabled-two',
+            'category' => 'writer',
+            'title' => 'Bulk Disabled Two',
+            'description' => 'Second disabled bulk prompt',
+            'active_version_number' => 1,
+            'output_schema' => [],
+            'is_enabled' => false,
+        ]);
+
+        $secondPrompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Second disabled template.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.ai-prompts.bulk-update'), [
+            'action' => 'enable',
+            'prompt_ids' => [$firstPrompt->id],
+        ]);
+
+        $response->assertRedirect(route('admin.ai-prompts.index'));
+        $response->assertSessionHas('success', '1 prompt enabled successfully.');
+
+        $firstPrompt->refresh();
+        $secondPrompt->refresh();
+        $this->assertTrue($firstPrompt->is_enabled);
+        $this->assertFalse($secondPrompt->is_enabled);
+    }
+
     public function test_admin_can_create_new_prompt_versions_and_rollback(): void
     {
         $prompt = AiPrompt::create([

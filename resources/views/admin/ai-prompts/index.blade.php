@@ -59,9 +59,24 @@
         </div>
     @endif
 
-    <x-admin.table :headers="['Key', 'Category', 'Title', 'Active Version', 'Versions', 'State']" :records="$prompts" actions="true">
+    <form id="bulk-prompt-actions" method="POST" action="{{ route('admin.ai-prompts.bulk-update') }}" class="flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        @csrf
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Bulk actions</span>
+            <button type="submit" name="action" value="enable" class="rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/30">
+                Enable Selected
+            </button>
+            <button type="submit" name="action" value="disable" class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
+                Disable Selected
+            </button>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Select one or more prompts in the table below.</p>
+    </form>
+
+    <x-admin.table :headers="['Select', 'Key', 'Category', 'Title', 'Active Version', 'Versions', 'State']" :records="$prompts" actions="true">
         @forelse($prompts as $prompt)
             <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <input type="checkbox" form="bulk-prompt-actions" name="prompt_ids[]" value="{{ $prompt->id }}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950">
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-700 dark:text-gray-300">{{ $prompt->prompt_key }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ $prompt->category }}</td>
                 <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white">{{ $prompt->title }}</td>
@@ -86,7 +101,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colspan="8" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     No prompts found. <a href="{{ route('admin.ai-prompts.create') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Create one</a>.
                 </td>
             </tr>

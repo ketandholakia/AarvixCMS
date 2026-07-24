@@ -229,6 +229,25 @@ class AiPromptController extends Controller
         return redirect()->route('admin.ai-prompts.index')->with('success', 'Prompt deleted successfully.');
     }
 
+    public function bulkUpdate(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'action' => ['required', 'in:enable,disable'],
+            'prompt_ids' => ['required', 'array', 'min:1'],
+            'prompt_ids.*' => ['integer', 'distinct', 'exists:ai_prompts,id'],
+        ]);
+
+        $ids = array_values(array_unique(array_map('intval', $data['prompt_ids'])));
+        $isEnabled = $data['action'] === 'enable';
+        $updated = AiPrompt::query()
+            ->whereIn('id', $ids)
+            ->update(['is_enabled' => $isEnabled]);
+
+        $message = $updated . ' prompt' . ($updated === 1 ? '' : 's') . ' ' . ($isEnabled ? 'enabled' : 'disabled') . ' successfully.';
+
+        return redirect()->route('admin.ai-prompts.index')->with('success', $message);
+    }
+
     public function compare(AiPrompt $ai_prompt, AiPromptVersion $version)
     {
         if ((int) $version->ai_prompt_id !== (int) $ai_prompt->id) {

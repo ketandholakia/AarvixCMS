@@ -20,10 +20,21 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.ai-prompts.import.store') }}" method="POST" class="space-y-0">
+    <form action="{{ route('admin.ai-prompts.import.store') }}" method="POST" enctype="multipart/form-data" class="space-y-0">
         @csrf
         <div class="p-6">
-            <x-admin.form.textarea name="payload_json" label="Prompt JSON" :value="old('payload_json', '')" rows="22" required="true" help="Paste the JSON downloaded from the export action." />
+            <div class="space-y-4">
+                <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-900/40 dark:bg-indigo-900/20">
+                    <label for="payload_file" class="block text-sm font-medium text-indigo-800 dark:text-indigo-200">Upload JSON file</label>
+                    <input type="file" name="payload_file" id="payload_file" accept=".json,application/json" class="mt-2 block w-full rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
+                    <p class="mt-2 text-sm text-indigo-700 dark:text-indigo-300">Choose an exported prompt JSON file. If provided, it takes precedence over pasted JSON.</p>
+                    @error('payload_file')
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <x-admin.form.textarea name="payload_json" label="Prompt JSON" :value="old('payload_json', '')" rows="22" help="Paste the JSON downloaded from the export action if you are not uploading a file." />
+            </div>
         </div>
 
         <div class="px-6 py-4 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-3">

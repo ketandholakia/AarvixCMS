@@ -10,6 +10,7 @@ use App\Models\AiPromptVersion;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 
 class AiPromptController extends Controller
@@ -92,7 +93,13 @@ class AiPromptController extends Controller
 
     public function importStore(Request $request, PromptService $promptService): RedirectResponse
     {
-        $payload = $this->decodeImportPayload($request->input('payload_json', ''));
+        $data = $request->validate([
+            'payload_json' => ['nullable', 'string'],
+            'payload_file' => ['nullable', 'file', 'max:2048'],
+        ]);
+
+        $payloadJson = $this->resolveImportPayloadJson($request, $data);
+        $payload = $this->decodeImportPayload($payloadJson);
         $this->validateImportPayload($payload, $promptService);
 
         $prompt = AiPrompt::create([
@@ -443,6 +450,19 @@ class AiPromptController extends Controller
         }
 
         return $payload;
+    }
+
+    protected function resolveImportPayloadJson(Request $request, array $validated): string
+    {
+        $file = $request->file('payload_file');
+
+        if ($file instanceof UploadedFile) {
+            $content = $file->getRealPath() ? file_get_contents($file->getRealPath()) : false;
+
+            return trim($content !== false ? $content : '');
+        }
+
+        return trim((string) ($validated['payload_json'] ?? ''));
     }
 
     protected function validateImportPayload(array $payload, PromptService $promptService): void

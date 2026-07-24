@@ -6,6 +6,7 @@ use App\Models\AiPrompt;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class AiPromptCrudTest extends TestCase
@@ -281,6 +282,46 @@ class AiPromptCrudTest extends TestCase
         $this->assertSame(2, $prompt->versions()->count());
     }
 
+    public function test_admin_can_import_prompt_from_uploaded_json_file(): void
+    {
+        $admin = $this->admin();
+
+        $payload = [
+            'prompt' => [
+                'prompt_key' => 'writer.uploaded',
+                'category' => 'writer',
+                'title' => 'Uploaded Prompt',
+                'description' => 'Imported from file',
+                'active_version_number' => 1,
+                'output_schema' => [],
+                'is_enabled' => false,
+            ],
+            'versions' => [
+                [
+                    'version_number' => 1,
+                    'system_template' => 'Return a polished rewrite.',
+                    'user_template' => null,
+                    'variables' => [],
+                    'output_schema' => [],
+                    'change_summary' => 'Initial version',
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.ai-prompts.import'))
+            ->post(route('admin.ai-prompts.import.store'), [
+                'payload_file' => UploadedFile::fake()->createWithContent('prompt.json', json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)),
+            ]);
+
+        $response->assertRedirect();
+
+        $prompt = AiPrompt::query()->where('prompt_key', 'writer.uploaded')->firstOrFail();
+        $this->assertSame('Uploaded Prompt', $prompt->title);
+        $this->assertSame(1, $prompt->active_version_number);
+        $this->assertSame(1, $prompt->versions()->count());
+    }
+
     public function test_admin_can_view_prompt_import_form(): void
     {
         $response = $this->actingAs($this->admin())->get(route('admin.ai-prompts.import'));
@@ -288,6 +329,7 @@ class AiPromptCrudTest extends TestCase
         $response->assertOk();
         $response->assertSee('Import Prompt JSON', false);
         $response->assertSee('Paste the JSON exported from a prompt detail page.', false);
+        $response->assertSee('Upload JSON file', false);
     }
 
     public function test_admin_can_filter_prompt_library_by_search_and_state(): void

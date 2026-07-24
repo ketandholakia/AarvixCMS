@@ -92,6 +92,9 @@
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white">AI Usage</h2>
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Last 30 days of request volume, cost, and reliability.</p>
                 </div>
+                <a href="{{ route('admin.ai-requests.index') }}" class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">
+                    View all requests
+                </a>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">

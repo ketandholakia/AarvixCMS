@@ -47,6 +47,12 @@
                     <dd class="mt-1 text-gray-900 dark:text-white">{{ optional($request->started_at)->format('Y-m-d H:i:s') ?? 'n/a' }}</dd>
                 </div>
                 <div>
+                    <dt class="text-gray-500 dark:text-gray-400">Queue wait</dt>
+                    <dd class="mt-1 text-gray-900 dark:text-white">
+                        {{ $queueWaitMs !== null ? number_format($queueWaitMs) . ' ms' : 'n/a' }}
+                    </dd>
+                </div>
+                <div>
                     <dt class="text-gray-500 dark:text-gray-400">Completed</dt>
                     <dd class="mt-1 text-gray-900 dark:text-white">{{ optional($request->completed_at)->format('Y-m-d H:i:s') ?? 'n/a' }}</dd>
                 </div>

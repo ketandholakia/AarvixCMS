@@ -66,6 +66,10 @@ class DashboardTest extends TestCase
             'started_at' => now()->subMinutes(5),
             'completed_at' => now(),
         ]);
+        AiRequest::query()->where('feature', 'writer')->where('prompt_key', 'writer.rewrite')->update([
+            'created_at' => now()->subMinutes(7),
+            'updated_at' => now()->subMinutes(7),
+        ]);
 
         AiRequest::create([
             'request_uuid' => (string) \Illuminate\Support\Str::uuid(),
@@ -88,6 +92,10 @@ class DashboardTest extends TestCase
             'started_at' => now()->subMinutes(4),
             'completed_at' => now(),
         ]);
+        AiRequest::query()->where('feature', 'chat')->where('prompt_key', 'chat.search')->update([
+            'created_at' => now()->subMinutes(5),
+            'updated_at' => now()->subMinutes(5),
+        ]);
 
         AiRequest::create([
             'request_uuid' => (string) \Illuminate\Support\Str::uuid(),
@@ -109,6 +117,10 @@ class DashboardTest extends TestCase
             'latency_ms' => 180,
             'started_at' => now()->subMinutes(3),
             'completed_at' => now(),
+        ]);
+        AiRequest::query()->where('prompt_key', 'writer.expand')->where('user_id', $editor->id)->update([
+            'created_at' => now()->subMinutes(6),
+            'updated_at' => now()->subMinutes(6),
         ]);
 
         AiUsageDaily::create([
@@ -134,6 +146,7 @@ class DashboardTest extends TestCase
         $response->assertSeeText('Top AI Models');
         $response->assertSeeText('Top AI Users');
         $response->assertSeeText('Avg Latency');
+        $response->assertSeeText('Avg Queue Wait');
         $response->assertSeeText('writer');
         $response->assertSeeText('chat');
         $response->assertSeeText($editor->name);

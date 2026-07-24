@@ -48,6 +48,10 @@ class AiRequestLogTest extends TestCase
             'started_at' => now()->subMinutes(10),
             'completed_at' => now(),
         ]);
+        AiRequest::query()->where('request_uuid', $request->request_uuid)->update([
+            'created_at' => now()->subMinutes(12),
+            'updated_at' => now()->subMinutes(12),
+        ]);
 
         $response = $this->actingAs($admin)->get(route('admin.ai-requests.index'));
 
@@ -69,6 +73,8 @@ class AiRequestLogTest extends TestCase
         $detail->assertSeeText('Request Metadata');
         $detail->assertSeeText('Response Payload');
         $detail->assertSeeText('writer.rewrite');
+        $detail->assertSeeText('Queue wait');
+        $detail->assertSeeText('120,000 ms');
     }
 
     public function test_admin_can_export_ai_requests_as_csv(): void

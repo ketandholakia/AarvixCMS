@@ -569,7 +569,7 @@ and retention rules.
 - Daily and monthly estimated cost.
 - Cost and latency by provider, model, feature, and user.
 - Most-used features and active users.
-- Queue wait and execution time.
+- [x] Queue wait and execution time.
 - RAG citation and no-answer metrics.
 - Workflow and tool-call success rates.
 

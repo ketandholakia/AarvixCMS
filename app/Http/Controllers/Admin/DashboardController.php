@@ -74,6 +74,7 @@ class DashboardController extends Controller
                 'total_tokens' => (int) (clone $aiRequests)->sum('total_tokens'),
                 'estimated_cost' => (string) (clone $aiRequests)->sum('estimated_cost'),
                 'average_latency_ms' => (int) round((float) ((clone $aiRequests)->avg('latency_ms') ?? 0)),
+                'average_queue_wait_ms' => (int) round((float) $this->averageQueueWaitMs((clone $aiRequests)->get())),
             ];
 
             $usageByDate = AiUsageDaily::query()
@@ -139,5 +140,18 @@ class DashboardController extends Controller
             'aiUserBreakdown',
             'recentAiRequests'
         ));
+    }
+
+    protected function averageQueueWaitMs($requests): int
+    {
+        if ($requests->isEmpty()) {
+            return 0;
+        }
+
+        return (int) round((float) $requests->filter(static function (AiRequest $request): bool {
+            return $request->created_at !== null && $request->started_at !== null;
+        })->avg(static function (AiRequest $request): int {
+            return max(0, (int) $request->created_at->diffInMilliseconds($request->started_at));
+        }));
     }
 }

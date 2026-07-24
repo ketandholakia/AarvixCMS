@@ -93,6 +93,7 @@ class AiRequestController extends Controller
 
         return view('admin.ai-requests.show', [
             'request' => $ai_request,
+            'queueWaitMs' => $this->queueWaitMs($ai_request),
         ]);
     }
 
@@ -156,5 +157,14 @@ class AiRequestController extends Controller
                 ->values()
                 ->all(),
         ];
+    }
+
+    protected function queueWaitMs(AiRequest $request): ?int
+    {
+        if ($request->created_at === null || $request->started_at === null) {
+            return null;
+        }
+
+        return max(0, (int) $request->created_at->diffInMilliseconds($request->started_at));
     }
 }

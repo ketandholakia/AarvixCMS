@@ -108,6 +108,7 @@ class DashboardTest extends TestCase
         $response->assertSeeText('AI Activity Trend');
         $response->assertSeeText('Top AI Features');
         $response->assertSeeText('Provider Mix');
+        $response->assertSeeText('Avg Latency');
         $response->assertSeeText('writer');
         $response->assertSeeText('chat');
     }

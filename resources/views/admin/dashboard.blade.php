@@ -97,7 +97,7 @@
                 </a>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-6">
                 <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
                     <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Requests</p>
                     <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($aiStats['requests_count']) }}</p>
@@ -117,6 +117,10 @@
                 <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
                     <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Estimated Cost</p>
                     <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">${{ number_format((float) $aiStats['estimated_cost'], 4) }}</p>
+                </div>
+                <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Latency</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($aiStats['average_latency_ms']) }} ms</p>
                 </div>
             </div>
 

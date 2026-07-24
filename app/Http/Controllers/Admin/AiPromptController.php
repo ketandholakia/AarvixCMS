@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpFoundation\Response;
 
 class AiPromptController extends Controller
 {
@@ -120,7 +119,7 @@ class AiPromptController extends Controller
         return redirect()->route('admin.ai-prompts.show', $prompt)->with('success', 'Prompt imported successfully.');
     }
 
-    public function export(AiPrompt $ai_prompt): Response
+    public function export(AiPrompt $ai_prompt)
     {
         $ai_prompt->loadMissing(['versions' => function ($query) {
             $query->orderBy('version_number');

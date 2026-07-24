@@ -21,10 +21,8 @@
             <x-admin.form.input name="title" label="Title" :value="$prompt->title" required="true" />
             <x-admin.form.input name="description" label="Description" :value="$prompt->description" />
             <div class="lg:col-span-2">
-                <x-admin.form.textarea name="system_template" label="System Template" :value="$version['system_template'] ?? ''" required="true" rows="8" />
-                @verbatim
-                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Supports strict {{variable}} placeholders.</p>
-                @endverbatim
+            <x-admin.form.textarea name="system_template" label="System Template" :value="$version['system_template'] ?? ''" required="true" rows="8" />
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Supports strict @{{variable}} placeholders.</p>
             </div>
             <div class="lg:col-span-2">
                 <x-admin.form.textarea name="user_template" label="User Template" :value="$version['user_template'] ?? ''" rows="8" />

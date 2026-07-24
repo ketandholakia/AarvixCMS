@@ -183,6 +183,10 @@ class AiDiagnosticsTest extends TestCase
         $response->assertSee('Avg Latency');
         $response->assertSee('Tool Calls');
         $response->assertSee('Agent Runs');
+        $response->assertSee('Recent Failures');
+        $response->assertSee('Provider unavailable');
+        $response->assertSee('Tool execution failed');
+        $response->assertSee('Agent stopped');
         $response->assertSee('failed');
     }
 }

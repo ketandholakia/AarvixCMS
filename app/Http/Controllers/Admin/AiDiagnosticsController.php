@@ -20,6 +20,7 @@ class AiDiagnosticsController extends Controller
         $config = config('ai', []);
         $providers = [];
         $usageSummary = null;
+        $recentFailures = [];
 
         foreach (Arr::wrap($config['providers'] ?? []) as $name => $providerConfig) {
             $providerConfig = is_array($providerConfig) ? $providerConfig : [];
@@ -54,6 +55,8 @@ class AiDiagnosticsController extends Controller
                 'agent_runs_count' => (clone $agentRuns)->count(),
                 'active_agent_runs_count' => (clone $agentRuns)->where('status', 'running')->count(),
             ];
+
+            $recentFailures = $this->buildRecentFailures();
         }
 
         return view('admin.ai.diagnostics', [
@@ -61,6 +64,7 @@ class AiDiagnosticsController extends Controller
             'providers' => $providers,
             'agents' => $agents->all()->map(static fn ($agent) => $agent->toArray())->all(),
             'usageSummary' => $usageSummary,
+            'recentFailures' => $recentFailures,
             'settings' => [
                 'enabled' => $settings->get('ai.enabled', $config['enabled'] ?? false),
                 'default_provider' => $settings->get('ai.default_provider', $config['default_provider'] ?? 'fake'),
@@ -82,6 +86,72 @@ class AiDiagnosticsController extends Controller
                 'support_agent_seconds' => data_get($config, 'agents.support.max_seconds', 30),
             ],
         ]);
+    }
+
+    protected function buildRecentFailures(): array
+    {
+        $failedRequestStatuses = [
+            AiStatus::Failed->value,
+            AiStatus::TimedOut->value,
+            AiStatus::RateLimited->value,
+            AiStatus::Rejected->value,
+            AiStatus::Cancelled->value,
+        ];
+
+        $entries = collect();
+
+        AiRequest::query()
+            ->with(['user'])
+            ->whereIn('status', $failedRequestStatuses)
+            ->latest('created_at')
+            ->limit(5)
+            ->get()
+            ->each(function (AiRequest $request) use ($entries): void {
+                $entries->push([
+                    'type' => 'Request',
+                    'title' => $request->feature,
+                    'detail' => $request->error_message ?: $request->error_class ?: 'Request failed',
+                    'url' => route('admin.ai-requests.show', $request),
+                    'occurred_at' => $request->created_at,
+                ]);
+            });
+
+        AiToolCall::query()
+            ->with(['tool'])
+            ->where('status', 'failed')
+            ->latest('created_at')
+            ->limit(5)
+            ->get()
+            ->each(function (AiToolCall $call) use ($entries): void {
+                $entries->push([
+                    'type' => 'Tool Call',
+                    'title' => $call->tool?->key ?? 'Unknown tool',
+                    'detail' => $call->error_message ?: $call->error_class ?: 'Tool call failed',
+                    'url' => route('admin.ai-tool-calls.show', $call),
+                    'occurred_at' => $call->created_at,
+                ]);
+            });
+
+        AiAgentRun::query()
+            ->where('status', 'failed')
+            ->latest('created_at')
+            ->limit(5)
+            ->get()
+            ->each(function (AiAgentRun $run) use ($entries): void {
+                $entries->push([
+                    'type' => 'Agent Run',
+                    'title' => $run->agent_name,
+                    'detail' => $run->error_message ?: $run->error_class ?: 'Agent run failed',
+                    'url' => route('admin.ai-agent-runs.show', $run),
+                    'occurred_at' => $run->created_at,
+                ]);
+            });
+
+        return $entries
+            ->sortByDesc(static fn (array $entry) => $entry['occurred_at']?->getTimestamp() ?? 0)
+            ->values()
+            ->take(10)
+            ->all();
     }
 
     protected function buildProviderStatus(string $name, array $providerConfig): array

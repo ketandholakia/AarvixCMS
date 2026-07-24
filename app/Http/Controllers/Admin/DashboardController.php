@@ -49,6 +49,8 @@ class DashboardController extends Controller
         $aiChartDates = [];
         $aiChartRequests = [];
         $aiChartTokens = [];
+        $aiFeatureBreakdown = collect();
+        $aiProviderBreakdown = collect();
         $recentAiRequests = collect();
 
         if (auth()->user()?->hasPermission('view_ai_usage')) {
@@ -87,6 +89,20 @@ class DashboardController extends Controller
                 $aiChartTokens[] = (int) ($usageByDate[$date]->total_tokens ?? 0);
             }
 
+            $aiFeatureBreakdown = (clone $aiRequests)
+                ->selectRaw('feature, count(*) as requests_count, sum(total_tokens) as total_tokens, sum(estimated_cost) as estimated_cost')
+                ->groupBy('feature')
+                ->orderByDesc('requests_count')
+                ->limit(5)
+                ->get();
+
+            $aiProviderBreakdown = (clone $aiRequests)
+                ->selectRaw('provider, count(*) as requests_count, sum(total_tokens) as total_tokens, sum(estimated_cost) as estimated_cost')
+                ->groupBy('provider')
+                ->orderByDesc('requests_count')
+                ->limit(5)
+                ->get();
+
             $recentAiRequests = AiRequest::with('user')->latest()->take(5)->get();
         }
 
@@ -100,6 +116,8 @@ class DashboardController extends Controller
             'aiChartDates',
             'aiChartRequests',
             'aiChartTokens',
+            'aiFeatureBreakdown',
+            'aiProviderBreakdown',
             'recentAiRequests'
         ));
     }

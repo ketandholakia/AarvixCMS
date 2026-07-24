@@ -66,6 +66,28 @@ class DashboardTest extends TestCase
             'completed_at' => now(),
         ]);
 
+        AiRequest::create([
+            'request_uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $admin->id,
+            'feature' => 'chat',
+            'status' => 'succeeded',
+            'provider' => 'openai',
+            'model' => 'gpt-4o-mini',
+            'prompt_key' => 'chat.search',
+            'scope' => [],
+            'request_metadata' => [],
+            'response_metadata' => [],
+            'request_payload' => [],
+            'response_payload' => [],
+            'prompt_tokens' => 18,
+            'completion_tokens' => 9,
+            'total_tokens' => 27,
+            'estimated_cost' => '0.00027000',
+            'latency_ms' => 210,
+            'started_at' => now()->subMinutes(4),
+            'completed_at' => now(),
+        ]);
+
         AiUsageDaily::create([
             'usage_date' => now()->toDateString(),
             'user_id' => $admin->id,
@@ -84,6 +106,9 @@ class DashboardTest extends TestCase
         $response->assertOk();
         $response->assertSeeText('AI Usage');
         $response->assertSeeText('AI Activity Trend');
+        $response->assertSeeText('Top AI Features');
+        $response->assertSeeText('Provider Mix');
         $response->assertSeeText('writer');
+        $response->assertSeeText('chat');
     }
 }

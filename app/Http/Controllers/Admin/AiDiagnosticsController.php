@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AiAgentRun;
 use App\Models\AiChatRun;
 use App\Models\AiRequest;
+use App\Models\AiWorkflowRun;
 use App\Models\AiToolCall;
 use App\Services\SettingService;
 use Illuminate\Support\Arr;
@@ -22,6 +23,7 @@ class AiDiagnosticsController extends Controller
         $providers = [];
         $usageSummary = null;
         $ragSummary = null;
+        $operationsSummary = null;
         $recentFailures = [];
 
         foreach (Arr::wrap($config['providers'] ?? []) as $name => $providerConfig) {
@@ -35,6 +37,7 @@ class AiDiagnosticsController extends Controller
             $toolCalls = AiToolCall::query()->where('created_at', '>=', now()->subDays(30));
             $agentRuns = AiAgentRun::query()->where('created_at', '>=', now()->subDays(30));
             $chatRuns = AiChatRun::query()->where('created_at', '>=', now()->subDays(30));
+            $workflowRuns = AiWorkflowRun::query()->where('created_at', '>=', now()->subDays(30));
             $requestCount = (clone $requests)->count();
             $successCount = (clone $requests)->where('status', AiStatus::Succeeded->value)->count();
             $retrievalTurnsCount = (clone $chatRuns)->whereIn('mode', ['knowledge', 'summary', 'policy'])->count();
@@ -92,6 +95,18 @@ class AiDiagnosticsController extends Controller
                 'average_citations_per_turn' => $citedTurnsCount > 0 ? round($citationCount / $citedTurnsCount, 1) : 0.0,
             ];
 
+            $toolCallCount = (clone $toolCalls)->count();
+            $workflowRunCount = (clone $workflowRuns)->count();
+
+            $operationsSummary = [
+                'tool_calls_count' => $toolCallCount,
+                'tool_call_success_rate' => $toolCallCount > 0 ? round(((clone $toolCalls)->where('status', 'succeeded')->count() / $toolCallCount) * 100, 1) : 0.0,
+                'tool_call_failed_count' => (clone $toolCalls)->where('status', 'failed')->count(),
+                'workflow_runs_count' => $workflowRunCount,
+                'workflow_success_rate' => $workflowRunCount > 0 ? round(((clone $workflowRuns)->where('status', 'succeeded')->count() / $workflowRunCount) * 100, 1) : 0.0,
+                'workflow_failed_count' => (clone $workflowRuns)->where('status', 'failed')->count(),
+            ];
+
             $recentFailures = $this->buildRecentFailures();
         }
 
@@ -101,6 +116,7 @@ class AiDiagnosticsController extends Controller
             'agents' => $agents->all()->map(static fn ($agent) => $agent->toArray())->all(),
             'usageSummary' => $usageSummary,
             'ragSummary' => $ragSummary,
+            'operationsSummary' => $operationsSummary,
             'recentFailures' => $recentFailures,
             'settings' => [
                 'enabled' => $settings->get('ai.enabled', $config['enabled'] ?? false),

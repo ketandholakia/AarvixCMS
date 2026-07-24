@@ -571,7 +571,7 @@ and retention rules.
 - Most-used features and active users.
 - [x] Queue wait and execution time.
 - [x] RAG citation and no-answer metrics.
-- Workflow and tool-call success rates.
+- [x] Workflow and tool-call success rates.
 
 Analytics access requires a dedicated permission. User-level reporting should expose
 only what is operationally necessary, with retention and export rules documented.

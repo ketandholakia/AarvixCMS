@@ -142,6 +142,21 @@
             </div>
         @endif
 
+        @if($operationsSummary !== null)
+            <div class="grid gap-4 md:grid-cols-2">
+                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Tool-call success rate</div>
+                    <div class="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">{{ number_format($operationsSummary['tool_call_success_rate'], 1) }}%</div>
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($operationsSummary['tool_calls_count']) }} total, {{ number_format($operationsSummary['tool_call_failed_count']) }} failed</div>
+                </div>
+                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Workflow success rate</div>
+                    <div class="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">{{ number_format($operationsSummary['workflow_success_rate'], 1) }}%</div>
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($operationsSummary['workflow_runs_count']) }} total, {{ number_format($operationsSummary['workflow_failed_count']) }} failed</div>
+                </div>
+            </div>
+        @endif
+
         <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
             <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800 flex items-center justify-between gap-3">
                 <div>

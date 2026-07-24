@@ -9,6 +9,8 @@ use App\Models\AiConversation;
 use App\Models\AiRequest;
 use App\Models\AiTool;
 use App\Models\AiToolCall;
+use App\Models\AiWorkflow;
+use App\Models\AiWorkflowRun;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -124,6 +126,51 @@ class AiDiagnosticsTest extends TestCase
             'error_message' => 'Tool execution failed',
             'started_at' => now()->subHours(1),
             'completed_at' => now()->subHours(1),
+        ]);
+
+        $workflow = AiWorkflow::create([
+            'workflow_uuid' => 'diag-workflow-1',
+            'key' => 'content.publish.seo-review',
+            'name' => 'Publish SEO review',
+            'trigger' => 'content.published',
+            'version' => 1,
+            'status' => 'enabled',
+            'conditions' => [],
+            'steps' => [],
+        ]);
+
+        AiWorkflowRun::create([
+            'workflow_id' => $workflow->id,
+            'run_uuid' => 'diag-workflow-run-1',
+            'idempotency_key' => 'diag-workflow-idem-1',
+            'trigger' => 'content.published',
+            'source_type' => 'post',
+            'source_id' => 1,
+            'actor_user_id' => $admin->id,
+            'status' => 'succeeded',
+            'payload' => [],
+            'result' => ['status' => 'succeeded'],
+            'review_task' => [],
+            'started_at' => now()->subMinutes(35),
+            'completed_at' => now()->subMinutes(35),
+        ]);
+
+        AiWorkflowRun::create([
+            'workflow_id' => $workflow->id,
+            'run_uuid' => 'diag-workflow-run-2',
+            'idempotency_key' => 'diag-workflow-idem-2',
+            'trigger' => 'content.published',
+            'source_type' => 'post',
+            'source_id' => 2,
+            'actor_user_id' => $admin->id,
+            'status' => 'failed',
+            'payload' => [],
+            'result' => [],
+            'review_task' => [],
+            'error_class' => 'RuntimeException',
+            'error_message' => 'Workflow stopped',
+            'started_at' => now()->subMinutes(30),
+            'failed_at' => now()->subMinutes(30),
         ]);
 
         AiAgentRun::create([
@@ -246,6 +293,8 @@ class AiDiagnosticsTest extends TestCase
         $response->assertSee('Tool Calls');
         $response->assertSee('Agent Runs');
         $response->assertSee('RAG Summary');
+        $response->assertSee('Tool-call success rate');
+        $response->assertSee('Workflow success rate');
         $response->assertSee('Recent Failures');
         $response->assertSee('Provider unavailable');
         $response->assertSee('Tool execution failed');
@@ -256,5 +305,6 @@ class AiDiagnosticsTest extends TestCase
         $response->assertSeeText('No-answer turns');
         $response->assertSeeText('No-answer rate');
         $response->assertSeeText('2');
+        $response->assertSeeText('50.0%');
     }
 }

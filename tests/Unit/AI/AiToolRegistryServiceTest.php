@@ -5,7 +5,9 @@ namespace Tests\Unit\AI;
 use App\AI\Exceptions\AiToolAuthorizationException;
 use App\AI\Services\AiToolRegistryService;
 use App\Models\AiTool;
+use App\Models\Page;
 use App\Models\Role;
+use App\Models\Post;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -54,5 +56,28 @@ class AiToolRegistryServiceTest extends TestCase
         $this->assertSame('request-123', $call->request_uuid);
         $this->assertSame('Example article', $call->input_payload['title']);
         $this->assertSame('seo.propose', $call->tool->key);
+    }
+
+    public function test_resolve_source_model_allows_only_supported_content_models(): void
+    {
+        $service = app(AiToolRegistryService::class);
+        $method = new \ReflectionMethod($service, 'resolveSourceModel');
+        $method->setAccessible(true);
+
+        $post = Post::factory()->create();
+        $page = Page::factory()->create();
+        $user = User::factory()->create(['is_active' => true]);
+
+        $this->assertSame(
+            $post->id,
+            $method->invoke($service, Post::class, $post->id)?->id
+        );
+
+        $this->assertSame(
+            $page->id,
+            $method->invoke($service, Page::class, $page->id)?->id
+        );
+
+        $this->assertNull($method->invoke($service, User::class, $user->id));
     }
 }

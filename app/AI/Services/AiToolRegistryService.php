@@ -9,6 +9,8 @@ use App\AI\Exceptions\AiToolExecutionException;
 use App\Models\AiTool;
 use App\Models\AiToolCall;
 use App\Models\Media;
+use App\Models\Entry;
+use App\Models\Page;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +21,15 @@ use Illuminate\Support\Str;
 
 class AiToolRegistryService
 {
+    /**
+     * @var array<int, class-string<Model>>
+     */
+    protected const ALLOWED_SOURCE_MODELS = [
+        Post::class,
+        Page::class,
+        Entry::class,
+    ];
+
     public function __construct(
         protected RetrievalService $retrievalService,
         protected ContentEmbeddingSourceResolver $contentEmbeddingSourceResolver,
@@ -615,7 +626,14 @@ class AiToolRegistryService
 
     protected function resolveSourceModel(?string $sourceType, ?int $sourceId): ?Model
     {
-        if (! is_string($sourceType) || trim($sourceType) === '' || ! is_int($sourceId) || $sourceId <= 0 || ! class_exists($sourceType)) {
+        if (
+            ! is_string($sourceType)
+            || trim($sourceType) === ''
+            || ! is_int($sourceId)
+            || $sourceId <= 0
+            || ! class_exists($sourceType)
+            || ! in_array($sourceType, self::ALLOWED_SOURCE_MODELS, true)
+        ) {
             return null;
         }
 

@@ -65,4 +65,40 @@ class AiRequestLogTest extends TestCase
         $detail->assertSeeText('Response Payload');
         $detail->assertSeeText('writer.rewrite');
     }
+
+    public function test_admin_can_export_ai_requests_as_csv(): void
+    {
+        $admin = $this->admin();
+
+        AiRequest::create([
+            'request_uuid' => 'req-123',
+            'user_id' => $admin->id,
+            'feature' => 'writer',
+            'status' => 'succeeded',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+            'prompt_key' => 'writer.rewrite',
+            'scope' => [],
+            'request_metadata' => [],
+            'response_metadata' => [],
+            'request_payload' => [],
+            'response_payload' => [],
+            'prompt_tokens' => 12,
+            'completion_tokens' => 8,
+            'total_tokens' => 20,
+            'estimated_cost' => '0.00020000',
+            'latency_ms' => 180,
+            'started_at' => now()->subMinutes(10),
+            'completed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-requests.export'));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $response->assertHeader('Content-Disposition');
+        $response->assertSee('request_uuid,feature,status,provider,model,prompt_key,actor,prompt_tokens,completion_tokens,total_tokens,estimated_cost,latency_ms,created_at,completed_at', false);
+        $response->assertSee('req-123', false);
+        $response->assertSee('writer.rewrite', false);
+    }
 }

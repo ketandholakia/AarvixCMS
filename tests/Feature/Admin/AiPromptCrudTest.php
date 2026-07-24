@@ -52,6 +52,9 @@ class AiPromptCrudTest extends TestCase
         $response->assertOk();
         $response->assertSee('Create Prompt', false);
         $response->assertSee('Supports strict {{variable}} placeholders.', false);
+        $response->assertSee('Create version 1', false);
+        $response->assertSee('Active version', false);
+        $response->assertSee('Current versions', false);
     }
 
     public function test_admin_can_view_prompt_create_form_with_a_session_cookie(): void
@@ -68,6 +71,42 @@ class AiPromptCrudTest extends TestCase
         $response->assertOk();
         $response->assertSee('Create Prompt', false);
         $response->assertSee('Supports strict {{variable}} placeholders.', false);
+        $response->assertSee('Create version 1', false);
+        $response->assertSee('Active version', false);
+        $response->assertSee('Current versions', false);
+    }
+
+    public function test_admin_can_view_prompt_edit_form_version_summary(): void
+    {
+        $admin = $this->admin();
+
+        $prompt = AiPrompt::create([
+            'prompt_key' => 'writer.rewrite',
+            'category' => 'writer',
+            'title' => 'Rewrite',
+            'description' => 'Rewrite helper',
+            'active_version_number' => 1,
+            'output_schema' => [],
+            'is_enabled' => true,
+        ]);
+
+        $prompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Return a polished rewrite.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-prompts.edit', $prompt));
+
+        $response->assertOk();
+        $response->assertSee('Edit Prompt', false);
+        $response->assertSee('Save New Version', false);
+        $response->assertSee('Create version 2', false);
+        $response->assertSee('Active version', false);
+        $response->assertSee('Current versions', false);
     }
 
     public function test_admin_can_view_prompt_library_summary(): void

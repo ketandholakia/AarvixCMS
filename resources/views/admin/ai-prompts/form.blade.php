@@ -21,7 +21,7 @@
             <x-admin.form.input name="title" label="Title" :value="$prompt->title" required="true" />
             <x-admin.form.input name="description" label="Description" :value="$prompt->description" />
             <div class="lg:col-span-2">
-            <x-admin.form.textarea name="system_template" label="System Template" :value="$version['system_template'] ?? ''" required="true" rows="8" />
+                <x-admin.form.textarea name="system_template" label="System Template" :value="$version['system_template'] ?? ''" required="true" rows="8" />
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Supports strict @{{variable}} placeholders.</p>
             </div>
             <div class="lg:col-span-2">
@@ -37,6 +37,29 @@
                     <input type="checkbox" name="is_enabled" value="1" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('is_enabled', $prompt->is_enabled ?? true) ? 'checked' : '' }}>
                     Prompt enabled
                 </label>
+            </div>
+        </div>
+
+        <div class="px-6 pb-6">
+            <div class="grid gap-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-5 dark:border-indigo-900/40 dark:bg-indigo-900/20 lg:grid-cols-3">
+                <div>
+                    <div class="text-sm font-medium text-indigo-700 dark:text-indigo-300">Save target</div>
+                    <div class="mt-2 text-lg font-semibold text-indigo-900 dark:text-indigo-100">
+                        {{ $formMeta['mode'] === 'edit' ? 'Create version ' . $formMeta['next_version'] : 'Create version 1' }}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-indigo-700 dark:text-indigo-300">Active version</div>
+                    <div class="mt-2 text-lg font-semibold text-indigo-900 dark:text-indigo-100">
+                        {{ number_format($formMeta['active_version']) }}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-indigo-700 dark:text-indigo-300">Current versions</div>
+                    <div class="mt-2 text-lg font-semibold text-indigo-900 dark:text-indigo-100">
+                        {{ number_format($formMeta['version_count']) }}
+                    </div>
+                </div>
             </div>
         </div>
 

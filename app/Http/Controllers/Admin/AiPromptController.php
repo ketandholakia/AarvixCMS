@@ -40,7 +40,16 @@ class AiPromptController extends Controller
             'change_summary' => '',
         ];
 
-        return view('admin.ai-prompts.form', compact('prompt', 'version'));
+        return view('admin.ai-prompts.form', [
+            'prompt' => $prompt,
+            'version' => $version,
+            'formMeta' => [
+                'mode' => 'create',
+                'next_version' => 1,
+                'active_version' => 1,
+                'version_count' => 0,
+            ],
+        ]);
     }
 
     public function store(Request $request, PromptService $promptService)
@@ -96,6 +105,12 @@ class AiPromptController extends Controller
         return view('admin.ai-prompts.form', [
             'prompt' => $ai_prompt,
             'version' => $version,
+            'formMeta' => [
+                'mode' => 'edit',
+                'next_version' => ($ai_prompt->versions()->max('version_number') ?? 0) + 1,
+                'active_version' => $ai_prompt->active_version_number,
+                'version_count' => $ai_prompt->versions()->count(),
+            ],
         ]);
     }
 

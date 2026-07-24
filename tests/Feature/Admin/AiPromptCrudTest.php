@@ -216,4 +216,50 @@ class AiPromptCrudTest extends TestCase
         $response->assertSee('Second version');
         $response->assertSee('Initial version');
     }
+
+    public function test_admin_can_compare_prompt_versions(): void
+    {
+        $admin = $this->admin();
+
+        $prompt = AiPrompt::create([
+            'prompt_key' => 'writer.rewrite',
+            'category' => 'writer',
+            'title' => 'Rewrite',
+            'description' => 'Rewrite helper',
+            'active_version_number' => 2,
+            'output_schema' => [],
+            'is_enabled' => true,
+        ]);
+
+        $prompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Return a polished rewrite.',
+            'user_template' => null,
+            'variables' => ['tone' => 'calm'],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $prompt->versions()->create([
+            'version_number' => 2,
+            'system_template' => 'Return a sharper rewrite.',
+            'user_template' => 'Use a concise tone.',
+            'variables' => ['tone' => 'direct'],
+            'output_schema' => ['type' => 'object'],
+            'change_summary' => 'Second version',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-prompts.compare', [$prompt, 1]));
+
+        $response->assertOk();
+        $response->assertSee('Compare Prompt Versions');
+        $response->assertSee('Comparison Details');
+        $response->assertSee('System template');
+        $response->assertSee('Variables');
+        $response->assertSee('Output schema');
+        $response->assertSee('Change summary');
+        $response->assertSee('Changed');
+        $response->assertSee('Return a polished rewrite.');
+        $response->assertSee('Return a sharper rewrite.');
+    }
 }

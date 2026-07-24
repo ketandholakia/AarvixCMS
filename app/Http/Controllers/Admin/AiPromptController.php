@@ -146,10 +146,19 @@ class AiPromptController extends Controller
             $query->orderByDesc('version_number');
         }]);
 
+        $activeVersion = $ai_prompt->versions->firstWhere('version_number', $ai_prompt->active_version_number);
+
         return view('admin.ai-prompts.compare', [
             'prompt' => $ai_prompt,
             'version' => $version,
-            'activeVersion' => $ai_prompt->versions->firstWhere('version_number', $ai_prompt->active_version_number),
+            'activeVersion' => $activeVersion,
+            'comparison' => [
+                'system_template_changed' => $activeVersion?->system_template !== $version->system_template,
+                'user_template_changed' => $activeVersion?->user_template !== $version->user_template,
+                'variables_changed' => json_encode($activeVersion?->variables ?? [], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !== json_encode($version->variables ?? [], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
+                'output_schema_changed' => json_encode($activeVersion?->output_schema ?? [], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !== json_encode($version->output_schema ?? [], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
+                'change_summary_changed' => $activeVersion?->change_summary !== $version->change_summary,
+            ],
         ]);
     }
 

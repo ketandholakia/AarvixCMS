@@ -5,7 +5,9 @@ namespace Tests\Unit\AI;
 use App\AI\DTOs\AiRequestData;
 use App\AI\Enums\AiCapability;
 use App\AI\Providers\FakeAiProvider;
+use App\AI\Providers\GeminiProvider;
 use App\AI\Providers\OpenAiProvider;
+use App\AI\Providers\OllamaProvider;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -127,5 +129,25 @@ class AiProviderContractTest extends TestCase
         $this->assertContains(AiCapability::Generate->value, $provider->capabilities());
         $this->assertContains(AiCapability::Json->value, $provider->capabilities());
         $this->assertContains(AiCapability::Vision->value, $provider->capabilities());
+    }
+
+    public function test_gemini_provider_exposes_required_text_capabilities(): void
+    {
+        $provider = new GeminiProvider();
+
+        $this->assertContains(AiCapability::Generate->value, $provider->capabilities());
+        $this->assertContains(AiCapability::Chat->value, $provider->capabilities());
+        $this->assertContains(AiCapability::Embedding->value, $provider->capabilities());
+        $this->assertContains(AiCapability::Json->value, $provider->capabilities());
+    }
+
+    public function test_ollama_provider_exposes_required_text_capabilities(): void
+    {
+        $provider = new OllamaProvider();
+
+        $this->assertContains(AiCapability::Generate->value, $provider->capabilities());
+        $this->assertContains(AiCapability::Chat->value, $provider->capabilities());
+        $this->assertContains(AiCapability::Embedding->value, $provider->capabilities());
+        $this->assertContains(AiCapability::Json->value, $provider->capabilities());
     }
 }

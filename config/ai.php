@@ -2,7 +2,9 @@
 
 use App\AI\Enums\AiCapability;
 use App\AI\Providers\FakeAiProvider;
+use App\AI\Providers\GeminiProvider;
 use App\AI\Providers\OpenAiProvider;
+use App\AI\Providers\OllamaProvider;
 use App\AI\Support\VectorStores\InMemoryVectorStore;
 
 return [
@@ -59,6 +61,46 @@ return [
                 'chat' => env('AI_OPENAI_CHAT_MODEL', 'gpt-4.1-mini'),
                 'json' => env('AI_OPENAI_CHAT_MODEL', 'gpt-4.1-mini'),
                 'embedding' => env('AI_OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
+            ],
+        ],
+        'gemini' => [
+            'driver' => GeminiProvider::class,
+            'api_key' => env('AI_GEMINI_API_KEY'),
+            'base_url' => env('AI_GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta/openai'),
+            'timeout' => (int) env('AI_GEMINI_TIMEOUT', env('AI_TIMEOUT', 60)),
+            'retries' => (int) env('AI_GEMINI_RETRIES', env('AI_RETRY_ATTEMPTS', 2)),
+            'capabilities' => [
+                AiCapability::Generate->value,
+                AiCapability::Stream->value,
+                AiCapability::Chat->value,
+                AiCapability::Embedding->value,
+                AiCapability::Json->value,
+            ],
+            'models' => [
+                'generate' => env('AI_GEMINI_CHAT_MODEL', 'gemini-2.5-flash'),
+                'chat' => env('AI_GEMINI_CHAT_MODEL', 'gemini-2.5-flash'),
+                'json' => env('AI_GEMINI_CHAT_MODEL', 'gemini-2.5-flash'),
+                'embedding' => env('AI_GEMINI_EMBEDDING_MODEL', 'gemini-embedding-001'),
+            ],
+        ],
+        'ollama' => [
+            'driver' => OllamaProvider::class,
+            'api_key' => env('AI_OLLAMA_API_KEY'),
+            'base_url' => env('AI_OLLAMA_BASE_URL', 'http://localhost:11434/api'),
+            'timeout' => (int) env('AI_OLLAMA_TIMEOUT', env('AI_TIMEOUT', 60)),
+            'retries' => (int) env('AI_OLLAMA_RETRIES', env('AI_RETRY_ATTEMPTS', 2)),
+            'capabilities' => [
+                AiCapability::Generate->value,
+                AiCapability::Stream->value,
+                AiCapability::Chat->value,
+                AiCapability::Embedding->value,
+                AiCapability::Json->value,
+            ],
+            'models' => [
+                'generate' => env('AI_OLLAMA_CHAT_MODEL', 'llama3.2:3b'),
+                'chat' => env('AI_OLLAMA_CHAT_MODEL', 'llama3.2:3b'),
+                'json' => env('AI_OLLAMA_CHAT_MODEL', 'llama3.2:3b'),
+                'embedding' => env('AI_OLLAMA_EMBEDDING_MODEL', 'embeddinggemma'),
             ],
         ],
     ],

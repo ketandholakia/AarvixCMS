@@ -7,7 +7,6 @@ use App\AI\DTOs\AiRequestData;
 use App\AI\DTOs\AiResult;
 use App\AI\DTOs\AiUsage;
 use App\AI\Enums\AiCapability;
-use App\AI\Enums\AiStatus;
 use App\AI\Exceptions\AiProviderException;
 use App\AI\Services\AiPolicyService;
 use Illuminate\Http\Client\PendingRequest;
@@ -15,11 +14,11 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Throwable;
 
-class OpenAiProvider implements AiProvider
+class OllamaProvider implements AiProvider
 {
     public function name(): string
     {
-        return $this->providerName();
+        return 'ollama';
     }
 
     public function capabilities(): array
@@ -58,39 +57,35 @@ class OpenAiProvider implements AiProvider
             'input' => $this->embeddingInput($request),
         ];
 
-        $response = $this->client()->post($this->baseUrl() . '/embeddings', $payload)->throw();
-        $body = $this->decodedBody($response->body());
-        $vector = data_get($body, 'data.0.embedding', []);
-
-        if (! is_array($vector)) {
-            $vector = [];
-        }
+        $response = $this->client()->post($this->baseUrl() . '/embed', $payload)->throw();
+        $body = $this->decodedBody((string) $response->body());
+        $vector = data_get($body, 'embeddings.0', []);
 
         return AiResult::success(
             response: [
-                'vector' => $vector,
+                'vector' => is_array($vector) ? $vector : [],
                 'raw' => $body,
             ],
             provider: $this->name(),
-            model: $payload['model'],
-            usage: AiUsage::fromArray(data_get($body, 'usage', [])),
+            model: (string) ($body['model'] ?? $payload['model']),
+            usage: $this->usageFromOllama($body, false),
             latencyMs: (int) round((microtime(true) - $startedAt) * 1000),
             requestId: (string) (data_get($body, 'id') ?: Str::uuid()),
             providerRequestId: data_get($body, 'id'),
             metadata: [
-                'endpoint' => 'embeddings',
+                'endpoint' => 'embed',
             ],
         );
     }
 
     public function image(AiRequestData $request): AiResult
     {
-        throw new AiProviderException('OpenAI text provider does not support image generation.');
+        throw new AiProviderException('Ollama provider does not support image generation in this integration.');
     }
 
     public function vision(AiRequestData $request): AiResult
     {
-        throw new AiProviderException('OpenAI text provider does not support vision requests.');
+        throw new AiProviderException('Ollama provider does not support vision requests in this integration.');
     }
 
     public function json(AiRequestData $request): AiResult
@@ -102,31 +97,30 @@ class OpenAiProvider implements AiProvider
     {
         $startedAt = microtime(true);
         $response = $this->sendChatCompletion($request, $stream, $jsonMode);
-        $body = $this->decodedBody($response->body());
-        $content = $this->extractContent($body);
+        $body = $this->decodedBody((string) $response->body());
+        $content = trim((string) data_get($body, 'message.content', ''));
 
         $parsedJson = null;
-        if ($jsonMode && is_string($content)) {
+        if ($jsonMode && $content !== '') {
             $candidate = json_decode($content, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 $parsedJson = $candidate;
             }
         }
 
-        $resultResponse = $parsedJson ?? $content;
-
         return AiResult::success(
-            response: $resultResponse,
+            response: $parsedJson ?? $content,
             provider: $this->name(),
-            model: $this->chatModel($request),
-            usage: AiUsage::fromArray(data_get($body, 'usage', [])),
+            model: (string) ($body['model'] ?? $this->chatModel($request)),
+            usage: $this->usageFromOllama($body, true),
             latencyMs: (int) round((microtime(true) - $startedAt) * 1000),
             requestId: (string) (data_get($body, 'id') ?: Str::uuid()),
             providerRequestId: data_get($body, 'id'),
             metadata: [
-                'endpoint' => 'chat/completions',
+                'endpoint' => 'chat',
                 'stream' => $stream,
                 'json_mode' => $jsonMode,
+                'done' => (bool) data_get($body, 'done', true),
             ],
         );
     }
@@ -139,44 +133,38 @@ class OpenAiProvider implements AiProvider
             'stream' => $stream,
         ];
 
+        $options = [];
+
         if (isset($request->options['temperature'])) {
-            $payload['temperature'] = (float) $request->options['temperature'];
+            $options['temperature'] = (float) $request->options['temperature'];
         }
 
         if (isset($request->options['max_tokens'])) {
-            $payload['max_tokens'] = (int) $request->options['max_tokens'];
+            $options['num_predict'] = (int) $request->options['max_tokens'];
+        }
+
+        if ($options !== []) {
+            $payload['options'] = $options;
         }
 
         if ($jsonMode) {
-            $payload['response_format'] = ['type' => 'json_object'];
+            $payload['format'] = 'json';
         }
 
         return $this->client()
-            ->post($this->baseUrl() . '/chat/completions', $payload)
+            ->post($this->baseUrl() . '/chat', $payload)
             ->throw();
     }
 
     protected function client(): PendingRequest
     {
-        $apiKey = (string) config('ai.providers.openai.api_key', '');
-        $configKey = $this->providerConfigKey();
-        $apiKey = (string) config("ai.providers.{$configKey}.api_key", '');
-
-        if ($apiKey === '') {
-            throw new AiProviderException($this->providerLabel() . ' provider is missing an API key.');
-        }
-
-        $client = Http::baseUrl($this->baseUrl())
-            ->acceptJson()
+        $client = Http::acceptJson()
             ->asJson()
-            ->withToken($apiKey)
-            ->timeout((int) config("ai.providers.{$configKey}.timeout", config('ai.timeout', 60)));
+            ->timeout((int) config('ai.providers.ollama.timeout', config('ai.timeout', 60)));
 
-        $organization = (string) config("ai.providers.{$configKey}.organization", '');
-        if ($organization !== '') {
-            $client = $client->withHeaders([
-                'OpenAI-Organization' => $organization,
-            ]);
+        $apiKey = (string) config('ai.providers.ollama.api_key', '');
+        if ($apiKey !== '') {
+            $client = $client->withToken($apiKey);
         }
 
         $policy = app(AiPolicyService::class);
@@ -194,19 +182,19 @@ class OpenAiProvider implements AiProvider
 
     protected function baseUrl(): string
     {
-        return rtrim((string) config("ai.providers.{$this->providerConfigKey()}.base_url", 'https://api.openai.com/v1'), '/');
+        return rtrim((string) config('ai.providers.ollama.base_url', 'http://localhost:11434/api'), '/');
     }
 
     protected function chatModel(AiRequestData $request): string
     {
         return $request->model
-            ?: (string) data_get(config("ai.providers.{$this->providerConfigKey()}.models", []), 'chat', $this->defaultChatModel());
+            ?: (string) data_get(config('ai.providers.ollama.models', []), 'chat', 'llama3.2:3b');
     }
 
     protected function embeddingModel(AiRequestData $request): string
     {
         return $request->model
-            ?: (string) data_get(config("ai.providers.{$this->providerConfigKey()}.models", []), 'embedding', $this->defaultEmbeddingModel());
+            ?: (string) data_get(config('ai.providers.ollama.models', []), 'embedding', 'embeddinggemma');
     }
 
     protected function embeddingInput(AiRequestData $request): string|array
@@ -226,9 +214,6 @@ class OpenAiProvider implements AiProvider
         return $request->input;
     }
 
-    /**
-     * @return array<int, array{role: string, content: string}>
-     */
     protected function buildMessages(AiRequestData $request): array
     {
         $messages = [];
@@ -257,11 +242,9 @@ class OpenAiProvider implements AiProvider
             return $messages;
         }
 
-        $content = $this->buildPromptFromInput($request);
-
         return [[
             'role' => 'user',
-            'content' => $content,
+            'content' => $this->buildPromptFromInput($request),
         ]];
     }
 
@@ -292,29 +275,12 @@ class OpenAiProvider implements AiProvider
         return implode("\n\n", $parts);
     }
 
-    protected function extractContent(array $body): string
-    {
-        $content = data_get($body, 'choices.0.message.content');
-
-        if (is_string($content)) {
-            return trim($content);
-        }
-
-        $content = data_get($body, 'choices.0.text');
-
-        if (is_string($content)) {
-            return trim($content);
-        }
-
-        return '';
-    }
-
     protected function decodedBody(string $body): array
     {
         $decoded = json_decode($body, true);
 
         if (! is_array($decoded)) {
-            throw new AiProviderException($this->providerLabel() . ' provider returned an invalid JSON response.');
+            throw new AiProviderException('Ollama provider returned an invalid JSON response.');
         }
 
         return $decoded;
@@ -325,56 +291,41 @@ class OpenAiProvider implements AiProvider
         foreach (preg_split("/\r\n|\n|\r/", $body) ?: [] as $line) {
             $line = trim($line);
 
-            if ($line === '' || ! str_starts_with($line, 'data:')) {
+            if ($line === '') {
                 continue;
             }
 
-            $payload = trim(substr($line, 5));
-
-            if ($payload === '[DONE]') {
-                break;
-            }
-
-            $decoded = json_decode($payload, true);
+            $decoded = json_decode($line, true);
             if (! is_array($decoded)) {
                 continue;
             }
 
-            $chunk = data_get($decoded, 'choices.0.delta.content');
+            $chunk = data_get($decoded, 'message.content');
             if (is_string($chunk) && $chunk !== '') {
                 yield $chunk;
-                continue;
             }
 
-            $chunk = data_get($decoded, 'choices.0.text');
-            if (is_string($chunk) && $chunk !== '') {
-                yield $chunk;
+            if ((bool) data_get($decoded, 'done', false) === true) {
+                break;
             }
         }
     }
 
-    protected function providerName(): string
+    protected function usageFromOllama(array $body, bool $includeCompletion): ?AiUsage
     {
-        return 'openai';
-    }
+        $promptTokens = (int) data_get($body, 'prompt_eval_count', 0);
+        $completionTokens = $includeCompletion ? (int) data_get($body, 'eval_count', 0) : 0;
+        $totalTokens = $promptTokens + $completionTokens;
 
-    protected function providerConfigKey(): string
-    {
-        return 'openai';
-    }
+        if ($promptTokens === 0 && $completionTokens === 0 && $totalTokens === 0) {
+            return null;
+        }
 
-    protected function providerLabel(): string
-    {
-        return 'OpenAI';
-    }
-
-    protected function defaultChatModel(): string
-    {
-        return 'gpt-4.1-mini';
-    }
-
-    protected function defaultEmbeddingModel(): string
-    {
-        return 'text-embedding-3-small';
+        return AiUsage::fromArray([
+            'prompt_tokens' => $promptTokens,
+            'completion_tokens' => $completionTokens,
+            'total_tokens' => $totalTokens,
+            'estimated_cost' => '0.00000000',
+        ]);
     }
 }

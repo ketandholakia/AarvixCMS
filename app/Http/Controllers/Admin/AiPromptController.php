@@ -7,6 +7,7 @@ use App\AI\Services\PromptService;
 use App\Http\Controllers\Controller;
 use App\Models\AiPrompt;
 use App\Models\AiPromptVersion;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -190,6 +191,42 @@ class AiPromptController extends Controller
         return redirect()->route('admin.ai-prompts.show', $ai_prompt)->with('success', "Prompt rolled back to version {$version->version_number}.");
     }
 
+    public function duplicate(AiPrompt $ai_prompt)
+    {
+        $ai_prompt->loadMissing(['versions' => function ($query) {
+            $query->orderByDesc('version_number');
+        }]);
+
+        $latestVersion = $ai_prompt->versions->first();
+
+        if ($latestVersion === null) {
+            throw new ModelNotFoundException('Unable to clone prompt without versions.');
+        }
+
+        $clone = AiPrompt::create([
+            'prompt_key' => $this->nextClonePromptKey($ai_prompt->prompt_key),
+            'category' => $ai_prompt->category,
+            'title' => $ai_prompt->title . ' Copy',
+            'description' => $ai_prompt->description,
+            'active_version_number' => 1,
+            'output_schema' => $ai_prompt->output_schema,
+            'is_enabled' => false,
+        ]);
+
+        $clone->versions()->create([
+            'version_number' => 1,
+            'system_template' => $latestVersion->system_template,
+            'user_template' => $latestVersion->user_template,
+            'variables' => $latestVersion->variables ?? [],
+            'output_schema' => $latestVersion->output_schema ?? [],
+            'change_summary' => 'Cloned from ' . $ai_prompt->prompt_key . ' version ' . $latestVersion->version_number,
+        ]);
+
+        return redirect()
+            ->route('admin.ai-prompts.edit', $clone)
+            ->with('success', 'Prompt cloned. Review the copy before saving a new version.');
+    }
+
     protected function validatePrompt(Request $request, ?AiPrompt $prompt = null): array
     {
         return $request->validate([
@@ -282,5 +319,19 @@ class AiPromptController extends Controller
             'disabled_count' => $prompts->where('is_enabled', false)->count(),
             'total_versions' => $prompts->sum('versions_count'),
         ];
+    }
+
+    protected function nextClonePromptKey(string $promptKey): string
+    {
+        $baseKey = $promptKey . '-copy';
+        $candidate = $baseKey;
+        $suffix = 2;
+
+        while (AiPrompt::query()->where('prompt_key', $candidate)->exists()) {
+            $candidate = $baseKey . '-' . $suffix;
+            $suffix++;
+        }
+
+        return $candidate;
     }
 }

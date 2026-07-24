@@ -42,6 +42,7 @@ Route::middleware(['auth', \App\Http\Middleware\AuthorizeAdmin::class])
         Route::resource('ai-prompts', \App\Http\Controllers\Admin\AiPromptController::class)->middleware('admin:manage_ai_prompts');
         Route::get('ai-prompts/{ai_prompt}/versions/{version}/compare', [\App\Http\Controllers\Admin\AiPromptController::class, 'compare'])->name('ai-prompts.compare')->middleware('admin:manage_ai_prompts');
         Route::post('ai-prompts/{ai_prompt}/versions/{version}/rollback', [\App\Http\Controllers\Admin\AiPromptController::class, 'rollback'])->name('ai-prompts.rollback')->middleware('admin:manage_ai_prompts');
+        Route::post('ai-prompts/{ai_prompt}/duplicate', [\App\Http\Controllers\Admin\AiPromptController::class, 'duplicate'])->name('ai-prompts.duplicate')->middleware('admin:manage_ai_prompts');
         Route::get('ai/agent-runs', [\App\Http\Controllers\Admin\AiAgentRunController::class, 'index'])->name('ai-agent-runs.index')->middleware('admin:view_ai_usage');
         Route::get('ai/agent-runs/{ai_agent_run}', [\App\Http\Controllers\Admin\AiAgentRunController::class, 'show'])->name('ai-agent-runs.show')->middleware('admin:view_ai_usage');
         Route::get('ai/tool-calls', [\App\Http\Controllers\Admin\AiToolCallController::class, 'index'])->name('ai-tool-calls.index')->middleware('admin:view_ai_usage');

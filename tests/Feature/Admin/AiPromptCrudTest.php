@@ -284,6 +284,56 @@ class AiPromptCrudTest extends TestCase
         $response->assertSee('Initial version');
     }
 
+    public function test_admin_can_duplicate_a_prompt_with_latest_version(): void
+    {
+        $admin = $this->admin();
+
+        $prompt = AiPrompt::create([
+            'prompt_key' => 'writer.rewrite',
+            'category' => 'writer',
+            'title' => 'Rewrite',
+            'description' => 'Rewrite helper',
+            'active_version_number' => 2,
+            'output_schema' => ['type' => 'object'],
+            'is_enabled' => true,
+        ]);
+
+        $prompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Return a polished rewrite.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $prompt->versions()->create([
+            'version_number' => 2,
+            'system_template' => 'Return a sharper rewrite.',
+            'user_template' => 'Use a concise tone.',
+            'variables' => ['tone' => 'direct'],
+            'output_schema' => ['type' => 'object'],
+            'change_summary' => 'Second version',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->post(route('admin.ai-prompts.duplicate', $prompt));
+
+        $response->assertRedirect();
+
+        $clone = AiPrompt::query()->where('prompt_key', 'writer.rewrite-copy')->firstOrFail();
+        $this->assertSame('writer', $clone->category);
+        $this->assertSame('Rewrite Copy', $clone->title);
+        $this->assertFalse($clone->is_enabled);
+        $this->assertSame(1, $clone->active_version_number);
+        $this->assertSame(1, $clone->versions()->count());
+
+        $cloneVersion = $clone->versions()->firstOrFail();
+        $this->assertSame('Return a sharper rewrite.', $cloneVersion->system_template);
+        $this->assertSame('Use a concise tone.', $cloneVersion->user_template);
+        $this->assertSame('Cloned from writer.rewrite version 2', $cloneVersion->change_summary);
+    }
+
     public function test_admin_can_compare_prompt_versions(): void
     {
         $admin = $this->admin();

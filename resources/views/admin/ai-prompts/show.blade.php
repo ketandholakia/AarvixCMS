@@ -27,6 +27,10 @@
                 </div>
             </div>
             <div class="flex gap-3">
+                <form action="{{ route('admin.ai-prompts.duplicate', $prompt) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/30">Duplicate</button>
+                </form>
                 <a href="{{ route('admin.ai-prompts.edit', $prompt) }}" class="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700">Edit</a>
                 <a href="{{ route('admin.ai-prompts.index') }}" class="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">Back</a>
             </div>

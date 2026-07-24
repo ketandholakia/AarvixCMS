@@ -49,7 +49,11 @@ class AiToolCallAdminTest extends TestCase
             ->get(route('admin.ai-tool-calls.index'))
             ->assertOk()
             ->assertSee('content.draft')
-            ->assertSee('Awaiting approval');
+            ->assertSee('Awaiting approval')
+            ->assertSee('Total calls')
+            ->assertSee('Approved')
+            ->assertSee('Failed')
+            ->assertSee('Export CSV');
 
         $this->actingAs($admin)
             ->get(route('admin.ai-tool-calls.show', $call))
@@ -69,5 +73,32 @@ class AiToolCallAdminTest extends TestCase
         $this->assertSame('Admin review article', $post->title);
         $this->assertSame($author->id, $post->author_id);
         $this->assertSame('draft', $post->status);
+    }
+
+    public function test_admin_can_export_tool_calls_as_csv(): void
+    {
+        $author = User::factory()->create(['is_active' => true]);
+        $author->roles()->attach(Role::where('name', 'Author')->firstOrFail());
+
+        $admin = User::factory()->create(['is_active' => true]);
+        $admin->roles()->attach(Role::where('name', 'Admin')->firstOrFail());
+
+        app(AiToolRegistryService::class)->execute(
+            'content.draft',
+            [
+                'title' => 'CSV export article',
+                'body' => 'Draft content for export.',
+            ],
+            $author,
+            ['site' => 'main'],
+        );
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-tool-calls.export', ['format' => 'csv']));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $response->assertSee('call_uuid');
+        $response->assertSee('content.draft');
+        $response->assertSee('Create Draft Article');
     }
 }

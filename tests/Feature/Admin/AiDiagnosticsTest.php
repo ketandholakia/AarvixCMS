@@ -3,7 +3,10 @@
 namespace Tests\Feature\Admin;
 
 use App\AI\Providers\FakeAiProvider;
+use App\Models\AiAgentRun;
 use App\Models\AiRequest;
+use App\Models\AiTool;
+use App\Models\AiToolCall;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,6 +19,7 @@ class AiDiagnosticsTest extends TestCase
     protected function setUpAdmin(): User
     {
         $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
+        $this->artisan('db:seed', ['--class' => 'AiToolSeeder']);
         $admin = User::factory()->create(['is_active' => true]);
         $admin->roles()->attach(Role::where('name', 'Admin')->first());
 
@@ -62,6 +66,45 @@ class AiDiagnosticsTest extends TestCase
             'completed_at' => now()->subHours(2),
         ]);
 
+        $tool = AiTool::query()->where('key', 'content.summary')->firstOrFail();
+
+        AiToolCall::create([
+            'tool_id' => $tool->id,
+            'call_uuid' => 'diag-call-1',
+            'request_uuid' => 'diag-req-1',
+            'actor_user_id' => $admin->id,
+            'source_type' => 'post',
+            'source_id' => 1,
+            'status' => 'succeeded',
+            'approval_state' => 'not_required',
+            'input_payload' => ['source_type' => 'post', 'source_id' => 1],
+            'result_summary' => ['summary' => 'Example summary'],
+            'started_at' => now()->subHours(2),
+            'completed_at' => now()->subHours(2),
+        ]);
+
+        AiAgentRun::create([
+            'run_uuid' => 'diag-run-1',
+            'agent_key' => 'seo',
+            'agent_version' => 1,
+            'agent_name' => 'SEO Agent',
+            'status' => 'succeeded',
+            'actor_user_id' => $admin->id,
+            'request_uuid' => 'diag-req-1',
+            'prompt_key' => 'ai.agents.seo.v1',
+            'policy_snapshot' => ['permissions' => ['use_ai_writer']],
+            'budget_snapshot' => ['max_tokens' => 1800, 'max_cost' => '0.50'],
+            'context' => ['site' => 'main'],
+            'plan' => [],
+            'steps_planned' => 1,
+            'steps_completed' => 1,
+            'estimated_tokens' => 50,
+            'estimated_cost' => '0.00050000',
+            'result' => ['status' => 'succeeded'],
+            'started_at' => now()->subHours(1),
+            'completed_at' => now()->subHours(1),
+        ]);
+
         $response = $this->actingAs($admin)->get(route('admin.ai.diagnostics'));
 
         $response->assertStatus(200);
@@ -74,5 +117,7 @@ class AiDiagnosticsTest extends TestCase
         $response->assertSee('ai.agents.seo.v1');
         $response->assertSee('Requests');
         $response->assertSee('Avg Latency');
+        $response->assertSee('Tool Calls');
+        $response->assertSee('Agent Runs');
     }
 }

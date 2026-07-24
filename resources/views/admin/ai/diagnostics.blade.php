@@ -85,8 +85,24 @@
                     <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($usageSummary['average_latency_ms']) }} ms</div>
                 </div>
             </div>
+            <div class="grid gap-4 border-t border-gray-200 px-6 py-5 md:grid-cols-3 dark:border-gray-800">
+                <div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Tool Calls</div>
+                    <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($usageSummary['tool_calls_count']) }}</div>
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($usageSummary['pending_tool_calls_count']) }} pending approval</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Agent Runs</div>
+                    <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($usageSummary['agent_runs_count']) }}</div>
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($usageSummary['active_agent_runs_count']) }} running</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Latest request</div>
+                    <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ optional($usageSummary['latest_request_at'])->diffForHumans() ?? 'n/a' }}</div>
+                </div>
+            </div>
             <div class="border-t border-gray-200 px-6 py-4 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
-                Latest request: {{ optional($usageSummary['latest_request_at'])->diffForHumans() ?? 'n/a' }}
+                Open the request log to inspect payloads, outputs, and filters.
             </div>
         </div>
     @endif

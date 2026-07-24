@@ -6,7 +6,9 @@ use App\AI\Contracts\AiProvider as AiProviderContract;
 use App\AI\Enums\AiStatus;
 use App\AI\Services\AiAgentRegistryService;
 use App\Http\Controllers\Controller;
+use App\Models\AiAgentRun;
 use App\Models\AiRequest;
+use App\Models\AiToolCall;
 use App\Services\SettingService;
 use Illuminate\Support\Arr;
 use Throwable;
@@ -27,6 +29,8 @@ class AiDiagnosticsController extends Controller
 
         if (auth()->user()?->hasPermission('view_ai_usage')) {
             $requests = AiRequest::query()->where('created_at', '>=', now()->subDays(30));
+            $toolCalls = AiToolCall::query()->where('created_at', '>=', now()->subDays(30));
+            $agentRuns = AiAgentRun::query()->where('created_at', '>=', now()->subDays(30));
             $requestCount = (clone $requests)->count();
             $successCount = (clone $requests)->where('status', AiStatus::Succeeded->value)->count();
 
@@ -37,6 +41,10 @@ class AiDiagnosticsController extends Controller
                 'estimated_cost' => (string) (clone $requests)->sum('estimated_cost'),
                 'average_latency_ms' => (int) round((float) ((clone $requests)->avg('latency_ms') ?? 0)),
                 'latest_request_at' => (clone $requests)->latest('created_at')->value('created_at'),
+                'tool_calls_count' => (clone $toolCalls)->count(),
+                'pending_tool_calls_count' => (clone $toolCalls)->where('approval_state', 'pending')->count(),
+                'agent_runs_count' => (clone $agentRuns)->count(),
+                'active_agent_runs_count' => (clone $agentRuns)->where('status', 'running')->count(),
             ];
         }
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\AI\Providers\FakeAiProvider;
+use App\Models\AiRequest;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,14 +40,39 @@ class AiDiagnosticsTest extends TestCase
 
         $admin = $this->setUpAdmin();
 
+        AiRequest::create([
+            'request_uuid' => 'diag-req-1',
+            'user_id' => $admin->id,
+            'feature' => 'writer',
+            'status' => 'succeeded',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+            'prompt_key' => 'writer.rewrite',
+            'scope' => [],
+            'request_metadata' => [],
+            'response_metadata' => [],
+            'request_payload' => [],
+            'response_payload' => [],
+            'prompt_tokens' => 11,
+            'completion_tokens' => 7,
+            'total_tokens' => 18,
+            'estimated_cost' => '0.00018000',
+            'latency_ms' => 145,
+            'started_at' => now()->subHours(2),
+            'completed_at' => now()->subHours(2),
+        ]);
+
         $response = $this->actingAs($admin)->get(route('admin.ai.diagnostics'));
 
         $response->assertStatus(200);
         $response->assertSee('AI Diagnostics');
+        $response->assertSee('Usage Summary');
         $response->assertSee('Default provider');
         $response->assertSee('fake');
         $response->assertSee('Agent Layer');
         $response->assertSee('SEO Agent');
         $response->assertSee('ai.agents.seo.v1');
+        $response->assertSee('Requests');
+        $response->assertSee('Avg Latency');
     }
 }

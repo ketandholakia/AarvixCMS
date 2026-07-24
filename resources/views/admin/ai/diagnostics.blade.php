@@ -52,6 +52,45 @@
         </div>
     </div>
 
+    @if($usageSummary !== null)
+        <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+            <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800 flex items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Usage Summary</h2>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Last 30 days of AI request activity.</p>
+                </div>
+                <a href="{{ route('admin.ai-requests.index') }}" class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">
+                    Open requests
+                </a>
+            </div>
+            <div class="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-5">
+                <div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Requests</div>
+                    <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($usageSummary['requests_count']) }}</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Success Rate</div>
+                    <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($usageSummary['success_rate'], 1) }}%</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Tokens</div>
+                    <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($usageSummary['total_tokens']) }}</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Estimated Cost</div>
+                    <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">${{ number_format((float) $usageSummary['estimated_cost'], 4) }}</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Avg Latency</div>
+                    <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($usageSummary['average_latency_ms']) }} ms</div>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 px-6 py-4 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                Latest request: {{ optional($usageSummary['latest_request_at'])->diffForHumans() ?? 'n/a' }}
+            </div>
+        </div>
+    @endif
+
     <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
         <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Runtime Configuration</h2>

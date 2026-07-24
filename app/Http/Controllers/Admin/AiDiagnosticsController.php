@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\AI\Contracts\AiProvider as AiProviderContract;
+use App\AI\Enums\AiStatus;
 use App\AI\Services\AiAgentRegistryService;
 use App\Http\Controllers\Controller;
+use App\Models\AiRequest;
 use App\Services\SettingService;
 use Illuminate\Support\Arr;
 use Throwable;
@@ -15,6 +17,7 @@ class AiDiagnosticsController extends Controller
     {
         $config = config('ai', []);
         $providers = [];
+        $usageSummary = null;
 
         foreach (Arr::wrap($config['providers'] ?? []) as $name => $providerConfig) {
             $providerConfig = is_array($providerConfig) ? $providerConfig : [];
@@ -22,10 +25,26 @@ class AiDiagnosticsController extends Controller
             $providers[] = $this->buildProviderStatus($name, $providerConfig);
         }
 
+        if (auth()->user()?->hasPermission('view_ai_usage')) {
+            $requests = AiRequest::query()->where('created_at', '>=', now()->subDays(30));
+            $requestCount = (clone $requests)->count();
+            $successCount = (clone $requests)->where('status', AiStatus::Succeeded->value)->count();
+
+            $usageSummary = [
+                'requests_count' => $requestCount,
+                'success_rate' => $requestCount > 0 ? round(($successCount / $requestCount) * 100, 1) : 0.0,
+                'total_tokens' => (int) (clone $requests)->sum('total_tokens'),
+                'estimated_cost' => (string) (clone $requests)->sum('estimated_cost'),
+                'average_latency_ms' => (int) round((float) ((clone $requests)->avg('latency_ms') ?? 0)),
+                'latest_request_at' => (clone $requests)->latest('created_at')->value('created_at'),
+            ];
+        }
+
         return view('admin.ai.diagnostics', [
             'config' => $config,
             'providers' => $providers,
             'agents' => $agents->all()->map(static fn ($agent) => $agent->toArray())->all(),
+            'usageSummary' => $usageSummary,
             'settings' => [
                 'enabled' => $settings->get('ai.enabled', $config['enabled'] ?? false),
                 'default_provider' => $settings->get('ai.default_provider', $config['default_provider'] ?? 'fake'),

@@ -11,3 +11,7 @@ Artisan::command('inspire', function () {
 Schedule::command('ai:refresh-stale-generated-metadata')
     ->dailyAt('03:00')
     ->withoutOverlapping();
+
+Schedule::command('ai:reconcile-requests', ['--minutes' => 60])
+    ->everyFifteenMinutes()
+    ->withoutOverlapping();

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\AI\Services\AiManager;
 use Illuminate\Console\Command;
+use App\Services\SettingService;
 use Throwable;
 
 class AiHealthCheck extends Command
@@ -12,12 +13,14 @@ class AiHealthCheck extends Command
 
     protected $description = 'Check AI configuration and provider connectivity.';
 
-    public function handle(AiManager $aiManager): int
+    public function handle(AiManager $aiManager, SettingService $settings): int
     {
         $this->info('AI health check');
 
+        $enabled = filter_var($settings->get('ai.enabled', config('ai.enabled', false)), FILTER_VALIDATE_BOOLEAN);
+
         $this->table(['Setting', 'Value'], [
-            ['Enabled', config('ai.enabled') ? 'yes' : 'no'],
+            ['Enabled', $enabled ? 'yes' : 'no'],
             ['Timeout', (string) config('ai.timeout', 60) . 's'],
             ['Retry attempts', (string) config('ai.retry.attempts', 2)],
             ['Retry delay', (string) config('ai.retry.delay_ms', 250) . 'ms'],

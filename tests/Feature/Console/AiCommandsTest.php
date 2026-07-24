@@ -3,6 +3,7 @@
 namespace Tests\Feature\Console;
 
 use App\AI\Providers\FakeAiProvider;
+use App\Services\SettingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -38,6 +39,27 @@ class AiCommandsTest extends TestCase
             ->expectsOutputToContain('3')
             ->expectsOutputToContain('125ms')
             ->expectsOutputToContain('fake')
+            ->assertExitCode(0);
+    }
+
+    public function test_ai_health_command_uses_persisted_ai_toggle(): void
+    {
+        config()->set('ai.enabled', true);
+        app(SettingService::class)->set('ai.enabled', false, 'ai', 'boolean');
+
+        $this->artisan('ai:health')
+            ->expectsOutputToContain('AI health check')
+            ->expectsTable(['Setting', 'Value'], [
+                ['Enabled', 'no'],
+                ['Timeout', '60s'],
+                ['Retry attempts', '2'],
+                ['Retry delay', '250ms'],
+                ['Default provider', 'fake'],
+                ['Fallback provider', 'fake'],
+                ['High queue', 'ai-high'],
+                ['Medium queue', 'ai-medium'],
+                ['Low queue', 'ai-low'],
+            ])
             ->assertExitCode(0);
     }
 }

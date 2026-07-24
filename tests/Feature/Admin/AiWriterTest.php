@@ -8,6 +8,7 @@ use App\Models\Revision;
 use App\Models\Post;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\ImageBlockAiProvider;
 use Tests\Support\ThrowingAiProvider;
@@ -102,6 +103,45 @@ class AiWriterTest extends TestCase
         $response->assertJsonPath('preview.actions.0', 'insert');
         $response->assertSee('Selected sentence only.', false);
         $response->assertDontSee('Whole document text.', false);
+    }
+
+    public function test_ai_writer_requires_selection_when_scope_is_selection(): void
+    {
+        config()->set('ai.enabled', true);
+        config()->set('ai.default_provider', 'fake');
+        config()->set('ai.providers.fake.driver', FakeAiProvider::class);
+
+        $admin = $this->admin();
+        $postId = DB::table('posts')->insertGetId([
+            'author_id' => $admin->id,
+            'title' => 'Selection Validation Target',
+            'slug' => 'selection-validation-target',
+            'excerpt' => null,
+            'body' => json_encode(['blocks' => []]),
+            'status' => 'draft',
+            'meta_title' => null,
+            'meta_description' => null,
+            'published_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.dashboard'))
+            ->post(route('admin.ai.writer.generate'), [
+                'context' => 'post',
+                'record_id' => $postId,
+                'operation' => 'rewrite',
+                'scope' => 'selection',
+                'document' => json_encode([
+                    'blocks' => [
+                        ['type' => 'paragraph', 'data' => ['text' => 'Whole document text.']],
+                    ],
+                ]),
+            ]);
+
+        $response->assertRedirect(route('admin.dashboard'));
+        $response->assertSessionHasErrors(['selection']);
     }
 
     public function test_admin_can_generate_ai_writer_preview_with_image_blocks(): void

@@ -64,6 +64,13 @@ class AiWriterRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->sometimes('selection', ['required'], function (): bool {
+            return $this->input('scope') === 'selection';
+        });
+    }
+
     protected function resolveSubject(string $context, mixed $recordId, mixed $contentTypeSlug): Model|Post|Page|Entry|null
     {
         return match ($context) {

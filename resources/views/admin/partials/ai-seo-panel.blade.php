@@ -1,6 +1,7 @@
 @php
+    $aiEnabled = filter_var(app(\App\Services\SettingService::class)->get('ai.enabled', config('ai.enabled', false)), FILTER_VALIDATE_BOOLEAN);
     $aiSeoConfig = [
-        'enabled' => config('ai.enabled', false),
+        'enabled' => $aiEnabled,
         'context' => $aiContext ?? null,
         'recordId' => $aiRecordId ?? null,
         'contentTypeSlug' => $aiContentTypeSlug ?? null,
@@ -18,8 +19,8 @@
             <div class="text-sm font-semibold text-cyan-700 dark:text-cyan-300">AI SEO</div>
             <div class="text-xs text-gray-500 dark:text-gray-400">Generate metadata for the fields below.</div>
         </div>
-        <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ config('ai.enabled', false) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
-            {{ config('ai.enabled', false) ? 'Ready' : 'Disabled' }}
+        <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $aiEnabled ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+            {{ $aiEnabled ? 'Ready' : 'Disabled' }}
         </span>
     </div>
 

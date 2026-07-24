@@ -7,6 +7,7 @@ use App\Models\Entry;
 use App\Models\Post;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\SettingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -83,5 +84,33 @@ class AiWriterFormRenderTest extends TestCase
         $this->assertStringContainsString('Insert', $html);
         $this->assertStringContainsString('Cancel', $html);
         $this->assertStringContainsString('aiWriterPanel', $html);
+    }
+
+    public function test_ai_writer_panel_badge_tracks_persisted_global_setting(): void
+    {
+        $this->artisan('db:seed', ['--class' => 'PermissionSeeder']);
+        $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
+
+        config()->set('ai.enabled', true);
+        app(SettingService::class)->set('ai.enabled', false, 'ai', 'boolean');
+
+        $disabledHtml = view('admin.partials.ai-writer-panel', [
+            'aiContext' => 'post',
+            'aiRecordId' => null,
+            'aiContentTypeSlug' => null,
+        ])->render();
+
+        $this->assertStringContainsString('Disabled', $disabledHtml);
+
+        app(SettingService::class)->set('ai.enabled', true, 'ai', 'boolean');
+
+        $enabledHtml = view('admin.partials.ai-writer-panel', [
+            'aiContext' => 'post',
+            'aiRecordId' => null,
+            'aiContentTypeSlug' => null,
+        ])->render();
+
+        $this->assertStringContainsString('Ready', $enabledHtml);
+        $this->assertStringContainsString('Generate Preview', $enabledHtml);
     }
 }

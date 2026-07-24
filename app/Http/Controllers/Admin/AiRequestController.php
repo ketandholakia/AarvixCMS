@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiRequest;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
@@ -118,8 +120,8 @@ class AiRequestController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('status', (string) $request->string('status')))
             ->when($request->filled('provider'), fn ($query) => $query->where('provider', (string) $request->string('provider')))
             ->when($request->filled('model'), fn ($query) => $query->where('model', (string) $request->string('model')))
-            ->when($request->filled('from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date('from')->toDateString()))
-            ->when($request->filled('to'), fn ($query) => $query->whereDate('created_at', '<=', $request->date('to')->toDateString()))
+            ->when($this->parseDateFilter($request->input('from')), fn ($query, CarbonInterface $date) => $query->whereDate('created_at', '>=', $date->toDateString()))
+            ->when($this->parseDateFilter($request->input('to')), fn ($query, CarbonInterface $date) => $query->whereDate('created_at', '<=', $date->toDateString()))
             ->latest('id');
     }
 
@@ -166,5 +168,18 @@ class AiRequestController extends Controller
         }
 
         return max(0, (int) $request->created_at->diffInMilliseconds($request->started_at));
+    }
+
+    protected function parseDateFilter(mixed $value): ?CarbonInterface
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

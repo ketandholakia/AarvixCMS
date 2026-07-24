@@ -254,4 +254,39 @@ class AiRequestLogTest extends TestCase
         $response->assertSeeText('req-chat');
         $response->assertDontSeeText('req-writer');
     }
+
+    public function test_admin_can_ignore_invalid_ai_request_date_filters(): void
+    {
+        $admin = $this->admin();
+
+        AiRequest::create([
+            'request_uuid' => 'req-safe',
+            'user_id' => $admin->id,
+            'feature' => 'writer',
+            'status' => 'succeeded',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+            'prompt_key' => 'writer.rewrite',
+            'scope' => [],
+            'request_metadata' => [],
+            'response_metadata' => [],
+            'request_payload' => [],
+            'response_payload' => [],
+            'prompt_tokens' => 1,
+            'completion_tokens' => 1,
+            'total_tokens' => 2,
+            'estimated_cost' => '0.00002000',
+            'latency_ms' => 50,
+            'started_at' => now(),
+            'completed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-requests.index', [
+            'from' => 'not-a-date',
+            'to' => 'also-not-a-date',
+        ]));
+
+        $response->assertOk();
+        $response->assertSeeText('req-safe');
+    }
 }

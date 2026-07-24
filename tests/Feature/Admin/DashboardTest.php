@@ -43,6 +43,7 @@ class DashboardTest extends TestCase
         $admin = User::factory()->create(['is_active' => true]);
         $adminRole = Role::where('name', 'Admin')->first();
         $admin->roles()->attach($adminRole);
+        $editor = User::factory()->create(['is_active' => true]);
 
         AiRequest::create([
             'request_uuid' => (string) \Illuminate\Support\Str::uuid(),
@@ -88,6 +89,28 @@ class DashboardTest extends TestCase
             'completed_at' => now(),
         ]);
 
+        AiRequest::create([
+            'request_uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $editor->id,
+            'feature' => 'writer',
+            'status' => 'succeeded',
+            'provider' => 'openai',
+            'model' => 'gpt-4o-mini',
+            'prompt_key' => 'writer.expand',
+            'scope' => [],
+            'request_metadata' => [],
+            'response_metadata' => [],
+            'request_payload' => [],
+            'response_payload' => [],
+            'prompt_tokens' => 24,
+            'completion_tokens' => 12,
+            'total_tokens' => 36,
+            'estimated_cost' => '0.00036000',
+            'latency_ms' => 180,
+            'started_at' => now()->subMinutes(3),
+            'completed_at' => now(),
+        ]);
+
         AiUsageDaily::create([
             'usage_date' => now()->toDateString(),
             'user_id' => $admin->id,
@@ -108,8 +131,11 @@ class DashboardTest extends TestCase
         $response->assertSeeText('AI Activity Trend');
         $response->assertSeeText('Top AI Features');
         $response->assertSeeText('Provider Mix');
+        $response->assertSeeText('Top AI Models');
+        $response->assertSeeText('Top AI Users');
         $response->assertSeeText('Avg Latency');
         $response->assertSeeText('writer');
         $response->assertSeeText('chat');
+        $response->assertSeeText($editor->name);
     }
 }

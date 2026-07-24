@@ -563,6 +563,7 @@ and retention rules.
 
 #### Dashboard
 
+- [x] Add an admin AI usage dashboard with 30-day trend data, feature/provider/model/user breakdowns, and recent request visibility.
 - Requests and success/failure rate.
 - Prompt, completion, and total tokens.
 - Daily and monthly estimated cost.

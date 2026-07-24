@@ -202,6 +202,72 @@
                 </div>
             </div>
 
+            <div class="grid gap-6 lg:grid-cols-2">
+                <div class="rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+                    <div class="border-b border-gray-100 px-6 py-5 dark:border-gray-800">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Top AI Models</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                            <thead class="bg-gray-50 dark:bg-gray-800/50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Model</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Requests</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tokens</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                                @forelse($aiModelBreakdown as $row)
+                                    <tr>
+                                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $row->model }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ number_format($row->requests_count) }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ number_format($row->total_tokens) }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">${{ number_format((float) $row->estimated_cost, 4) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No AI model usage recorded yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+                    <div class="border-b border-gray-100 px-6 py-5 dark:border-gray-800">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Top AI Users</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                            <thead class="bg-gray-50 dark:bg-gray-800/50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">User</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Requests</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tokens</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                                @forelse($aiUserBreakdown as $row)
+                                    <tr>
+                                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $row->user_name }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ number_format($row->requests_count) }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ number_format($row->total_tokens) }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">${{ number_format((float) $row->estimated_cost, 4) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No AI user usage recorded yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                     <div>

@@ -51,10 +51,12 @@ class DashboardController extends Controller
         $aiChartTokens = [];
         $aiFeatureBreakdown = collect();
         $aiProviderBreakdown = collect();
+        $aiModelBreakdown = collect();
+        $aiUserBreakdown = collect();
         $recentAiRequests = collect();
 
         if (auth()->user()?->hasPermission('view_ai_usage')) {
-            $aiRequests = AiRequest::query()->where('created_at', '>=', now()->subDays(30));
+            $aiRequests = AiRequest::query()->where('ai_requests.created_at', '>=', now()->subDays(30));
 
             $requestCount = (clone $aiRequests)->count();
             $successCount = (clone $aiRequests)->where('status', AiStatus::Succeeded->value)->count();
@@ -103,6 +105,21 @@ class DashboardController extends Controller
                 ->limit(5)
                 ->get();
 
+            $aiModelBreakdown = (clone $aiRequests)
+                ->selectRaw('model, count(*) as requests_count, sum(total_tokens) as total_tokens, sum(estimated_cost) as estimated_cost')
+                ->groupBy('model')
+                ->orderByDesc('requests_count')
+                ->limit(5)
+                ->get();
+
+            $aiUserBreakdown = (clone $aiRequests)
+                ->leftJoin('users', 'ai_requests.user_id', '=', 'users.id')
+                ->selectRaw('ai_requests.user_id, coalesce(users.name, "System") as user_name, count(*) as requests_count, sum(total_tokens) as total_tokens, sum(estimated_cost) as estimated_cost')
+                ->groupBy('ai_requests.user_id', 'users.name')
+                ->orderByDesc('requests_count')
+                ->limit(5)
+                ->get();
+
             $recentAiRequests = AiRequest::with('user')->latest()->take(5)->get();
         }
 
@@ -118,6 +135,8 @@ class DashboardController extends Controller
             'aiChartTokens',
             'aiFeatureBreakdown',
             'aiProviderBreakdown',
+            'aiModelBreakdown',
+            'aiUserBreakdown',
             'recentAiRequests'
         ));
     }

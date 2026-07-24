@@ -65,7 +65,7 @@
                     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-800 pb-2">AI Controls</h3>
                     <div class="grid gap-4 md:grid-cols-2">
                         <label class="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
-                            <input type="checkbox" name="ai_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_enabled', $settings['ai_enabled'] ?? config('ai.enabled', false)) ? 'checked' : '' }}>
+                            <input type="checkbox" name="ai_enabled" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('ai_enabled', $settings['ai_enabled'] ?? false) ? 'checked' : '' }}>
                             <span>
                                 <span class="block text-sm font-medium text-gray-900 dark:text-white">Global AI enabled</span>
                                 <span class="block text-sm text-gray-500 dark:text-gray-400">Master kill switch for all AI requests.</span>

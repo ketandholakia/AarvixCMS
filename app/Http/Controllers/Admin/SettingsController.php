@@ -17,7 +17,7 @@ class SettingsController extends Controller
             'site_description' => $service->get('site_description', ''),
             'social_twitter' => $service->get('social_twitter', ''),
             'social_github' => $service->get('social_github', ''),
-            'ai_enabled' => $service->get('ai.enabled', config('ai.enabled', false)),
+            'ai_enabled' => $service->get('ai.enabled', false),
             'ai_writer_enabled' => $service->get('ai.writer.enabled', true),
             'ai_chat_enabled' => $service->get('ai.chat.enabled', true),
             'ai_image_enabled' => $service->get('ai.image.enabled', true),

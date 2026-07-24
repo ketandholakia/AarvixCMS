@@ -32,6 +32,25 @@ class SettingsTest extends TestCase
         $response->assertSee('AI Agents');
     }
 
+    public function test_admin_settings_page_uses_persisted_ai_toggle(): void
+    {
+        $admin = $this->setUpAdmin();
+
+        config()->set('ai.enabled', true);
+        app(SettingService::class)->set('ai.enabled', false, 'ai', 'boolean');
+
+        $response = $this->actingAs($admin)->get(route('admin.settings.index'));
+
+        $response->assertStatus(200);
+
+        $content = $response->getContent();
+        $this->assertMatchesRegularExpression('/name="ai_enabled"[^>]*>/', $content, 'AI enabled checkbox was not rendered.');
+        preg_match('/name="ai_enabled"[^>]*>/', $content, $matches);
+
+        $this->assertNotEmpty($matches);
+        $this->assertStringNotContainsString('checked', $matches[0]);
+    }
+
     public function test_admin_can_update_settings(): void
     {
         $admin = $this->setUpAdmin();

@@ -191,6 +191,61 @@ class AiPromptCrudTest extends TestCase
         $response->assertSee('writer.disabled');
     }
 
+    public function test_admin_can_filter_prompt_library_by_search_and_state(): void
+    {
+        $admin = $this->admin();
+
+        $enabledPrompt = AiPrompt::create([
+            'prompt_key' => 'writer.searchable',
+            'category' => 'writer',
+            'title' => 'Searchable Prompt',
+            'description' => 'Matches search',
+            'active_version_number' => 1,
+            'output_schema' => [],
+            'is_enabled' => true,
+        ]);
+
+        $enabledPrompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Searchable template.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $disabledPrompt = AiPrompt::create([
+            'prompt_key' => 'support.unused',
+            'category' => 'support',
+            'title' => 'Unused Prompt',
+            'description' => 'Should not match',
+            'active_version_number' => 1,
+            'output_schema' => [],
+            'is_enabled' => false,
+        ]);
+
+        $disabledPrompt->versions()->create([
+            'version_number' => 1,
+            'system_template' => 'Unused template.',
+            'user_template' => null,
+            'variables' => [],
+            'output_schema' => [],
+            'change_summary' => 'Initial version',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.ai-prompts.index', [
+            'q' => 'searchable',
+            'state' => 'enabled',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Total prompts');
+        $response->assertSee('1');
+        $response->assertSee('Searchable Prompt');
+        $response->assertDontSee('Unused Prompt');
+        $response->assertSee('writer.searchable');
+    }
+
     public function test_admin_can_create_new_prompt_versions_and_rollback(): void
     {
         $prompt = AiPrompt::create([

@@ -15,15 +15,19 @@ class AiPromptController extends Controller
 {
     public function index()
     {
-        $query = AiPrompt::query()
-            ->withCount('versions')
-            ->orderBy('category')
-            ->orderBy('prompt_key');
+        $query = $this->buildQuery(request());
 
         $prompts = $query->paginate(20);
         $summary = $this->buildSummary(clone $query);
 
-        return view('admin.ai-prompts.index', compact('prompts', 'summary'));
+        return view('admin.ai-prompts.index', [
+            'prompts' => $prompts,
+            'summary' => $summary,
+            'filters' => [
+                'q' => request()->string('q')->toString(),
+                'state' => request()->string('state')->toString(),
+            ],
+        ]);
     }
 
     public function create()
@@ -319,6 +323,33 @@ class AiPromptController extends Controller
             'disabled_count' => $prompts->where('is_enabled', false)->count(),
             'total_versions' => $prompts->sum('versions_count'),
         ];
+    }
+
+    protected function buildQuery(Request $request)
+    {
+        return AiPrompt::query()
+            ->withCount('versions')
+            ->when($request->filled('q'), function ($query) use ($request): void {
+                $term = trim((string) $request->string('q'));
+
+                $query->where(function ($searchQuery) use ($term): void {
+                    $searchQuery->where('prompt_key', 'like', '%' . $term . '%')
+                        ->orWhere('title', 'like', '%' . $term . '%')
+                        ->orWhere('category', 'like', '%' . $term . '%')
+                        ->orWhere('description', 'like', '%' . $term . '%');
+                });
+            })
+            ->when($request->filled('state'), function ($query) use ($request): void {
+                $state = (string) $request->string('state');
+
+                if ($state === 'enabled') {
+                    $query->where('is_enabled', true);
+                } elseif ($state === 'disabled') {
+                    $query->where('is_enabled', false);
+                }
+            })
+            ->orderBy('category')
+            ->orderBy('prompt_key');
     }
 
     protected function nextClonePromptKey(string $promptKey): string

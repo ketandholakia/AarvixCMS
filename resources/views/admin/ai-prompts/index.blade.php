@@ -9,10 +9,27 @@
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">Prompt Library</h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Versioned prompt templates used by the AI services.</p>
         </div>
-        <a href="{{ route('admin.ai-prompts.create') }}" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium">
-            Create Prompt
-        </a>
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ route('admin.ai-prompts.create') }}" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium">
+                Create Prompt
+            </a>
+            @if(!empty($filters['q']) || !empty($filters['state']))
+                <a href="{{ route('admin.ai-prompts.index') }}" class="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors font-medium">
+                    Clear Filters
+                </a>
+            @endif
+        </div>
     </div>
+
+    <form method="GET" action="{{ route('admin.ai-prompts.index') }}" class="grid gap-3 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:grid-cols-[1fr_220px_auto]">
+        <input type="text" name="q" value="{{ $filters['q'] }}" placeholder="Search key, title, category, description" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
+        <select name="state" class="rounded-xl border-gray-300 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white">
+            <option value="">All states</option>
+            <option value="enabled" {{ $filters['state'] === 'enabled' ? 'selected' : '' }}>Enabled</option>
+            <option value="disabled" {{ $filters['state'] === 'disabled' ? 'selected' : '' }}>Disabled</option>
+        </select>
+        <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Filter</button>
+    </form>
 
     <div class="grid gap-4 md:grid-cols-4">
         <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -72,5 +89,9 @@
             </tr>
         @endforelse
     </x-admin.table>
+
+    <div>
+        {{ $prompts->links() }}
+    </div>
 </div>
 @endsection

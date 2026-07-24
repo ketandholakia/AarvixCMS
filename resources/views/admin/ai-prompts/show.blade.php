@@ -27,6 +27,7 @@
                 </div>
             </div>
             <div class="flex gap-3">
+                <a href="{{ route('admin.ai-prompts.test', $prompt) }}" class="px-4 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30">Test Prompt</a>
                 <a href="{{ route('admin.ai-prompts.export', $prompt) }}" class="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">Export JSON</a>
                 <form action="{{ route('admin.ai-prompts.duplicate', $prompt) }}" method="POST">
                     @csrf

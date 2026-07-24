@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\AI\DTOs\AiRequestData;
 use App\AI\Exceptions\AiPromptException;
+use App\AI\Services\AiManager;
 use App\AI\Services\PromptService;
 use App\Http\Controllers\Controller;
 use App\Models\AiPrompt;
 use App\Models\AiPromptVersion;
+use App\Services\SettingService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -173,6 +176,137 @@ class AiPromptController extends Controller
                 'total_versions' => $ai_prompt->versions->count(),
                 'state' => $ai_prompt->is_enabled ? 'Enabled' : 'Disabled',
                 'latest_version_at' => $latestVersion?->created_at,
+            ],
+        ]);
+    }
+
+    public function test(AiPrompt $ai_prompt, SettingService $settings)
+    {
+        $version = $this->activeVersionOrFail($ai_prompt);
+        $providerOptions = collect((array) config('ai.providers', []))
+            ->keys()
+            ->mapWithKeys(static fn (string $provider) => [$provider => strtoupper($provider)])
+            ->all();
+
+        return view('admin.ai-prompts.test', [
+            'prompt' => $ai_prompt,
+            'version' => $version,
+            'form' => [
+                'provider' => $settings->get('ai.default_provider', config('ai.default_provider', 'fake')),
+                'model' => $settings->get('ai.models.writer.model', data_get(config('ai.models.writer'), 'model', 'fake-writer')),
+                'runtime_input' => '',
+                'variables_json' => json_encode($version->variables ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            ],
+            'rendered' => null,
+            'result' => null,
+            'errorMessage' => null,
+            'providerOptions' => $providerOptions,
+            'placeholders' => [
+                'system' => app(PromptService::class)->placeholders($version->system_template),
+                'user' => app(PromptService::class)->placeholders((string) ($version->user_template ?? '')),
+            ],
+        ]);
+    }
+
+    public function testRun(Request $request, AiPrompt $ai_prompt, PromptService $promptService, AiManager $aiManager, SettingService $settings)
+    {
+        $version = $this->activeVersionOrFail($ai_prompt);
+
+        $data = $request->validate([
+            'provider' => ['required', 'string', 'in:' . implode(',', array_keys((array) config('ai.providers', [])))],
+            'model' => ['nullable', 'string', 'max:255'],
+            'runtime_input' => ['nullable', 'string', 'max:10000'],
+            'variables_json' => ['nullable', 'json'],
+        ]);
+
+        $defaults = is_array($version->variables ?? null) ? $version->variables : [];
+        $variables = array_replace($defaults, $this->decodeJson($data['variables_json'] ?? '{}'));
+        $placeholders = array_values(array_unique(array_merge(
+            $promptService->placeholders($version->system_template),
+            $promptService->placeholders((string) ($version->user_template ?? ''))
+        )));
+
+        if ($request->filled('runtime_input') && in_array('input', $placeholders, true)) {
+            $variables['input'] = $data['runtime_input'];
+        }
+
+        try {
+            $rendered = $promptService->renderVersion($version, $variables);
+        } catch (AiPromptException $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['variables_json' => $e->getMessage()]);
+        }
+
+        $userPrompt = $rendered['user'] ?? trim((string) ($data['runtime_input'] ?? ''));
+        $messages = array_values(array_filter([
+            ['role' => 'system', 'content' => $rendered['system']],
+            $userPrompt !== '' ? ['role' => 'user', 'content' => $userPrompt] : null,
+        ]));
+
+        $promptText = trim(implode("\n\n", array_values(array_filter([
+            $rendered['system'] ?? '',
+            $userPrompt !== '' ? $userPrompt : null,
+        ]))));
+
+        try {
+            $result = $aiManager->generate(new AiRequestData(
+                input: [
+                    'prompt' => $promptText,
+                    'messages' => $messages,
+                    'runtime_input' => $data['runtime_input'] ?? '',
+                    'rendered_system' => $rendered['system'],
+                    'rendered_user' => $rendered['user'],
+                    'prompt_key' => $ai_prompt->prompt_key,
+                ],
+                provider: $data['provider'],
+                model: filled($data['model'] ?? null) ? $data['model'] : null,
+                promptKey: $ai_prompt->prompt_key,
+                feature: 'chat',
+            ));
+        } catch (\Throwable $e) {
+            return view('admin.ai-prompts.test', [
+                'prompt' => $ai_prompt,
+                'version' => $version,
+                'form' => [
+                    'provider' => $data['provider'],
+                    'model' => $data['model'] ?? '',
+                    'runtime_input' => $data['runtime_input'] ?? '',
+                    'variables_json' => $data['variables_json'] ?? '{}',
+                ],
+                'rendered' => $rendered,
+                'result' => null,
+                'errorMessage' => $e->getMessage(),
+                'providerOptions' => collect((array) config('ai.providers', []))
+                    ->keys()
+                    ->mapWithKeys(static fn (string $provider) => [$provider => strtoupper($provider)])
+                    ->all(),
+                'placeholders' => [
+                    'system' => $promptService->placeholders($version->system_template),
+                    'user' => $promptService->placeholders((string) ($version->user_template ?? '')),
+                ],
+            ]);
+        }
+
+        return view('admin.ai-prompts.test', [
+            'prompt' => $ai_prompt,
+            'version' => $version,
+            'form' => [
+                'provider' => $data['provider'],
+                'model' => $data['model'] ?? '',
+                'runtime_input' => $data['runtime_input'] ?? '',
+                'variables_json' => $data['variables_json'] ?? json_encode($variables, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            ],
+            'rendered' => $rendered,
+            'result' => $result,
+            'errorMessage' => null,
+            'providerOptions' => collect((array) config('ai.providers', []))
+                ->keys()
+                ->mapWithKeys(static fn (string $provider) => [$provider => strtoupper($provider)])
+                ->all(),
+            'placeholders' => [
+                'system' => $promptService->placeholders($version->system_template),
+                'user' => $promptService->placeholders((string) ($version->user_template ?? '')),
             ],
         ]);
     }
@@ -410,6 +544,17 @@ class AiPromptController extends Controller
             'output_schema_json' => json_encode($version?->output_schema ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
             'change_summary' => $version?->change_summary ?? '',
         ];
+    }
+
+    protected function activeVersionOrFail(AiPrompt $prompt): AiPromptVersion
+    {
+        $version = $prompt->versions()->where('version_number', $prompt->active_version_number)->first();
+
+        if (! $version instanceof AiPromptVersion) {
+            abort(404, 'Prompt does not have an active version.');
+        }
+
+        return $version;
     }
 
     protected function buildSummary($query): array

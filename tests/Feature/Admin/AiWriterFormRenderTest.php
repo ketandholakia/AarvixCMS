@@ -76,6 +76,7 @@ class AiWriterFormRenderTest extends TestCase
             'aiContext' => 'post',
             'aiRecordId' => null,
             'aiContentTypeSlug' => null,
+            'locale' => 'hi',
             'errors' => new \Illuminate\Support\ViewErrorBag(),
         ])->render();
 
@@ -84,6 +85,9 @@ class AiWriterFormRenderTest extends TestCase
         $this->assertStringContainsString('Insert', $html);
         $this->assertStringContainsString('Cancel', $html);
         $this->assertStringContainsString('aiWriterPanel', $html);
+        $this->assertStringContainsString('data-editorjs-placeholder=', $html);
+        $this->assertStringContainsString('id="editorjs_body"', $html);
+        $this->assertStringContainsString('यहां सामग्री लिखें', html_entity_decode($html, ENT_QUOTES | ENT_HTML5));
     }
 
     public function test_ai_writer_panel_badge_tracks_persisted_global_setting(): void

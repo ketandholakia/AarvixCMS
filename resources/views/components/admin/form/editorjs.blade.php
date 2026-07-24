@@ -1,10 +1,19 @@
-@props(['name', 'label' => '', 'value' => '', 'required' => false, 'help' => '', 'aiContext' => null, 'aiRecordId' => null, 'aiContentTypeSlug' => null])
+@props(['name', 'label' => '', 'value' => '', 'required' => false, 'help' => '', 'aiContext' => null, 'aiRecordId' => null, 'aiContentTypeSlug' => null, 'locale' => 'en', 'placeholder' => null])
+
+@php
+    $editorPlaceholder = $placeholder ?: match ($locale) {
+        'hi' => 'यहां सामग्री लिखें। नए ब्लॉक जोड़ने के लिए "/" या + बटन का उपयोग करें।',
+        'gu' => 'અહીં સામગ્રી લખો. નવા બ્લોક્સ ઉમેરવા માટે "/" અથવા + બટનનો ઉપયોગ કરો.',
+        default => 'Write the page content here. Use "/" or the + button to add blocks.',
+    };
+@endphp
 
 <div
     class="space-y-3"
     data-editorjs-root
     data-editorjs-name="{{ $name }}"
     data-editorjs-initial='@json(old($name, $value))'
+    data-editorjs-placeholder="{{ $editorPlaceholder }}"
 >
     @if($label)
         <label for="{{ $name }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -55,6 +64,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/warning@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/raw@latest"></script>
 
 <script>
     (() => {
@@ -78,6 +91,7 @@
                 const textarea = root.querySelector('textarea');
                 const holder = root.querySelector('[data-editorjs-holder]');
                 const initialData = textarea?.value || root.dataset.editorjsInitial || '';
+                const placeholder = root.dataset.editorjsPlaceholder || 'Write the page content here.';
 
                 if (! textarea || ! holder || ! name) {
                     return;
@@ -154,6 +168,36 @@
                     underline: window.Underline ? {
                         class: window.Underline,
                     } : undefined,
+                    table: window.Table ? {
+                        class: window.Table,
+                        inlineToolbar: true,
+                        config: {
+                            rows: 2,
+                            cols: 3,
+                        },
+                    } : undefined,
+                    embed: window.Embed ? {
+                        class: window.Embed,
+                        config: {
+                            services: {
+                                youtube: true,
+                                vimeo: true,
+                                instagram: true,
+                                x: true,
+                            },
+                        },
+                    } : undefined,
+                    warning: window.Warning ? {
+                        class: window.Warning,
+                        inlineToolbar: true,
+                        config: {
+                            titlePlaceholder: 'Callout title',
+                            messagePlaceholder: 'Add the key message',
+                        },
+                    } : undefined,
+                    raw: window.RawTool ? {
+                        class: window.RawTool,
+                    } : undefined,
                 };
 
                 Object.keys(tools).forEach((toolName) => {
@@ -171,7 +215,7 @@
                     autofocus: false,
                     defaultBlock: 'paragraph',
                     inlineToolbar: ['link', 'marker', 'bold', 'italic', 'underline'],
-                    placeholder: 'Write the page content here. Use "/" or the + button to add blocks.',
+                    placeholder,
                     tools,
                     onChange: (api) => {
                         api.saver.save().then((outputData) => {

@@ -38,6 +38,7 @@
                         name="body"
                         label="Body"
                         :value="$record->body"
+                        locale="en"
                         ai-context="entry"
                         :ai-record-id="$record->exists ? $record->id : null"
                         :ai-content-type-slug="$contentType->slug"

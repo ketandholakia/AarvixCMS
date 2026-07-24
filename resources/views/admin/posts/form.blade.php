@@ -78,6 +78,7 @@
                                 name="{{ $prefix }}body{{ $suffix }}"
                                 label="Body Content ({{ strtoupper($loc) }})"
                                 :value="$trans->body"
+                                locale="{{ $loc }}"
                                 ai-context="post"
                                 :ai-record-id="$record->exists ? $record->id : null"
                             />
@@ -86,6 +87,7 @@
                                 name="{{ $prefix }}body{{ $suffix }}"
                                 label="Body Content ({{ strtoupper($loc) }})"
                                 :value="$trans->body"
+                                locale="{{ $loc }}"
                             />
                         @endif
                     </div>

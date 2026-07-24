@@ -42,12 +42,20 @@ class PageCrudTest extends TestCase
         $response->assertSee('editorjs_body', false);
         $response->assertSee('@editorjs/marker', false);
         $response->assertSee('@editorjs/underline', false);
+        $response->assertSee('@editorjs/table', false);
+        $response->assertSee('@editorjs/embed', false);
+        $response->assertSee('@editorjs/warning', false);
         $response->assertSee("inlineToolbar: ['link', 'marker', 'bold', 'italic', 'underline']", false);
         $response->assertSee('Generate Preview');
         $response->assertSee('AI Writer');
 
         $html = $response->getContent();
 
+        $this->assertStringContainsString('data-editorjs-placeholder=', $html);
+        $this->assertStringContainsString(
+            'Write the page content here. Use "/" or the + button to add blocks.',
+            html_entity_decode($html, ENT_QUOTES | ENT_HTML5)
+        );
         $this->assertMatchesRegularExpression('/name="title"[^>]*required/s', $html);
         $this->assertDoesNotMatchRegularExpression('/name="translations\[hi\]\[title\]"[^>]*required/s', $html);
         $this->assertDoesNotMatchRegularExpression('/name="translations\[gu\]\[title\]"[^>]*required/s', $html);

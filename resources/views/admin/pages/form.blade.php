@@ -74,6 +74,7 @@
                                 name="{{ $prefix }}body{{ $suffix }}"
                                 label="Page Body ({{ strtoupper($loc) }})"
                                 :value="$trans->body"
+                                locale="{{ $loc }}"
                                 ai-context="page"
                                 :ai-record-id="$record->exists ? $record->id : null"
                             />
@@ -82,6 +83,7 @@
                                 name="{{ $prefix }}body{{ $suffix }}"
                                 label="Page Body ({{ strtoupper($loc) }})"
                                 :value="$trans->body"
+                                locale="{{ $loc }}"
                             />
                         @endif
                     </div>

@@ -7,6 +7,7 @@ use App\AI\Enums\AiStatus;
 use App\AI\Services\AiAgentRegistryService;
 use App\Http\Controllers\Controller;
 use App\Models\AiAgentRun;
+use App\Models\AiChatRun;
 use App\Models\AiRequest;
 use App\Models\AiToolCall;
 use App\Services\SettingService;
@@ -20,6 +21,7 @@ class AiDiagnosticsController extends Controller
         $config = config('ai', []);
         $providers = [];
         $usageSummary = null;
+        $ragSummary = null;
         $recentFailures = [];
 
         foreach (Arr::wrap($config['providers'] ?? []) as $name => $providerConfig) {
@@ -32,8 +34,33 @@ class AiDiagnosticsController extends Controller
             $requests = AiRequest::query()->where('created_at', '>=', now()->subDays(30));
             $toolCalls = AiToolCall::query()->where('created_at', '>=', now()->subDays(30));
             $agentRuns = AiAgentRun::query()->where('created_at', '>=', now()->subDays(30));
+            $chatRuns = AiChatRun::query()->where('created_at', '>=', now()->subDays(30));
             $requestCount = (clone $requests)->count();
             $successCount = (clone $requests)->where('status', AiStatus::Succeeded->value)->count();
+            $retrievalTurnsCount = (clone $chatRuns)->whereIn('mode', ['knowledge', 'summary', 'policy'])->count();
+            $citedTurnsCount = (clone $chatRuns)
+                ->whereIn('mode', ['knowledge', 'summary', 'policy'])
+                ->get()
+                ->filter(static function (AiChatRun $run): bool {
+                    return is_array($run->context['citations'] ?? null) && $run->context['citations'] !== [];
+                })
+                ->count();
+            $citationCount = (clone $chatRuns)
+                ->whereIn('mode', ['knowledge', 'summary', 'policy'])
+                ->get()
+                ->sum(static function (AiChatRun $run): int {
+                    return is_array($run->context['citations'] ?? null) ? count($run->context['citations']) : 0;
+                });
+            $noAnswerTurnsCount = (clone $chatRuns)
+                ->whereIn('mode', ['knowledge', 'summary', 'policy'])
+                ->get()
+                ->filter(static function (AiChatRun $run): bool {
+                    $hasCitations = is_array($run->context['citations'] ?? null) && $run->context['citations'] !== [];
+                    $noAnswerText = str_contains(strtolower((string) $run->response_text), 'could not find any authorized sources');
+
+                    return ! $hasCitations || $noAnswerText;
+                })
+                ->count();
 
             $usageSummary = [
                 'requests_count' => $requestCount,
@@ -56,6 +83,15 @@ class AiDiagnosticsController extends Controller
                 'active_agent_runs_count' => (clone $agentRuns)->where('status', 'running')->count(),
             ];
 
+            $ragSummary = [
+                'retrieval_turns_count' => $retrievalTurnsCount,
+                'cited_turns_count' => $citedTurnsCount,
+                'citation_count' => $citationCount,
+                'no_answer_turns_count' => $noAnswerTurnsCount,
+                'no_answer_rate' => $retrievalTurnsCount > 0 ? round(($noAnswerTurnsCount / $retrievalTurnsCount) * 100, 1) : 0.0,
+                'average_citations_per_turn' => $citedTurnsCount > 0 ? round($citationCount / $citedTurnsCount, 1) : 0.0,
+            ];
+
             $recentFailures = $this->buildRecentFailures();
         }
 
@@ -64,6 +100,7 @@ class AiDiagnosticsController extends Controller
             'providers' => $providers,
             'agents' => $agents->all()->map(static fn ($agent) => $agent->toArray())->all(),
             'usageSummary' => $usageSummary,
+            'ragSummary' => $ragSummary,
             'recentFailures' => $recentFailures,
             'settings' => [
                 'enabled' => $settings->get('ai.enabled', $config['enabled'] ?? false),

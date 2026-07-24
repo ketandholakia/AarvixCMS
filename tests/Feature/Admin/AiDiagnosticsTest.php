@@ -4,6 +4,8 @@ namespace Tests\Feature\Admin;
 
 use App\AI\Providers\FakeAiProvider;
 use App\Models\AiAgentRun;
+use App\Models\AiChatRun;
+use App\Models\AiConversation;
 use App\Models\AiRequest;
 use App\Models\AiTool;
 use App\Models\AiToolCall;
@@ -169,6 +171,66 @@ class AiDiagnosticsTest extends TestCase
             'failed_at' => now()->subMinutes(50),
         ]);
 
+        $conversation = AiConversation::create([
+            'conversation_uuid' => 'diag-conv-1',
+            'user_id' => $admin->id,
+            'title' => 'Diagnostics Conversation',
+            'status' => 'active',
+            'scope' => ['site' => 'main'],
+            'model_settings' => ['mode' => 'knowledge'],
+        ]);
+
+        AiChatRun::create([
+            'conversation_id' => $conversation->id,
+            'request_uuid' => 'diag-chat-1',
+            'mode' => 'knowledge',
+            'status' => 'succeeded',
+            'question' => 'What is the public source?',
+            'options' => [],
+            'context' => [
+                'citations' => [
+                    [
+                        'title' => 'Public source',
+                        'source_type' => 'post',
+                        'source_id' => 1,
+                        'chunk_index' => 0,
+                        'score' => 0.9,
+                        'snippet' => 'Public citation body text.',
+                    ],
+                ],
+                'context' => 'Citation context',
+            ],
+            'response_text' => 'I found 1 authorized source chunk(s) for "What is the public source?": Public source.',
+            'response_metadata' => [
+                'citations' => [
+                    [
+                        'title' => 'Public source',
+                    ],
+                ],
+            ],
+            'started_at' => now()->subMinutes(45),
+            'completed_at' => now()->subMinutes(45),
+        ]);
+
+        AiChatRun::create([
+            'conversation_id' => $conversation->id,
+            'request_uuid' => 'diag-chat-2',
+            'mode' => 'knowledge',
+            'status' => 'succeeded',
+            'question' => 'What is the internal incident plan?',
+            'options' => [],
+            'context' => [
+                'citations' => [],
+                'context' => 'No authorized sources matched the question.',
+            ],
+            'response_text' => 'I could not find any authorized sources that match "What is the internal incident plan?".',
+            'response_metadata' => [
+                'citations' => [],
+            ],
+            'started_at' => now()->subMinutes(40),
+            'completed_at' => now()->subMinutes(40),
+        ]);
+
         $response = $this->actingAs($admin)->get(route('admin.ai.diagnostics'));
 
         $response->assertStatus(200);
@@ -183,10 +245,16 @@ class AiDiagnosticsTest extends TestCase
         $response->assertSee('Avg Latency');
         $response->assertSee('Tool Calls');
         $response->assertSee('Agent Runs');
+        $response->assertSee('RAG Summary');
         $response->assertSee('Recent Failures');
         $response->assertSee('Provider unavailable');
         $response->assertSee('Tool execution failed');
         $response->assertSee('Agent stopped');
         $response->assertSee('failed');
+        $response->assertSeeText('Retrieval turns');
+        $response->assertSeeText('Cited turns');
+        $response->assertSeeText('No-answer turns');
+        $response->assertSeeText('No-answer rate');
+        $response->assertSeeText('2');
     }
 }

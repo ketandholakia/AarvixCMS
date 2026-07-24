@@ -570,7 +570,7 @@ and retention rules.
 - Cost and latency by provider, model, feature, and user.
 - Most-used features and active users.
 - [x] Queue wait and execution time.
-- RAG citation and no-answer metrics.
+- [x] RAG citation and no-answer metrics.
 - Workflow and tool-call success rates.
 
 Analytics access requires a dedicated permission. User-level reporting should expose

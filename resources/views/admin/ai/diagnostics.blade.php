@@ -108,6 +108,40 @@
             </div>
         </div>
 
+        @if($ragSummary !== null)
+            <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+                <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800 flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">RAG Summary</h2>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Conversation retrieval turns, citations, and unanswered questions.</p>
+                    </div>
+                </div>
+                <div class="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-5">
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Retrieval turns</div>
+                        <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($ragSummary['retrieval_turns_count']) }}</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Cited turns</div>
+                        <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($ragSummary['cited_turns_count']) }}</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Citations</div>
+                        <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($ragSummary['citation_count']) }}</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">No-answer turns</div>
+                        <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($ragSummary['no_answer_turns_count']) }}</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">No-answer rate</div>
+                        <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($ragSummary['no_answer_rate'], 1) }}%</div>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($ragSummary['average_citations_per_turn'], 1) }} citations per cited turn</div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
             <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800 flex items-center justify-between gap-3">
                 <div>

@@ -135,4 +135,39 @@ class OpenAiProviderTest extends TestCase
 
         Http::assertSentCount(2);
     }
+
+    public function test_stream_yields_incremental_chat_chunks_from_sse_response(): void
+    {
+        config()->set('ai.providers.openai.api_key', 'test-key');
+        config()->set('ai.providers.openai.base_url', 'https://api.openai.test/v1');
+        config()->set('ai.providers.openai.timeout', 15);
+        config()->set('ai.providers.openai.retries', 0);
+        config()->set('ai.providers.openai.models.chat', 'test-chat-model');
+
+        Http::fake([
+            'https://api.openai.test/v1/chat/completions' => Http::response(
+                "data: {\"choices\":[{\"delta\":{\"content\":\"Hello \"}}]}\n\n" .
+                "data: {\"choices\":[{\"delta\":{\"content\":\"world\"}}]}\n\n" .
+                "data: {\"choices\":[{\"delta\":{\"content\":\"!\"}}]}\n\n" .
+                "data: [DONE]\n\n",
+                200
+            ),
+        ]);
+
+        $provider = new OpenAiProvider();
+        $chunks = iterator_to_array($provider->stream(new AiRequestData([
+            'prompt' => 'Stream this summary.',
+        ])), false);
+
+        $this->assertSame(['Hello ', 'world', '!'], $chunks);
+
+        Http::assertSent(function ($request) {
+            $payload = json_decode($request->body(), true);
+
+            $this->assertSame('https://api.openai.test/v1/chat/completions', $request->url());
+            $this->assertTrue((bool) ($payload['stream'] ?? false));
+
+            return true;
+        });
+    }
 }

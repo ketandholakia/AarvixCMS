@@ -10,6 +10,7 @@ use App\AI\Enums\AiCapability;
 use App\AI\Enums\AiStatus;
 use App\AI\Exceptions\AiProviderException;
 use App\AI\Services\AiPolicyService;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -40,9 +41,9 @@ class OpenAiProvider implements AiProvider
 
     public function stream(AiRequestData $request): iterable
     {
-        $response = $this->sendChatCompletion($request, true, false);
+        $response = $this->sendChatCompletionResponse($request, true, false);
 
-        yield from $this->streamChunks((string) $response->body());
+        yield from $this->streamResponseChunks($response->toPsrResponse()->getBody());
     }
 
     public function chat(AiRequestData $request): AiResult
@@ -101,7 +102,7 @@ class OpenAiProvider implements AiProvider
     protected function chatCompletion(AiRequestData $request, bool $stream, bool $jsonMode): AiResult
     {
         $startedAt = microtime(true);
-        $response = $this->sendChatCompletion($request, $stream, $jsonMode);
+        $response = $this->sendChatCompletionResponse($request, $stream, $jsonMode);
         $body = $this->decodedBody($response->body());
         $content = $this->extractContent($body);
 
@@ -131,7 +132,7 @@ class OpenAiProvider implements AiProvider
         );
     }
 
-    protected function sendChatCompletion(AiRequestData $request, bool $stream, bool $jsonMode)
+    protected function sendChatCompletionResponse(AiRequestData $request, bool $stream, bool $jsonMode): Response
     {
         $payload = [
             'model' => $this->chatModel($request),
@@ -151,14 +152,19 @@ class OpenAiProvider implements AiProvider
             $payload['response_format'] = ['type' => 'json_object'];
         }
 
-        return $this->client()
+        $client = $this->client();
+
+        if ($stream) {
+            $client = $client->withOptions(['stream' => true]);
+        }
+
+        return $client
             ->post($this->baseUrl() . '/chat/completions', $payload)
             ->throw();
     }
 
     protected function client(): PendingRequest
     {
-        $apiKey = (string) config('ai.providers.openai.api_key', '');
         $configKey = $this->providerConfigKey();
         $apiKey = (string) config("ai.providers.{$configKey}.api_key", '');
 
@@ -323,33 +329,66 @@ class OpenAiProvider implements AiProvider
     protected function streamChunks(string $body): iterable
     {
         foreach (preg_split("/\r\n|\n|\r/", $body) ?: [] as $line) {
-            $line = trim($line);
+            yield from $this->streamLine($line);
+        }
+    }
 
-            if ($line === '' || ! str_starts_with($line, 'data:')) {
-                continue;
+    /**
+     * @param resource|\Psr\Http\Message\StreamInterface|mixed $body
+     */
+    protected function streamResponseChunks(mixed $body): iterable
+    {
+        $buffer = '';
+
+        if (! is_object($body) || ! method_exists($body, 'read') || ! method_exists($body, 'eof')) {
+            yield from $this->streamChunks((string) $body);
+            return;
+        }
+
+        while (! $body->eof()) {
+            $buffer .= (string) $body->read(8192);
+
+            while (($position = strpos($buffer, "\n")) !== false) {
+                $line = rtrim(substr($buffer, 0, $position), "\r");
+                $buffer = substr($buffer, $position + 1);
+
+                yield from $this->streamLine($line);
             }
+        }
 
-            $payload = trim(substr($line, 5));
+        if ($buffer !== '') {
+            yield from $this->streamLine($buffer);
+        }
+    }
 
-            if ($payload === '[DONE]') {
-                break;
-            }
+    protected function streamLine(string $line): iterable
+    {
+        $line = trim($line);
 
-            $decoded = json_decode($payload, true);
-            if (! is_array($decoded)) {
-                continue;
-            }
+        if ($line === '' || ! str_starts_with($line, 'data:')) {
+            return;
+        }
 
-            $chunk = data_get($decoded, 'choices.0.delta.content');
-            if (is_string($chunk) && $chunk !== '') {
-                yield $chunk;
-                continue;
-            }
+        $payload = trim(substr($line, 5));
 
-            $chunk = data_get($decoded, 'choices.0.text');
-            if (is_string($chunk) && $chunk !== '') {
-                yield $chunk;
-            }
+        if ($payload === '[DONE]') {
+            return;
+        }
+
+        $decoded = json_decode($payload, true);
+        if (! is_array($decoded)) {
+            return;
+        }
+
+        $chunk = data_get($decoded, 'choices.0.delta.content');
+        if (is_string($chunk) && $chunk !== '') {
+            yield $chunk;
+            return;
+        }
+
+        $chunk = data_get($decoded, 'choices.0.text');
+        if (is_string($chunk) && $chunk !== '') {
+            yield $chunk;
         }
     }
 

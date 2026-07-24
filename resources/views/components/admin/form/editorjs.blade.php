@@ -56,19 +56,34 @@
             documentData: null,
             aiConfig,
             init() {
+                const emptyDocument = {
+                    blocks: [
+                        {
+                            type: 'paragraph',
+                            data: { text: '' },
+                        },
+                    ],
+                };
+
                 let parsedData = {};
                 try {
-                    parsedData = initialData ? JSON.parse(initialData) : {};
+                    parsedData = initialData ? JSON.parse(initialData) : emptyDocument;
                 } catch(e) {
                     // It might be raw HTML from before. Let's wrap it in a raw block or paragraph
-                    parsedData = {
-                        blocks: [
-                            {
-                                type: "paragraph",
-                                data: { text: initialData }
-                            }
-                        ]
-                    };
+                    parsedData = initialData
+                        ? {
+                            blocks: [
+                                {
+                                    type: 'paragraph',
+                                    data: { text: initialData },
+                                },
+                            ],
+                        }
+                        : emptyDocument;
+                }
+
+                if (! Array.isArray(parsedData.blocks) || parsedData.blocks.length === 0) {
+                    parsedData = emptyDocument;
                 }
 
                 this.documentData = parsedData;

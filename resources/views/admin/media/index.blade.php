@@ -99,6 +99,11 @@
                                         OCR: {{ $media->aiImageAsset->ocr_text }}
                                     </p>
                                 @endif
+                                @if($media->aiImageAsset->request)
+                                    <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate" title="{{ $media->aiImageAsset->request->request_uuid }}">
+                                        Request: {{ $media->aiImageAsset->request->request_uuid }}
+                                    </p>
+                                @endif
                             </div>
                         @endif
                     </div>

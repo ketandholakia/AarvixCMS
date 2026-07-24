@@ -12,6 +12,7 @@ use App\AI\Providers\FakeAiProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Tests\TestCase;
+use App\Models\AiRequest;
 
 class MediaLibraryTest extends TestCase
 {
@@ -41,6 +42,13 @@ class MediaLibraryTest extends TestCase
 
         AiImageAsset::create([
             'media_id' => $media->id,
+            'ai_request_id' => AiRequest::create([
+                'request_uuid' => 'img-req-1',
+                'feature' => 'image',
+                'status' => 'succeeded',
+                'provider' => 'fake',
+                'model' => 'fake-image',
+            ])->id,
             'provider' => 'fake',
             'model' => 'fake-image',
             'operation' => 'generate',
@@ -61,6 +69,7 @@ class MediaLibraryTest extends TestCase
         $response->assertSee('approved');
         $response->assertSee('ai, generated');
         $response->assertSee('Visible text from the generated image.');
+        $response->assertSee('img-req-1');
     }
 
     public function test_media_library_returns_paginated_json_for_picker_requests(): void
@@ -98,6 +107,13 @@ class MediaLibraryTest extends TestCase
 
         AiImageAsset::create([
             'media_id' => $media->id,
+            'ai_request_id' => AiRequest::create([
+                'request_uuid' => 'img-req-2',
+                'feature' => 'image',
+                'status' => 'succeeded',
+                'provider' => 'fake',
+                'model' => 'fake-image',
+            ])->id,
             'provider' => 'fake',
             'model' => 'fake-image',
             'operation' => 'edit',
@@ -121,6 +137,7 @@ class MediaLibraryTest extends TestCase
         $response->assertSee('detail, ai');
         $response->assertSee('Detail OCR text.');
         $response->assertSee(hash('sha256', 'detail prompt'));
+        $response->assertSee('img-req-2');
     }
 
     public function test_admin_can_queue_vision_analysis_for_image_media(): void
@@ -213,6 +230,7 @@ class MediaLibraryTest extends TestCase
         app()->call([$job, 'handle']);
 
         $analysis = AiMediaAnalysis::query()->firstOrFail();
+        $aiRequest = $analysis->request()->first();
 
         $this->assertSame($media->id, $analysis->media_id);
         $this->assertSame('vision', $analysis->analysis_type);
@@ -229,12 +247,16 @@ class MediaLibraryTest extends TestCase
         $this->assertSame(0.94, $analysis->structured_data['classification']['confidence'] ?? null);
         $this->assertSame(hash('sha256', 'Analyze this media for accessibility, OCR, and structured extraction.'), $analysis->prompt_hash);
         $this->assertNotNull($analysis->analyzed_at);
+        $this->assertNotNull($aiRequest);
+        $this->assertNotEmpty($aiRequest->request_uuid);
 
         $response = $this->actingAs($this->admin())->get(route('admin.media.show', $media));
         $response->assertOk();
         $response->assertSee('Vision Analysis');
         $response->assertSee('Analyze with AI');
         $response->assertSee('Analyze screenshot');
+        $response->assertSee('AI Request');
+        $response->assertSee($aiRequest->request_uuid);
         $response->assertSee('Accessible description for product-target.webp');
         $response->assertSee('Detected text from product-target.webp.');
         $response->assertSee('Classification');
@@ -271,6 +293,7 @@ class MediaLibraryTest extends TestCase
         app()->call([$job, 'handle']);
 
         $analysis = AiMediaAnalysis::query()->firstOrFail();
+        $aiRequest = $analysis->request()->first();
 
         $this->assertSame('screenshot', $analysis->analysis_type);
         $this->assertSame('Screenshot analysis for screenshot-target.webp.', $analysis->summary);
@@ -281,5 +304,12 @@ class MediaLibraryTest extends TestCase
         $this->assertSame('screenshot', $analysis->structured_data['analysis_type'] ?? null);
         $this->assertSame('screenshot', $analysis->structured_data['classification']['label'] ?? null);
         $this->assertSame(0.97, $analysis->structured_data['classification']['confidence'] ?? null);
+        $this->assertNotNull($aiRequest);
+        $this->assertNotEmpty($aiRequest->request_uuid);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.media.show', $media));
+        $response->assertOk();
+        $response->assertSee('AI Request');
+        $response->assertSee($aiRequest->request_uuid);
     }
 }

@@ -74,9 +74,13 @@ class AnalyzeMediaVisionJob implements ShouldQueue
         $payload = $result->response;
         $aiRequestId = null;
 
-        if (is_string($result->requestId) && $result->requestId !== '') {
+        $requestUuid = is_string($result->usageRequestId) && $result->usageRequestId !== ''
+            ? $result->usageRequestId
+            : $result->requestId;
+
+        if (is_string($requestUuid) && $requestUuid !== '') {
             $aiRequestId = AiRequest::query()
-                ->where('request_uuid', $result->requestId)
+                ->where('request_uuid', $requestUuid)
                 ->value('id');
         }
 

@@ -134,6 +134,16 @@
                             <dt class="text-gray-500 dark:text-gray-400">Seed</dt>
                             <dd class="font-medium text-gray-900 dark:text-white">{{ $media->aiImageAsset->seed ?? 'n/a' }}</dd>
                         </div>
+                        @if($media->aiImageAsset->request)
+                            <div class="flex items-center justify-between gap-4">
+                                <dt class="text-gray-500 dark:text-gray-400">AI Request</dt>
+                                <dd class="font-medium text-gray-900 dark:text-white">
+                                    <a href="{{ route('admin.ai-requests.show', $media->aiImageAsset->request) }}" class="text-indigo-600 hover:underline dark:text-indigo-400">
+                                        {{ $media->aiImageAsset->request->request_uuid }}
+                                    </a>
+                                </dd>
+                            </div>
+                        @endif
                         <div class="flex items-center justify-between gap-4">
                             <dt class="text-gray-500 dark:text-gray-400">Retains until</dt>
                             <dd class="font-medium text-gray-900 dark:text-white">{{ optional($media->aiImageAsset->retention_expires_at)->format('Y-m-d H:i') ?? 'n/a' }}</dd>
@@ -198,6 +208,16 @@
                             <dt class="text-gray-500 dark:text-gray-400">Analyzed</dt>
                             <dd class="font-medium text-gray-900 dark:text-white">{{ optional($media->aiVisionAnalysis->analyzed_at)->format('Y-m-d H:i') ?? 'n/a' }}</dd>
                         </div>
+                        @if($media->aiVisionAnalysis->request)
+                            <div class="flex items-center justify-between gap-4">
+                                <dt class="text-gray-500 dark:text-gray-400">AI Request</dt>
+                                <dd class="font-medium text-gray-900 dark:text-white">
+                                    <a href="{{ route('admin.ai-requests.show', $media->aiVisionAnalysis->request) }}" class="text-indigo-600 hover:underline dark:text-indigo-400">
+                                        {{ $media->aiVisionAnalysis->request->request_uuid }}
+                                    </a>
+                                </dd>
+                            </div>
+                        @endif
                     </dl>
 
                     <div class="mt-6 space-y-4">

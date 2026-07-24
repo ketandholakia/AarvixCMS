@@ -14,13 +14,15 @@ class AiPromptController extends Controller
 {
     public function index()
     {
-        $prompts = AiPrompt::query()
+        $query = AiPrompt::query()
             ->withCount('versions')
             ->orderBy('category')
-            ->orderBy('prompt_key')
-            ->paginate(20);
+            ->orderBy('prompt_key');
 
-        return view('admin.ai-prompts.index', compact('prompts'));
+        $prompts = $query->paginate(20);
+        $summary = $this->buildSummary(clone $query);
+
+        return view('admin.ai-prompts.index', compact('prompts', 'summary'));
     }
 
     public function create()
@@ -235,6 +237,18 @@ class AiPromptController extends Controller
             'variables_json' => json_encode($version?->variables ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
             'output_schema_json' => json_encode($version?->output_schema ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
             'change_summary' => $version?->change_summary ?? '',
+        ];
+    }
+
+    protected function buildSummary($query): array
+    {
+        $prompts = $query->get();
+
+        return [
+            'total_prompts' => $prompts->count(),
+            'enabled_count' => $prompts->where('is_enabled', true)->count(),
+            'disabled_count' => $prompts->where('is_enabled', false)->count(),
+            'total_versions' => $prompts->sum('versions_count'),
         ];
     }
 }

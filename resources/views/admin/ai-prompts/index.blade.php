@@ -14,6 +14,25 @@
         </a>
     </div>
 
+    <div class="grid gap-4 md:grid-cols-4">
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Total prompts</div>
+            <div class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($summary['total_prompts']) }}</div>
+        </div>
+        <div class="rounded-2xl border border-green-200 bg-green-50 p-5 shadow-sm dark:border-green-900/40 dark:bg-green-900/20">
+            <div class="text-sm text-green-700 dark:text-green-300">Enabled</div>
+            <div class="mt-2 text-3xl font-bold text-green-900 dark:text-green-100">{{ number_format($summary['enabled_count']) }}</div>
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Disabled</div>
+            <div class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($summary['disabled_count']) }}</div>
+        </div>
+        <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm dark:border-indigo-900/40 dark:bg-indigo-900/20">
+            <div class="text-sm text-indigo-700 dark:text-indigo-300">Total versions</div>
+            <div class="mt-2 text-3xl font-bold text-indigo-900 dark:text-indigo-100">{{ number_format($summary['total_versions']) }}</div>
+        </div>
+    </div>
+
     @if(session('success'))
         <div class="p-4 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-xl">
             {{ session('success') }}

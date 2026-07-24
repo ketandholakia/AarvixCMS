@@ -87,6 +87,9 @@ class AiWriterFormRenderTest extends TestCase
         $this->assertStringContainsString('aiWriterPanel', $html);
         $this->assertStringContainsString('data-editorjs-placeholder=', $html);
         $this->assertStringContainsString('id="editorjs_body"', $html);
+        $this->assertStringContainsString('Media Library', $html);
+        $this->assertStringContainsString('Upload Image', $html);
+        $this->assertStringContainsString('data-editorjs-media-endpoint=', $html);
         $this->assertStringContainsString('यहां सामग्री लिखें', html_entity_decode($html, ENT_QUOTES | ENT_HTML5));
     }
 

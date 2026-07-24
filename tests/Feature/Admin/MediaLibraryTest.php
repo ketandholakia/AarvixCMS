@@ -63,6 +63,27 @@ class MediaLibraryTest extends TestCase
         $response->assertSee('Visible text from the generated image.');
     }
 
+    public function test_media_library_returns_paginated_json_for_picker_requests(): void
+    {
+        Media::create([
+            'disk' => 'public',
+            'path' => 'uploads/picker-one.webp',
+            'filename' => 'picker-one.webp',
+            'mime_type' => 'image/webp',
+            'size' => 1024,
+            'alt_text' => 'Picker one',
+            'caption' => 'Picker caption',
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->getJson(route('admin.media.index', ['search' => 'picker']));
+
+        $response->assertOk()
+            ->assertJsonPath('data.0.filename', 'picker-one.webp')
+            ->assertJsonPath('data.0.alt_text', 'Picker one')
+            ->assertJsonPath('data.0.caption', 'Picker caption');
+    }
+
     public function test_admin_can_open_a_media_detail_page_with_ai_provenance(): void
     {
         $media = Media::create([

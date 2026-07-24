@@ -14,6 +14,7 @@
     data-editorjs-name="{{ $name }}"
     data-editorjs-initial='@json(old($name, $value))'
     data-editorjs-placeholder="{{ $editorPlaceholder }}"
+    data-editorjs-media-endpoint="{{ route('admin.media.index') }}"
 >
     @if($label)
         <label for="{{ $name }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -28,6 +29,24 @@
             'aiContentTypeSlug' => $aiContentTypeSlug,
         ])
     @endif
+
+    <div class="flex flex-wrap items-center gap-2">
+        <button
+            type="button"
+            class="inline-flex items-center rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-950/40 dark:text-indigo-200 dark:hover:bg-indigo-900/40"
+            data-editorjs-open-media
+        >
+            Media Library
+        </button>
+        <button
+            type="button"
+            class="inline-flex items-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+            data-editorjs-upload-trigger
+        >
+            Upload Image
+        </button>
+        <input type="file" accept="image/*" class="hidden" data-editorjs-file-input>
+    </div>
     
     <!-- Fallback textarea remains usable if Editor.js fails to boot -->
     <textarea
@@ -51,6 +70,51 @@
     @if($help && !$errors->has($name))
         <p class="text-sm text-gray-500 dark:text-gray-400">{{ $help }}</p>
     @endif
+
+    <div class="hidden fixed inset-0 z-50" data-editorjs-media-modal aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" data-editorjs-close-media></div>
+        <div class="relative mx-auto mt-10 flex max-h-[85vh] w-[min(1100px,92vw)] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-950">
+            <div class="flex items-center justify-between gap-4 border-b border-gray-200 px-5 py-4 dark:border-gray-800">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Select from Media Library</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Choose an existing image and insert it as an Editor.js image block.</p>
+                </div>
+                <button
+                    type="button"
+                    class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
+                    data-editorjs-close-media
+                >
+                    Close
+                </button>
+            </div>
+            <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-800">
+                <form class="flex flex-col gap-3 sm:flex-row" data-editorjs-media-search-form>
+                    <input
+                        type="text"
+                        class="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                        placeholder="Search media by filename or alt text"
+                        data-editorjs-media-search
+                    >
+                    <button
+                        type="submit"
+                        class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                    >
+                        Search
+                    </button>
+                </form>
+            </div>
+            <div class="min-h-[320px] flex-1 overflow-y-auto px-5 py-5">
+                <div class="hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-300" data-editorjs-media-error></div>
+                <div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4" data-editorjs-media-grid></div>
+                <div class="hidden py-10 text-center text-sm text-gray-500 dark:text-gray-400" data-editorjs-media-empty>No images found.</div>
+                <div class="hidden py-10 text-center text-sm text-gray-500 dark:text-gray-400" data-editorjs-media-loading>Loading media...</div>
+            </div>
+            <div class="flex items-center justify-between gap-4 border-t border-gray-200 px-5 py-4 dark:border-gray-800">
+                <p class="text-sm text-gray-500 dark:text-gray-400" data-editorjs-media-summary></p>
+                <div class="flex items-center gap-2" data-editorjs-media-pagination></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -82,6 +146,20 @@
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             const uploadEndpoint = '{{ route('admin.upload.image') }}';
 
+            const normalizeImagePayload = (payload) => ({
+                type: 'image',
+                data: {
+                    file: {
+                        url: payload?.file?.url || payload?.location || '',
+                        media_id: payload?.file?.media_id || payload?.media_id || null,
+                    },
+                    caption: payload?.caption || '',
+                    withBorder: false,
+                    withBackground: false,
+                    stretched: false,
+                },
+            });
+
             roots.forEach((root) => {
                 if (root.dataset.editorjsInitialized === 'true') {
                     return;
@@ -98,6 +176,21 @@
                 if (! textarea || ! holder || ! name) {
                     return;
                 }
+
+                const mediaEndpoint = root.dataset.editorjsMediaEndpoint || '';
+                const mediaModal = root.querySelector('[data-editorjs-media-modal]');
+                const mediaGrid = root.querySelector('[data-editorjs-media-grid]');
+                const mediaError = root.querySelector('[data-editorjs-media-error]');
+                const mediaEmpty = root.querySelector('[data-editorjs-media-empty]');
+                const mediaLoading = root.querySelector('[data-editorjs-media-loading]');
+                const mediaSummary = root.querySelector('[data-editorjs-media-summary]');
+                const mediaPagination = root.querySelector('[data-editorjs-media-pagination]');
+                const mediaSearchForm = root.querySelector('[data-editorjs-media-search-form]');
+                const mediaSearchInput = root.querySelector('[data-editorjs-media-search]');
+                const mediaOpenButton = root.querySelector('[data-editorjs-open-media]');
+                const mediaCloseButtons = root.querySelectorAll('[data-editorjs-close-media]');
+                const uploadTrigger = root.querySelector('[data-editorjs-upload-trigger]');
+                const uploadInput = root.querySelector('[data-editorjs-file-input]');
 
                 const emptyDocument = {
                     blocks: [
@@ -129,6 +222,50 @@
                     parsedData = emptyDocument;
                 }
 
+                const uploadImageByFile = async (file) => {
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const response = await fetch(uploadEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                        body: formData,
+                        credentials: 'same-origin',
+                    });
+
+                    const payload = await response.json();
+
+                    if (! response.ok) {
+                        throw new Error(payload.message || 'Image upload failed.');
+                    }
+
+                    return payload;
+                };
+
+                const uploadImageByUrl = async (url) => {
+                    const response = await fetch(uploadEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ url }),
+                    });
+
+                    const payload = await response.json();
+
+                    if (! response.ok) {
+                        throw new Error(payload.message || 'Image import failed.');
+                    }
+
+                    return payload;
+                };
+
                 const tools = {
                     header: window.Header ? {
                         class: window.Header,
@@ -147,48 +284,8 @@
                         config: {
                             captionPlaceholder: 'Describe the image',
                             uploader: {
-                                async uploadByFile(file) {
-                                    const formData = new FormData();
-                                    formData.append('file', file);
-
-                                    const response = await fetch(uploadEndpoint, {
-                                        method: 'POST',
-                                        headers: {
-                                            'X-CSRF-TOKEN': csrfToken,
-                                            'Accept': 'application/json',
-                                        },
-                                        body: formData,
-                                        credentials: 'same-origin',
-                                    });
-
-                                    const payload = await response.json();
-
-                                    if (! response.ok) {
-                                        throw new Error(payload.message || 'Image upload failed.');
-                                    }
-
-                                    return payload;
-                                },
-                                async uploadByUrl(url) {
-                                    const response = await fetch(uploadEndpoint, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': csrfToken,
-                                            'Accept': 'application/json',
-                                        },
-                                        credentials: 'same-origin',
-                                        body: JSON.stringify({ url }),
-                                    });
-
-                                    const payload = await response.json();
-
-                                    if (! response.ok) {
-                                        throw new Error(payload.message || 'Image import failed.');
-                                    }
-
-                                    return payload;
-                                },
+                                uploadByFile: uploadImageByFile,
+                                uploadByUrl: uploadImageByUrl,
                             },
                         }
                     } : undefined,
@@ -259,6 +356,8 @@
 
                 let documentData = parsedData;
                 let submitting = false;
+                let mediaPage = 1;
+                let mediaSearch = '';
 
                 const editor = new EditorJS({
                     holder: holder.id,
@@ -287,6 +386,162 @@
                     textarea.classList.remove('hidden');
                 });
 
+                const syncTextarea = async () => {
+                    const outputData = await editor.save();
+                    documentData = outputData;
+                    textarea.value = JSON.stringify(outputData);
+                    return outputData;
+                };
+
+                const insertImageBlock = async (payload) => {
+                    const block = normalizeImagePayload(payload);
+                    await editor.blocks.insert(block.type, block.data);
+                    await syncTextarea();
+                };
+
+                const setMediaError = (message = '') => {
+                    if (! mediaError) {
+                        return;
+                    }
+
+                    mediaError.textContent = message;
+                    mediaError.classList.toggle('hidden', ! message);
+                };
+
+                const setMediaLoading = (loading) => {
+                    mediaLoading?.classList.toggle('hidden', ! loading);
+                    mediaGrid?.classList.toggle('opacity-50', loading);
+                };
+
+                const closeMediaModal = () => {
+                    mediaModal?.classList.add('hidden');
+                    mediaModal?.setAttribute('aria-hidden', 'true');
+                    setMediaError('');
+                };
+
+                const openMediaModal = async () => {
+                    mediaModal?.classList.remove('hidden');
+                    mediaModal?.setAttribute('aria-hidden', 'false');
+                    await loadMediaLibrary(1, mediaSearchInput?.value || '');
+                };
+
+                const renderMediaCards = (items) => {
+                    if (! mediaGrid) {
+                        return;
+                    }
+
+                    mediaGrid.innerHTML = '';
+
+                    items.forEach((media) => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'group overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-indigo-700';
+                        button.innerHTML = `
+                            <div class="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                <img src="${media.url}" alt="${media.alt_text || media.filename}" class="h-full w-full object-cover">
+                            </div>
+                            <div class="space-y-1 p-3">
+                                <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">${media.filename}</p>
+                                <p class="truncate text-xs text-gray-500 dark:text-gray-400">${media.alt_text || 'No alt text'}</p>
+                            </div>
+                        `;
+                        button.addEventListener('click', async () => {
+                            try {
+                                setMediaError('');
+                                await insertImageBlock({
+                                    file: {
+                                        url: media.url,
+                                        media_id: media.id,
+                                    },
+                                    caption: media.caption || '',
+                                });
+                                closeMediaModal();
+                            } catch (error) {
+                                setMediaError(error.message || 'Unable to insert the selected image.');
+                            }
+                        });
+
+                        mediaGrid.appendChild(button);
+                    });
+                };
+
+                const renderMediaPagination = (payload) => {
+                    if (! mediaPagination) {
+                        return;
+                    }
+
+                    mediaPagination.innerHTML = '';
+
+                    const makeButton = (label, page, disabled = false) => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.textContent = label;
+                        button.disabled = disabled;
+                        button.className = 'rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900';
+                        button.addEventListener('click', () => loadMediaLibrary(page, mediaSearch));
+                        mediaPagination.appendChild(button);
+                    };
+
+                    makeButton('Previous', payload.current_page - 1, payload.current_page <= 1);
+                    makeButton('Next', payload.current_page + 1, payload.current_page >= payload.last_page);
+                };
+
+                const loadMediaLibrary = async (page = 1, search = '') => {
+                    if (! mediaEndpoint) {
+                        return;
+                    }
+
+                    mediaPage = page;
+                    mediaSearch = search.trim();
+                    setMediaError('');
+                    setMediaLoading(true);
+
+                    try {
+                        const url = new URL(mediaEndpoint, window.location.origin);
+                        url.searchParams.set('page', String(mediaPage));
+                        if (mediaSearch) {
+                            url.searchParams.set('search', mediaSearch);
+                        }
+
+                        const response = await fetch(url.toString(), {
+                            headers: {
+                                'Accept': 'application/json',
+                            },
+                            credentials: 'same-origin',
+                        });
+
+                        const payload = await response.json();
+
+                        if (! response.ok) {
+                            throw new Error(payload.message || 'Unable to load the media library.');
+                        }
+
+                        const items = Array.isArray(payload.data)
+                            ? payload.data.filter((media) => (media.mime_type || '').startsWith('image/'))
+                            : [];
+
+                        renderMediaCards(items);
+                        renderMediaPagination(payload);
+                        mediaEmpty?.classList.toggle('hidden', items.length > 0);
+
+                        if (mediaSummary) {
+                            mediaSummary.textContent = items.length
+                                ? `Showing ${payload.from ?? 1}-${payload.to ?? items.length} of ${payload.total ?? items.length} images`
+                                : 'No matching images in the media library.';
+                        }
+                    } catch (error) {
+                        renderMediaCards([]);
+                        mediaPagination && (mediaPagination.innerHTML = '');
+                        mediaEmpty?.classList.add('hidden');
+                        if (mediaSummary) {
+                            mediaSummary.textContent = '';
+                        }
+                        setMediaError(error.message || 'Unable to load the media library.');
+                    } finally {
+                        setMediaLoading(false);
+                    }
+                };
+
                 window.AarvixEditorJs[name] = {
                     applyPreview(blocks, mode) {
                         const snapshot = JSON.parse(JSON.stringify(documentData || {}));
@@ -310,8 +565,34 @@
                                 throw error;
                             });
                         });
-                    }
+                    },
+                    insertImageBlock,
                 };
+
+                mediaOpenButton?.addEventListener('click', openMediaModal);
+                mediaCloseButtons.forEach((button) => button.addEventListener('click', closeMediaModal));
+                mediaSearchForm?.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    loadMediaLibrary(1, mediaSearchInput?.value || '');
+                });
+
+                uploadTrigger?.addEventListener('click', () => uploadInput?.click());
+                uploadInput?.addEventListener('change', async (event) => {
+                    const [file] = event.target.files || [];
+                    if (! file) {
+                        return;
+                    }
+
+                    try {
+                        setMediaError('');
+                        const payload = await uploadImageByFile(file);
+                        await insertImageBlock(payload);
+                    } catch (error) {
+                        setMediaError(error.message || 'Unable to upload the selected image.');
+                    } finally {
+                        event.target.value = '';
+                    }
+                });
 
                 textarea.closest('form')?.addEventListener('submit', (e) => {
                     if (submitting) {

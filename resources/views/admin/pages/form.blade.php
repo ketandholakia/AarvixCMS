@@ -62,15 +62,21 @@
                         />
                         @endif
                         
-                        <x-admin.form.editorjs 
-                            name="{{ $prefix }}body{{ $suffix }}" 
-                            label="Page Body ({{ strtoupper($loc) }})" 
-                            :value="$trans->body" 
-                            @if($loc === 'en')
+                        @if($loc === 'en')
+                            <x-admin.form.editorjs
+                                name="{{ $prefix }}body{{ $suffix }}"
+                                label="Page Body ({{ strtoupper($loc) }})"
+                                :value="$trans->body"
                                 ai-context="page"
                                 :ai-record-id="$record->exists ? $record->id : null"
-                            @endif
-                        />
+                            />
+                        @else
+                            <x-admin.form.editorjs
+                                name="{{ $prefix }}body{{ $suffix }}"
+                                label="Page Body ({{ strtoupper($loc) }})"
+                                :value="$trans->body"
+                            />
+                        @endif
                     </div>
                 @endforeach
             </div>

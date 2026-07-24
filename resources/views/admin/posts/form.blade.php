@@ -73,15 +73,21 @@
                             help="A brief summary for blog listings and SEO." 
                         />
 
-                        <x-admin.form.editorjs 
-                            name="{{ $prefix }}body{{ $suffix }}" 
-                            label="Body Content ({{ strtoupper($loc) }})" 
-                            :value="$trans->body" 
-                            @if($loc === 'en')
+                        @if($loc === 'en')
+                            <x-admin.form.editorjs
+                                name="{{ $prefix }}body{{ $suffix }}"
+                                label="Body Content ({{ strtoupper($loc) }})"
+                                :value="$trans->body"
                                 ai-context="post"
                                 :ai-record-id="$record->exists ? $record->id : null"
-                            @endif
-                        />
+                            />
+                        @else
+                            <x-admin.form.editorjs
+                                name="{{ $prefix }}body{{ $suffix }}"
+                                label="Body Content ({{ strtoupper($loc) }})"
+                                :value="$trans->body"
+                            />
+                        @endif
                     </div>
                 @endforeach
             </div>

@@ -32,6 +32,15 @@ class PageCrudTest extends TestCase
         $response->assertViewIs('admin.pages.index');
     }
 
+    public function test_admin_can_view_page_create_form_with_body_editor(): void
+    {
+        $response = $this->actingAs($this->getAdmin())->get(route('admin.pages.create'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Page Body (EN)');
+        $response->assertSee('editorjs_body');
+    }
+
     public function test_admin_can_store_page(): void
     {
         $response = $this->actingAs($this->getAdmin())->post(route('admin.pages.store'), [

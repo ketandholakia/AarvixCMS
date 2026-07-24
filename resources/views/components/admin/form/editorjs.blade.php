@@ -101,12 +101,25 @@
                 window.AarvixEditorJs = window.AarvixEditorJs || {};
                 window.AarvixEditorJs[name] = this;
                 
-                // Also update on form submit just to be sure
+                // Serialize the editor before the form actually posts.
                 this.$refs.textarea.closest('form').addEventListener('submit', (e) => {
-                    this.editor.save().then((outputData) => {
-                        this.documentData = outputData;
-                        this.$refs.textarea.value = JSON.stringify(outputData);
-                    });
+                    if (this._submitting) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    this._submitting = true;
+
+                    this.editor.save()
+                        .then((outputData) => {
+                            this.documentData = outputData;
+                            this.$refs.textarea.value = JSON.stringify(outputData);
+                            e.target.submit();
+                        })
+                        .catch((error) => {
+                            this._submitting = false;
+                            throw error;
+                        });
                 });
             },
             applyPreview(blocks, mode) {

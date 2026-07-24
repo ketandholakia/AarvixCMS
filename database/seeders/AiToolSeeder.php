@@ -42,6 +42,9 @@ class AiToolSeeder extends Seeder
                         'items' => ['type' => 'array'],
                     ],
                 ],
+                timeoutSeconds: 20,
+                rateLimitPerMinute: 60,
+                auditRedactionPolicy: 'minimal',
             ),
             new AiToolDefinition(
                 key: 'content.summary',
@@ -66,6 +69,9 @@ class AiToolSeeder extends Seeder
                         'summary' => ['type' => 'string'],
                     ],
                 ],
+                timeoutSeconds: 30,
+                rateLimitPerMinute: 40,
+                auditRedactionPolicy: 'minimal',
             ),
             new AiToolDefinition(
                 key: 'media.search',
@@ -93,6 +99,9 @@ class AiToolSeeder extends Seeder
                         'items' => ['type' => 'array'],
                     ],
                 ],
+                timeoutSeconds: 15,
+                rateLimitPerMinute: 60,
+                auditRedactionPolicy: 'minimal',
             ),
             new AiToolDefinition(
                 key: 'content.draft',
@@ -128,6 +137,9 @@ class AiToolSeeder extends Seeder
                         'edit_url' => ['type' => 'string'],
                     ],
                 ],
+                timeoutSeconds: 60,
+                rateLimitPerMinute: 10,
+                auditRedactionPolicy: 'partial',
             ),
             new AiToolDefinition(
                 key: 'ai.report',
@@ -160,6 +172,9 @@ class AiToolSeeder extends Seeder
                         'csv' => ['type' => 'string'],
                     ],
                 ],
+                timeoutSeconds: 20,
+                rateLimitPerMinute: 30,
+                auditRedactionPolicy: 'minimal',
             ),
             new AiToolDefinition(
                 key: 'seo.propose',
@@ -185,6 +200,9 @@ class AiToolSeeder extends Seeder
                         'meta_description' => ['type' => 'string'],
                     ],
                 ],
+                timeoutSeconds: 30,
+                rateLimitPerMinute: 20,
+                auditRedactionPolicy: 'minimal',
             ),
         ];
     }

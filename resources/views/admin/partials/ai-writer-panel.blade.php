@@ -174,18 +174,45 @@
 
             const editor = window.AarvixEditorJs?.[this.config.fieldName];
 
-            if (! editor || typeof editor.applyPreview !== 'function') {
+            if (editor && typeof editor.applyPreview === 'function') {
+                editor.applyPreview(this.preview.blocks, mode || this.preview.mode || 'replace')
+                    .then(() => {
+                        this.preview = null;
+                    })
+                    .catch((error) => {
+                        this.error = error?.message || 'Unable to apply preview.';
+                    });
+
+                return;
+            }
+
+            const textarea = this.$root.closest('form')?.querySelector('textarea[name="' + this.config.fieldName + '"], textarea[name$="[' + this.config.fieldName + ']"]');
+
+            if (! textarea) {
                 this.error = 'Editor instance is not ready yet.';
                 return;
             }
 
-            editor.applyPreview(this.preview.blocks, mode || this.preview.mode || 'replace')
-                .then(() => {
-                    this.preview = null;
+            const blockText = this.preview.blocks
+                .map((block) => {
+                    const data = block?.data || {};
+
+                    if (block?.type === 'image') {
+                        return data.caption || data.alt || data.file?.url || '';
+                    }
+
+                    return data.text || data.code || data.caption || '';
                 })
-                .catch((error) => {
-                    this.error = error?.message || 'Unable to apply preview.';
-                });
+                .filter((value) => typeof value === 'string' && value.trim() !== '')
+                .join('\n\n');
+
+            const currentValue = textarea.value || '';
+            textarea.value = mode === 'insert' && currentValue.trim() !== ''
+                ? [currentValue.trim(), blockText].filter(Boolean).join('\n\n')
+                : blockText;
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            textarea.dispatchEvent(new Event('change', { bubbles: true }));
+            this.preview = null;
         },
         cancelPreview() {
             this.preview = null;

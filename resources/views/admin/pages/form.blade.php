@@ -63,20 +63,20 @@
                         @endif
                         
                         @if($loc === 'en')
-                            <x-admin.form.editorjs
-                                name="{{ $prefix }}body{{ $suffix }}"
-                                label="Page Body ({{ strtoupper($loc) }})"
-                                :value="$trans->body"
-                                ai-context="page"
-                                :ai-record-id="$record->exists ? $record->id : null"
-                            />
-                        @else
-                            <x-admin.form.editorjs
-                                name="{{ $prefix }}body{{ $suffix }}"
-                                label="Page Body ({{ strtoupper($loc) }})"
-                                :value="$trans->body"
-                            />
+                            @include('admin.partials.ai-writer-panel', [
+                                'aiContext' => 'page',
+                                'aiRecordId' => $record->exists ? $record->id : null,
+                                'aiContentTypeSlug' => null,
+                            ])
                         @endif
+
+                        <x-admin.form.textarea
+                            name="{{ $prefix }}body{{ $suffix }}"
+                            label="Page Body ({{ strtoupper($loc) }})"
+                            :value="$trans->body"
+                            rows="12"
+                            help="Write the page content here."
+                        />
                     </div>
                 @endforeach
             </div>

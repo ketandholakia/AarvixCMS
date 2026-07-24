@@ -38,9 +38,9 @@ class PageCrudTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Page Body (EN)');
-        $response->assertSee('editorjs_body');
-        $response->assertSee('e.preventDefault();');
-        $response->assertSee('e.target.submit();');
+        $response->assertSee('name="body"', false);
+        $response->assertSee('Generate Preview');
+        $response->assertSee('AI Writer');
     }
 
     public function test_admin_can_store_page(): void

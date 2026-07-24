@@ -27,6 +27,29 @@
         </form>
     </div>
 
+    <div class="grid gap-4 md:grid-cols-5">
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Total runs</div>
+            <div class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($summary['total_runs']) }}</div>
+        </div>
+        <div class="rounded-2xl border border-green-200 bg-green-50 p-5 shadow-sm dark:border-green-900/40 dark:bg-green-900/20">
+            <div class="text-sm text-green-700 dark:text-green-300">Succeeded</div>
+            <div class="mt-2 text-3xl font-bold text-green-900 dark:text-green-100">{{ number_format($summary['succeeded_count']) }}</div>
+        </div>
+        <div class="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm dark:border-blue-900/40 dark:bg-blue-900/20">
+            <div class="text-sm text-blue-700 dark:text-blue-300">Running</div>
+            <div class="mt-2 text-3xl font-bold text-blue-900 dark:text-blue-100">{{ number_format($summary['running_count']) }}</div>
+        </div>
+        <div class="rounded-2xl border border-yellow-200 bg-yellow-50 p-5 shadow-sm dark:border-yellow-900/40 dark:bg-yellow-900/20">
+            <div class="text-sm text-yellow-700 dark:text-yellow-300">Approval required</div>
+            <div class="mt-2 text-3xl font-bold text-yellow-900 dark:text-yellow-100">{{ number_format($summary['approval_required_count']) }}</div>
+        </div>
+        <div class="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm dark:border-red-900/40 dark:bg-red-900/20">
+            <div class="text-sm text-red-700 dark:text-red-300">Failed</div>
+            <div class="mt-2 text-3xl font-bold text-red-900 dark:text-red-100">{{ number_format($summary['failed_count']) }}</div>
+        </div>
+    </div>
+
     <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">

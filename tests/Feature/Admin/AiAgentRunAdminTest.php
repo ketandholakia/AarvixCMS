@@ -70,6 +70,11 @@ class AiAgentRunAdminTest extends TestCase
         $response->assertSee('Reporting Agent');
         $response->assertSee($result['run_uuid']);
         $response->assertSee('Export CSV');
+        $response->assertSee('Total runs');
+        $response->assertSee('Succeeded');
+        $response->assertSee('Running');
+        $response->assertSee('Approval required');
+        $response->assertSee('Failed');
 
         $response = $this->actingAs($admin)->get(route('admin.ai-agent-runs.show', ['ai_agent_run' => $result['run_uuid']]));
         $response->assertOk();

@@ -23,9 +23,11 @@ class AiAgentRunController extends Controller
         }
 
         $runs = $query->paginate(20)->withQueryString();
+        $summary = $this->buildSummary(clone $query);
 
         return view('admin.ai-agent-runs.index', [
             'runs' => $runs,
+            'summary' => $summary,
             'filters' => [
                 'agent_key' => $request->string('agent_key')->toString(),
                 'status' => $request->string('status')->toString(),
@@ -40,6 +42,19 @@ class AiAgentRunController extends Controller
         return view('admin.ai-agent-runs.show', [
             'run' => $ai_agent_run,
         ]);
+    }
+
+    protected function buildSummary($query): array
+    {
+        $runs = $query->get();
+
+        return [
+            'total_runs' => $runs->count(),
+            'succeeded_count' => $runs->where('status', 'succeeded')->count(),
+            'running_count' => $runs->where('status', 'running')->count(),
+            'approval_required_count' => $runs->where('status', 'approval_required')->count(),
+            'failed_count' => $runs->where('status', 'failed')->count(),
+        ];
     }
 
     protected function exportCsv(iterable $runs): Response

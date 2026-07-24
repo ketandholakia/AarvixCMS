@@ -49,6 +49,7 @@ class DashboardController extends Controller
         $aiChartDates = [];
         $aiChartRequests = [];
         $aiChartTokens = [];
+        $aiChartCosts = [];
         $aiFeatureBreakdown = collect();
         $aiProviderBreakdown = collect();
         $aiModelBreakdown = collect();
@@ -75,10 +76,16 @@ class DashboardController extends Controller
                 'estimated_cost' => (string) (clone $aiRequests)->sum('estimated_cost'),
                 'average_latency_ms' => (int) round((float) ((clone $aiRequests)->avg('latency_ms') ?? 0)),
                 'average_queue_wait_ms' => (int) round((float) $this->averageQueueWaitMs((clone $aiRequests)->get())),
+                'current_month_cost' => (string) AiUsageDaily::query()
+                    ->whereBetween('usage_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
+                    ->sum('estimated_cost'),
+                'previous_month_cost' => (string) AiUsageDaily::query()
+                    ->whereBetween('usage_date', [now()->subMonthNoOverflow()->startOfMonth()->toDateString(), now()->subMonthNoOverflow()->endOfMonth()->toDateString()])
+                    ->sum('estimated_cost'),
             ];
 
             $usageByDate = AiUsageDaily::query()
-                ->selectRaw('usage_date, sum(requests_count) as requests_count, sum(total_tokens) as total_tokens')
+                ->selectRaw('usage_date, sum(requests_count) as requests_count, sum(total_tokens) as total_tokens, sum(estimated_cost) as estimated_cost')
                 ->where('usage_date', '>=', now()->subDays(29)->toDateString())
                 ->groupBy('usage_date')
                 ->orderBy('usage_date')
@@ -90,6 +97,7 @@ class DashboardController extends Controller
                 $aiChartDates[] = $date;
                 $aiChartRequests[] = (int) ($usageByDate[$date]->requests_count ?? 0);
                 $aiChartTokens[] = (int) ($usageByDate[$date]->total_tokens ?? 0);
+                $aiChartCosts[] = (float) ($usageByDate[$date]->estimated_cost ?? 0);
             }
 
             $aiFeatureBreakdown = (clone $aiRequests)
@@ -134,6 +142,7 @@ class DashboardController extends Controller
             'aiChartDates',
             'aiChartRequests',
             'aiChartTokens',
+            'aiChartCosts',
             'aiFeatureBreakdown',
             'aiProviderBreakdown',
             'aiModelBreakdown',

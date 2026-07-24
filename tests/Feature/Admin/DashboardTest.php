@@ -136,6 +136,19 @@ class DashboardTest extends TestCase
             'estimated_cost' => '0.00042000',
         ]);
 
+        AiUsageDaily::create([
+            'usage_date' => now()->subMonthNoOverflow()->startOfMonth()->addDays(2)->toDateString(),
+            'user_id' => $admin->id,
+            'feature' => 'writer',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+            'requests_count' => 2,
+            'prompt_tokens' => 18,
+            'completion_tokens' => 9,
+            'total_tokens' => 27,
+            'estimated_cost' => '0.00031000',
+        ]);
+
         $response = $this->actingAs($admin)->get(route('admin.dashboard'));
 
         $response->assertOk();
@@ -147,6 +160,10 @@ class DashboardTest extends TestCase
         $response->assertSeeText('Top AI Users');
         $response->assertSeeText('Avg Latency');
         $response->assertSeeText('Avg Queue Wait');
+        $response->assertSeeText('Current Month Cost');
+        $response->assertSeeText('Previous Month Cost');
+        $response->assertSeeText('$0.0004');
+        $response->assertSeeText('$0.0003');
         $response->assertSeeText('writer');
         $response->assertSeeText('chat');
         $response->assertSeeText($editor->name);

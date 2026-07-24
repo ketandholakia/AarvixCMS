@@ -566,7 +566,7 @@ and retention rules.
 - [x] Add an admin AI usage dashboard with 30-day trend data, feature/provider/model/user breakdowns, and recent request visibility.
 - Requests and success/failure rate.
 - Prompt, completion, and total tokens.
-- Daily and monthly estimated cost.
+- [x] Daily and monthly estimated cost.
 - Cost and latency by provider, model, feature, and user.
 - Most-used features and active users.
 - [x] Queue wait and execution time.

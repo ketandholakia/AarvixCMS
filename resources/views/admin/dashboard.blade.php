@@ -128,6 +128,17 @@
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Current Month Cost</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">${{ number_format((float) $aiStats['current_month_cost'], 4) }}</p>
+                </div>
+                <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Previous Month Cost</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">${{ number_format((float) $aiStats['previous_month_cost'], 4) }}</p>
+                </div>
+            </div>
+
             <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden p-6">
                 <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                     <div>
@@ -137,6 +148,18 @@
                 </div>
                 <div class="relative mt-4 h-72 w-full">
                     <canvas id="aiUsageChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden p-6">
+                <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">AI Cost Trend</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Daily estimated cost from the usage aggregation table.</p>
+                    </div>
+                </div>
+                <div class="relative mt-4 h-72 w-full">
+                    <canvas id="aiCostChart"></canvas>
                 </div>
             </div>
 
@@ -562,6 +585,87 @@
                             color: textColor,
                             beginAtZero: true,
                             precision: 0,
+                        },
+                        border: {
+                            display: false
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+
+        const aiCostCtx = document.getElementById('aiCostChart').getContext('2d');
+
+        new Chart(aiCostCtx, {
+            type: 'line',
+            data: {
+                labels: {!! json_encode($aiChartDates) !!},
+                datasets: [
+                    {
+                        label: 'Estimated Cost',
+                        data: {!! json_encode($aiChartCosts) !!},
+                        borderColor: '#ea580c',
+                        backgroundColor: 'rgba(234, 88, 12, 0.08)',
+                        borderWidth: 2,
+                        tension: 0.35,
+                        fill: true,
+                        pointRadius: 3,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: textColor,
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                        titleColor: isDark ? '#ffffff' : '#111827',
+                        bodyColor: isDark ? '#d1d5db' : '#4b5563',
+                        borderColor: isDark ? '#374151' : '#e5e7eb',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': $' + Number(context.parsed.y || 0).toFixed(4);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                        },
+                        ticks: {
+                            color: textColor,
+                            maxTicksLimit: 7,
+                            maxRotation: 0,
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: gridColor,
+                            borderDash: [5, 5],
+                        },
+                        ticks: {
+                            color: textColor,
+                            beginAtZero: true,
+                            callback: function(value) {
+                                return '$' + Number(value).toFixed(4);
+                            },
                         },
                         border: {
                             display: false

@@ -66,6 +66,30 @@ class AiDiagnosticsTest extends TestCase
             'completed_at' => now()->subHours(2),
         ]);
 
+        AiRequest::create([
+            'request_uuid' => 'diag-req-2',
+            'user_id' => $admin->id,
+            'feature' => 'writer',
+            'status' => 'failed',
+            'provider' => 'fake',
+            'model' => 'fake-writer',
+            'prompt_key' => 'writer.rewrite',
+            'scope' => [],
+            'request_metadata' => [],
+            'response_metadata' => [],
+            'request_payload' => [],
+            'response_payload' => [],
+            'prompt_tokens' => 6,
+            'completion_tokens' => 0,
+            'total_tokens' => 6,
+            'estimated_cost' => '0.00006000',
+            'latency_ms' => 95,
+            'error_class' => 'RuntimeException',
+            'error_message' => 'Provider unavailable',
+            'started_at' => now()->subHours(1),
+            'completed_at' => now()->subHours(1),
+        ]);
+
         $tool = AiTool::query()->where('key', 'content.summary')->firstOrFail();
 
         AiToolCall::create([
@@ -81,6 +105,23 @@ class AiDiagnosticsTest extends TestCase
             'result_summary' => ['summary' => 'Example summary'],
             'started_at' => now()->subHours(2),
             'completed_at' => now()->subHours(2),
+        ]);
+
+        AiToolCall::create([
+            'tool_id' => $tool->id,
+            'call_uuid' => 'diag-call-2',
+            'request_uuid' => 'diag-req-2',
+            'actor_user_id' => $admin->id,
+            'source_type' => 'post',
+            'source_id' => 1,
+            'status' => 'failed',
+            'approval_state' => 'rejected',
+            'input_payload' => ['source_type' => 'post', 'source_id' => 1],
+            'result_summary' => ['summary' => null],
+            'error_class' => 'RuntimeException',
+            'error_message' => 'Tool execution failed',
+            'started_at' => now()->subHours(1),
+            'completed_at' => now()->subHours(1),
         ]);
 
         AiAgentRun::create([
@@ -105,6 +146,29 @@ class AiDiagnosticsTest extends TestCase
             'completed_at' => now()->subHours(1),
         ]);
 
+        AiAgentRun::create([
+            'run_uuid' => 'diag-run-2',
+            'agent_key' => 'seo',
+            'agent_version' => 1,
+            'agent_name' => 'SEO Agent',
+            'status' => 'failed',
+            'actor_user_id' => $admin->id,
+            'request_uuid' => 'diag-req-2',
+            'prompt_key' => 'ai.agents.seo.v1',
+            'policy_snapshot' => ['permissions' => ['use_ai_writer']],
+            'budget_snapshot' => ['max_tokens' => 1800, 'max_cost' => '0.50'],
+            'context' => ['site' => 'main'],
+            'plan' => [],
+            'steps_planned' => 1,
+            'steps_completed' => 0,
+            'estimated_tokens' => 30,
+            'estimated_cost' => '0.00030000',
+            'error_class' => 'RuntimeException',
+            'error_message' => 'Agent stopped',
+            'started_at' => now()->subMinutes(50),
+            'failed_at' => now()->subMinutes(50),
+        ]);
+
         $response = $this->actingAs($admin)->get(route('admin.ai.diagnostics'));
 
         $response->assertStatus(200);
@@ -119,5 +183,6 @@ class AiDiagnosticsTest extends TestCase
         $response->assertSee('Avg Latency');
         $response->assertSee('Tool Calls');
         $response->assertSee('Agent Runs');
+        $response->assertSee('failed');
     }
 }

@@ -90,11 +90,13 @@
                     <div class="text-sm text-gray-500 dark:text-gray-400">Tool Calls</div>
                     <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($usageSummary['tool_calls_count']) }}</div>
                     <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($usageSummary['pending_tool_calls_count']) }} pending approval</div>
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($usageSummary['failed_tool_calls_count']) }} failed</div>
                 </div>
                 <div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">Agent Runs</div>
                     <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($usageSummary['agent_runs_count']) }}</div>
                     <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($usageSummary['active_agent_runs_count']) }} running</div>
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($usageSummary['failed_agent_runs_count']) }} failed</div>
                 </div>
                 <div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">Latest request</div>

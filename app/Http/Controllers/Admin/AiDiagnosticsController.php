@@ -37,12 +37,20 @@ class AiDiagnosticsController extends Controller
             $usageSummary = [
                 'requests_count' => $requestCount,
                 'success_rate' => $requestCount > 0 ? round(($successCount / $requestCount) * 100, 1) : 0.0,
+                'failed_requests_count' => (clone $requests)->whereIn('status', [
+                    AiStatus::Rejected->value,
+                    AiStatus::RateLimited->value,
+                    AiStatus::TimedOut->value,
+                    AiStatus::Failed->value,
+                ])->count(),
                 'total_tokens' => (int) (clone $requests)->sum('total_tokens'),
                 'estimated_cost' => (string) (clone $requests)->sum('estimated_cost'),
                 'average_latency_ms' => (int) round((float) ((clone $requests)->avg('latency_ms') ?? 0)),
                 'latest_request_at' => (clone $requests)->latest('created_at')->value('created_at'),
+                'failed_tool_calls_count' => (clone $toolCalls)->where('status', 'failed')->count(),
                 'tool_calls_count' => (clone $toolCalls)->count(),
                 'pending_tool_calls_count' => (clone $toolCalls)->where('approval_state', 'pending')->count(),
+                'failed_agent_runs_count' => (clone $agentRuns)->where('status', 'failed')->count(),
                 'agent_runs_count' => (clone $agentRuns)->count(),
                 'active_agent_runs_count' => (clone $agentRuns)->where('status', 'running')->count(),
             ];

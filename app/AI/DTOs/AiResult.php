@@ -15,6 +15,7 @@ readonly class AiResult
         public ?int $latencyMs = null,
         public ?string $requestId = null,
         public ?string $providerRequestId = null,
+        public ?string $usageRequestId = null,
         public ?string $errorClass = null,
         public ?string $errorMessage = null,
         public array $metadata = [],
@@ -29,6 +30,7 @@ readonly class AiResult
         ?int $latencyMs = null,
         ?string $requestId = null,
         ?string $providerRequestId = null,
+        ?string $usageRequestId = null,
         array $metadata = [],
     ): self {
         return new self(
@@ -40,6 +42,7 @@ readonly class AiResult
             latencyMs: $latencyMs,
             requestId: $requestId,
             providerRequestId: $providerRequestId,
+            usageRequestId: $usageRequestId,
             metadata: $metadata,
         );
     }
@@ -53,6 +56,7 @@ readonly class AiResult
         ?int $latencyMs = null,
         ?string $requestId = null,
         ?string $providerRequestId = null,
+        ?string $usageRequestId = null,
         array $metadata = [],
     ): self {
         return new self(
@@ -62,6 +66,7 @@ readonly class AiResult
             latencyMs: $latencyMs,
             requestId: $requestId,
             providerRequestId: $providerRequestId,
+            usageRequestId: $usageRequestId,
             errorClass: $errorClass,
             errorMessage: $errorMessage,
             metadata: $metadata,
@@ -74,6 +79,7 @@ readonly class AiResult
         ?int $latencyMs = null,
         ?string $requestId = null,
         ?string $providerRequestId = null,
+        ?string $usageRequestId = null,
     ): self {
         return new self(
             status: $this->status,
@@ -84,6 +90,7 @@ readonly class AiResult
             latencyMs: $latencyMs ?? $this->latencyMs,
             requestId: $requestId ?? $this->requestId,
             providerRequestId: $providerRequestId ?? $this->providerRequestId,
+            usageRequestId: $usageRequestId ?? $this->usageRequestId,
             errorClass: $this->errorClass,
             errorMessage: $this->errorMessage,
             metadata: $this->metadata,

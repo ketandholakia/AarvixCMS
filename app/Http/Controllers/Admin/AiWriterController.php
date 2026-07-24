@@ -106,6 +106,7 @@ class AiWriterController extends Controller
         return response()->json([
             'status' => $result->status->value,
             'request_id' => $result->requestId,
+            'ai_request_uuid' => $result->usageRequestId,
             'provider' => $result->provider,
             'model' => $result->model,
             'suggestion' => $preview['plain_text'],

@@ -126,6 +126,7 @@ class AiManager
                 provider: $provider->name(),
                 model: $request->model ?? $result->model,
                 latencyMs: (int) round((microtime(true) - $startedAt) * 1000),
+                usageRequestId: $requestRecord?->request_uuid,
             );
 
             if ($this->usageService && $requestRecord) {

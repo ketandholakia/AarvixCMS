@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 trait HasRevisions
 {
     protected static array $revisionSnapshots = [];
+    protected ?int $pendingAiRequestId = null;
 
     /**
      * Boot the trait to listen for model events.
@@ -40,6 +41,16 @@ trait HasRevisions
     public function revisions()
     {
         return $this->morphMany(Revision::class, 'revisionable')->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Attach contextual metadata to the next revision created for this model.
+     */
+    public function withRevisionContext(?int $aiRequestId = null): static
+    {
+        $this->pendingAiRequestId = $aiRequestId && $aiRequestId > 0 ? $aiRequestId : null;
+
+        return $this;
     }
 
     /**
@@ -80,10 +91,13 @@ trait HasRevisions
 
         $this->revisions()->create([
             'user_id' => auth()->id(),
+            'ai_request_id' => $this->pendingAiRequestId,
             'before_attributes' => $before,
             'after_attributes' => $after,
             'event' => $event,
         ]);
+
+        $this->pendingAiRequestId = null;
     }
 
     protected function pullRevisionSnapshot(): array

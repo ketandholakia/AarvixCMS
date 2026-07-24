@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AiRequest;
 use App\Services\ActivityService;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Model;
@@ -157,6 +158,7 @@ abstract class AdminCrudController extends Controller
     public function store(Request $request)
     {
         $this->authorizePermission('create');
+        $contextRequest = $request;
 
         if ($formRequest = $this->getFormRequestClass()) {
             $request = app($formRequest);
@@ -168,7 +170,10 @@ abstract class AdminCrudController extends Controller
         $this->beforeStore($request, $data);
 
         $modelClass = $this->getModelClass();
-        $model = $modelClass::create($data);
+        $model = new $modelClass;
+        $model->fill($data);
+        $this->applyRevisionContext($contextRequest, $model);
+        $model->save();
 
         $this->afterStore($request, $model);
 
@@ -192,6 +197,7 @@ abstract class AdminCrudController extends Controller
     public function update(Request $request, string $id)
     {
         $this->authorizePermission('edit');
+        $contextRequest = $request;
 
         $modelClass = $this->getModelClass();
         $model = $modelClass::findOrFail($id);
@@ -206,7 +212,9 @@ abstract class AdminCrudController extends Controller
 
         $this->beforeUpdate($request, $model, $data);
 
-        $model->update($data);
+        $model->fill($data);
+        $this->applyRevisionContext($contextRequest, $model);
+        $model->save();
 
         $this->afterUpdate($request, $model);
 
@@ -232,5 +240,33 @@ abstract class AdminCrudController extends Controller
 
         return redirect()->route($this->getRoutePrefix() . '.index')
             ->with('success', class_basename($modelClass) . ' deleted successfully.');
+    }
+
+    protected function applyRevisionContext(Request $request, Model $model): void
+    {
+        if (! method_exists($model, 'withRevisionContext')) {
+            return;
+        }
+
+        $aiRequestId = $this->resolveAiRequestId($request);
+
+        if ($aiRequestId !== null) {
+            $model->withRevisionContext($aiRequestId);
+        }
+    }
+
+    protected function resolveAiRequestId(Request $request): ?int
+    {
+        $requestUuid = $request->input('ai_request_uuid');
+
+        if (! is_string($requestUuid) || trim($requestUuid) === '') {
+            return null;
+        }
+
+        $aiRequestId = AiRequest::query()
+            ->where('request_uuid', trim($requestUuid))
+            ->value('id');
+
+        return is_int($aiRequestId) && $aiRequestId > 0 ? $aiRequestId : null;
     }
 }

@@ -22,6 +22,7 @@ class RevisionController extends Controller
 
     public function show(Request $request, Revision $revision)
     {
+        $revision->loadMissing(['user', 'aiRequest']);
         $record = $revision->revisionable;
         $before = $revision->before_attributes ?? [];
         $after = $revision->after_attributes ?? [];

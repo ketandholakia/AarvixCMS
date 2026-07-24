@@ -315,7 +315,7 @@ class AiWriterTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $preview = $this->actingAs($admin)->postJson(route('admin.ai.writer.generate'), [
+        $generationResponse = $this->actingAs($admin)->postJson(route('admin.ai.writer.generate'), [
             'context' => 'post',
             'record_id' => $post->id,
             'title' => 'SEO Ready Title',
@@ -325,7 +325,12 @@ class AiWriterTest extends TestCase
                     ['type' => 'paragraph', 'data' => ['text' => 'This article explains SEO planning for editors.']],
                 ],
             ]),
-        ])->json('preview.seo');
+        ]);
+
+        $generationResponse->assertOk();
+
+        $preview = $generationResponse->json('preview.seo');
+        $requestUuid = $generationResponse->json('ai_request_uuid');
 
         $this->actingAs($admin)->put(route('admin.posts.update', $post->id), [
             'title' => 'SEO Ready Title',
@@ -340,6 +345,7 @@ class AiWriterTest extends TestCase
             'meta_title' => $preview['meta_title'],
             'meta_description' => $preview['meta_description'],
             'published_at' => now()->format('Y-m-d\TH:i'),
+            'ai_request_uuid' => $requestUuid,
         ])->assertRedirect(route('admin.posts.index'));
 
         $this->assertSame(2, $post->fresh()->revisions()->count());
@@ -353,5 +359,11 @@ class AiWriterTest extends TestCase
         $this->assertNotNull($revision->after_attributes);
         $this->assertSame($preview['meta_title'], $revision->after_attributes['meta_title'] ?? null);
         $this->assertSame($preview['meta_description'], $revision->after_attributes['meta_description'] ?? null);
+        $this->assertNotNull($requestUuid);
+        $this->assertSame(
+            AiRequest::where('request_uuid', $requestUuid)->value('id'),
+            $revision->ai_request_id
+        );
+        $this->assertSame($requestUuid, $revision->aiRequest?->request_uuid);
     }
 }

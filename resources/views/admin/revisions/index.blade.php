@@ -27,13 +27,20 @@
                         {{ $revision->user->name ?? 'System' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        <span class="px-2 py-1 text-xs rounded font-medium 
-                            {{ $revision->event === 'created' ? 'bg-green-100 text-green-800' : '' }}
-                            {{ $revision->event === 'updated' ? 'bg-blue-100 text-blue-800' : '' }}
-                            {{ $revision->event === 'deleted' ? 'bg-red-100 text-red-800' : '' }}
-                        ">
-                            {{ ucfirst($revision->event) }}
-                        </span>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="px-2 py-1 text-xs rounded font-medium 
+                                {{ $revision->event === 'created' ? 'bg-green-100 text-green-800' : '' }}
+                                {{ $revision->event === 'updated' ? 'bg-blue-100 text-blue-800' : '' }}
+                                {{ $revision->event === 'deleted' ? 'bg-red-100 text-red-800' : '' }}
+                            ">
+                                {{ ucfirst($revision->event) }}
+                            </span>
+                            @if($revision->ai_request_id)
+                                <span class="px-2 py-1 text-xs rounded font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                    AI-assisted
+                                </span>
+                            @endif
+                        </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <a href="{{ route('admin.revisions.show', $revision->id) }}" class="text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mr-3">View Diff</a>

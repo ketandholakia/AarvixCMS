@@ -42,6 +42,8 @@
         </button>
     </div>
 
+    <input type="hidden" name="ai_request_uuid" data-ai-writer-request-uuid value="">
+
     <div class="mt-4">
         <p class="text-xs text-gray-500 dark:text-gray-400">Selection is used when available; otherwise the whole document is sent.</p>
     </div>
@@ -102,7 +104,15 @@
         loading: false,
         error: '',
         preview: null,
+        requestId: '',
         config,
+        syncRequestIdField(value = '') {
+            const field = this.$root.closest('form')?.querySelector('[data-ai-writer-request-uuid]');
+
+            if (field) {
+                field.value = value || '';
+            }
+        },
         async generate() {
             if (! this.config.enabled) {
                 this.error = 'AI is disabled in settings.';
@@ -112,6 +122,8 @@
             this.loading = true;
             this.error = '';
             this.preview = null;
+            this.requestId = '';
+            this.syncRequestIdField('');
 
             try {
                 const selection = window.getSelection ? String(window.getSelection()) : '';
@@ -148,6 +160,7 @@
                     throw new Error(payload.message || 'AI writer request failed.');
                 }
 
+                this.requestId = payload.ai_request_uuid || payload.request_id || '';
                 this.preview = payload.preview || null;
                 if (this.preview && (! this.preview.blocks || ! this.preview.blocks.length) && payload.suggestion) {
                     this.preview.blocks = [{
@@ -178,6 +191,7 @@
             if (editor && typeof editor.applyPreview === 'function') {
                 editor.applyPreview(this.preview.blocks, mode || this.preview.mode || 'replace')
                     .then(() => {
+                        this.syncRequestIdField(this.requestId);
                         this.preview = null;
                     })
                     .catch((error) => {
@@ -213,10 +227,13 @@
                 : blockText;
             textarea.dispatchEvent(new Event('input', { bubbles: true }));
             textarea.dispatchEvent(new Event('change', { bubbles: true }));
+            this.syncRequestIdField(this.requestId);
             this.preview = null;
         },
         cancelPreview() {
             this.preview = null;
+            this.requestId = '';
+            this.syncRequestIdField('');
         },
         }));
 

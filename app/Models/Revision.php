@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\AiRequest;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +13,7 @@ class Revision extends Model
         'revisionable_type',
         'revisionable_id',
         'user_id',
+        'ai_request_id',
         'before_attributes',
         'after_attributes',
         'event',
@@ -36,5 +38,10 @@ class Revision extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function aiRequest(): BelongsTo
+    {
+        return $this->belongsTo(AiRequest::class, 'ai_request_id');
     }
 }

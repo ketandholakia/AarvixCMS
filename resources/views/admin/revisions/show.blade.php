@@ -28,6 +28,11 @@
             ">
                 {{ ucfirst($revision->event) }}
             </span>
+            @if($revision->aiRequest)
+                <a href="{{ route('admin.ai-requests.show', $revision->aiRequest) }}" class="ml-2 inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50">
+                    AI request #{{ $revision->aiRequest->id }}
+                </a>
+            @endif
         </div>
     </div>
 
